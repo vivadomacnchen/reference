@@ -1,0 +1,30 @@
+  824  make zynq_zed_defconfig
+  825  cd doc/
+  826  ls
+  827  make
+  828  cd ..
+  829  ls -l
+  830  make menuconfig
+  831  make zynq_zed_defconfig
+  832  sudo apt-get install bison
+  833  make zynq_zed_defconfig
+  834  sudo apt-get install flex
+  835  make zynq_zed_defconfig
+  836  export DEVICE_TREE=zynq-zed
+  837  make xiline_zynq_virt_defconfig
+  838  make xilinx_zynq_virt_defconfig
+  839  make -j8
+  840  arm-linux-gnueabihf-gcc -v
+  841  gcc -v
+  842  sudo apt-get install gcc
+  843  export DEVICE_TREE="zynq-zed"
+  844  make
+  845  export CROSS_COMPILE=arm-linux-gnueabihf-
+  846  export ARCH=arm
+  847  make xilinx_zynq_virt_defconfig
+  848  export DEVICE_TREE="zynq-zed"
+  849  make
+  850  sudo apt-get install libssl-dev
+  851  make
+  852  ls -l
+  853  history 30
