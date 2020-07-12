@@ -28,3 +28,50 @@
   851  make
   852  ls -l
   853  history 30
+//////////////////////////
+從Github下載後按照
+https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841973/Build+U-Boot
+步驟如下:
+在terminal下輸入
+export CROSS_COMPILE=arm-linux-gnueabihf-
+之後
+export ARCH=arm
+make distclean
+make xilinx_zynqmp_virt_defconfig
+export DEVICE_TREE="zynq-zed"
+make
+出現
+Makefile 37:missing separator錯誤
+=>嘗試結果
+=>刪去第一層的Makefile的第37行(undefine MK_ARCH)重新執行上述步驟或在make該命令下以make -j8取代
+出現
+需要bison的library
+=>sudo apt-get install bison即可
+需要openssl相關library
+=>sudo apt-get install libssl-dev即可
+//////////參考
+在陸佳華《嵌入式系統軟硬體協同設計實戰指南 第2版》一書的第13章節 編譯U-boot時會遇到2個錯誤。原因很簡單，就從一開始的錯誤提示著手： fatal error: openssl/evp.h: 沒有那個檔案或目錄。當然在網上也可以搜尋到相關的解決方法。在此僅作為記錄：如果你在編譯時遇到這個錯誤，這可能是下面的原因：你嘗試編譯的程式使用OpenSSL，但是需要和OpenSSL連結的檔案（庫和標頭檔案）在你Linux平臺上缺少。因為原書貌似用的是Ubuntu12.04而我用的是14.04.所以要自己安裝相關的檔案。
+
+要在Debian、Ubuntu或者其他衍生版上安裝OpenSSL：
+
+$ sudo apt-get install libssl-dev
+要在Fedora、CentOS或者RHEL上安裝OpenSSL開發包：
+
+$ sudo yum install openssl-devel
+安裝完後，嘗試重新編譯程式。
+
+編譯後出現
+
+ MKIMAGE u-boot.img
+./tools/zynq-boot-bin.py -o boot.bin -u spl/u-boot-spl.bin
+Input file is: spl/u-boot-spl.bin
+Output file is: boot.bin
+Using /root/build/u-boot-xlnx/spl/u-boot-spl.bin to get image length - it is 49136 (0xbff0) bytes
+After checksum waddr= 0x13  byte addr= 0x4c
+Number of registers to initialize 0
+Generating binary output  /root/build/u-boot-xlnx/boot.bin
+
+OK!
+
+
+//////////
