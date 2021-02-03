@@ -1,0 +1,2341 @@
+<options>
+	<misc.options n="misc.options" version="1">
+		<app_theme v="Dark"/>
+		<search_flags v="0x1"/>
+	</misc.options>
+	<misc.tag_file_list n="misc.tag_file_list" version="1" configs="win">
+		<p n="cs" v='%SLICKEDITCONFIGVERSION%tagfiles\unity.vtg;"C:\Users\User\Documents\My SlickEdit Config\24.0.2\tagfiles\dotnet.vtg"'/>
+		<p n="bas" v='"C:\Users\User\Documents\My SlickEdit Config\24.0.2\tagfiles\dotnet.vtg"'/>
+		<p n="c" v="%SLICKEDITCONFIGVERSION%tagfiles\dotnet.vtg"/>
+		<p n="e" v="%SLICKEDITCONFIGVERSION%tagfiles\slickc.vtg"/>
+	</misc.tag_file_list>
+	<misc.def_vars n="misc.def_vars" version="1">
+		<p n="def_color_scheme" v="Slate"/>
+		<p n="def_refactor_active_config" v="Visual Studio 2008"/>
+		<p n="def_toolbar_tree_pic_size" v="12"/>
+		<p n="def_toolbartab" configs="win unix">
+			<array>
+				<class._TOOLBAR>
+					<FormName v="_tbstandard_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x0"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbproject_tools_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x1"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbtools_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x0"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbedit_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x0"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbseldisp_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x0"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbxml_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x800"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbhtml_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x0"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbtagging_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x4"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbcontext_form"/>
+					<tbflags v="0x8"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x400"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbdebugbb_form"/>
+					<tbflags v="0x49"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x2"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbdebug_sessions_form"/>
+					<tbflags v="0x48"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x2"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbvc_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x8"/>
+				</class._TOOLBAR>
+				<class._TOOLBAR>
+					<FormName v="_tbandroid_form"/>
+					<tbflags v="0x9"/>
+					<restore_docked v="0"/>
+					<show_x v="0"/>
+					<show_y v="0"/>
+					<show_width v="0"/>
+					<show_height v="0"/>
+					<docked_area v="0"/>
+					<docked_row v="0"/>
+					<docked_x v="0"/>
+					<docked_y v="0"/>
+					<docked_width v="0"/>
+					<docked_height v="0"/>
+					<tabgroup v="0"/>
+					<tabOrder v="0"/>
+					<auto_width v="0"/>
+					<auto_height v="0"/>
+					<rflags v="0x1"/>
+				</class._TOOLBAR>
+			</array>
+		</p>
+		<p n="def_symbol_color_profile" v="All symbols - Dark background"/>
+		<p n="def_mozilla_modified" v="1"/>
+		<p n="def_eao_file_date2" v="20200401124714000"/>
+		<p n="def_lldb_debug_server" v=""/>
+		<p n="def_workspace_info" configs="win">
+			<array>
+				<class.WORKSPACE_LIST>
+					<isFolder v="1"/>
+					<filename/>
+					<caption v="Sample Workspaces"/>
+					<u>
+						<array>
+							<class.WORKSPACE_LIST>
+								<isFolder v="0"/>
+								<filename v="%SLICKEDITCONFIGVERSION%SampleProjects\clang\clang.vpw"/>
+								<caption v=""/>
+								<u/>
+								<projectname v=""/>
+							</class.WORKSPACE_LIST>
+							<class.WORKSPACE_LIST>
+								<isFolder v="0"/>
+								<filename v="%SLICKEDITCONFIGVERSION%SampleProjects\csharp\csharp.vpw"/>
+								<caption v=""/>
+								<u/>
+								<projectname v=""/>
+							</class.WORKSPACE_LIST>
+							<class.WORKSPACE_LIST>
+								<isFolder v="0"/>
+								<filename v="%SLICKEDITCONFIGVERSION%SampleProjects\csharp\vcpp_csharp.sln"/>
+								<caption v=""/>
+								<u/>
+								<projectname v=""/>
+							</class.WORKSPACE_LIST>
+							<class.WORKSPACE_LIST>
+								<isFolder v="0"/>
+								<filename v="%SLICKEDITCONFIGVERSION%SampleProjects\csharp\vcpp_csharp.vpw"/>
+								<caption v=""/>
+								<u/>
+								<projectname v=""/>
+							</class.WORKSPACE_LIST>
+							<class.WORKSPACE_LIST>
+								<isFolder v="0"/>
+								<filename v="%SLICKEDITCONFIGVERSION%SampleProjects\DevStudio\2013\VS2013.sln"/>
+								<caption v=""/>
+								<u/>
+								<projectname v=""/>
+							</class.WORKSPACE_LIST>
+							<class.WORKSPACE_LIST>
+								<isFolder v="0"/>
+								<filename v="%SLICKEDITCONFIGVERSION%SampleProjects\DevStudio\2015\VS2015.sln"/>
+								<caption v=""/>
+								<u/>
+								<projectname v=""/>
+							</class.WORKSPACE_LIST>
+							<class.WORKSPACE_LIST>
+								<isFolder v="0"/>
+								<filename v="%SLICKEDITCONFIGVERSION%SampleProjects\java\java.vpw"/>
+								<caption v=""/>
+								<u/>
+								<projectname v=""/>
+							</class.WORKSPACE_LIST>
+							<class.WORKSPACE_LIST>
+								<isFolder v="0"/>
+								<filename v="%SLICKEDITCONFIGVERSION%SampleProjects\ucpp\cpp.vpw"/>
+								<caption v=""/>
+								<u/>
+								<projectname v=""/>
+							</class.WORKSPACE_LIST>
+						</array>
+					</u>
+					<projectname/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\workspace\testse\testse.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\workspace\testse\testse.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\workspace\netEx.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\workspace\netEx.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\repo\myjava\NetEx\NetEx.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\repo\myjava\NetEx\NetEx.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\crypto\wolfssl\wolfsslLEARN\wolfssl.sln"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\crypto\wolfssl\wolfsslLEARN\wolfssl.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\crypto\openssl\opensslLEARN\openssltest\openssltest.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\crypto\openssl\opensslLEARN\openssltest\openssltest.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\usb4java\testjavausb.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\usb4java\testjavausb.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\Japan\Repo\TestJP\TestJP.sln"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\Japan\Repo\TestJP\TestJP\TestJP.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\repo\myjava\testswing.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\repo\myjava\testswing.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\repo\myjava\testswing2\testswing2.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\repo\myjava\testswing2\testswing2.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\repo\myjava\testawtapplet\testawtapplet.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\repo\myjava\testawtapplet\testawtapplet.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\repo\myjava\testswtapp\testswtapp.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\repo\myjava\testswtapp\testswtapp.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\repo\myjava\testjfcapplet\testjfcapplet.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\repo\myjava\testjfcapplet\testjfcapplet.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\java\repo\myjava\testjfcapplication\testjfcapplication.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\java\repo\myjava\testjfcapplication\testjfcapplication.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\Algorithm\repo\CH4.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\Algorithm\repo\CH4.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\Algorithm\repo\testCross.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\Algorithm\repo\testCross.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\Algorithm\repo\testc.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\Algorithm\repo\testc.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\Algorithm\repo\testalg\testalg.sln"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\Algorithm\repo\testalg\testalg\testalg.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\Algorithm\repo\testalg2\testalg2.sln"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\Algorithm\repo\testalg2\testalg2\testalg2.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\Algorithm\repo\myalg\testalg2\testalg2.sln"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\Algorithm\repo\myalg\testalg2\testalg2\testalg2.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="D:\testalg2\testalg2.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="D:\testalg2\testalg2.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="D:\testalg2\testalg2.sln"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="D:\testalg2\testalg2\testalg2.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="D:\testCordinateECC\testCordinateECC\testECCCordinate\vsporj.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="D:\testCordinateECC\testCordinateECC\testECCCordinate\vsporj.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\learningjava-master\examples\se\se.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\learningjava-master\examples\se\se.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\learningjava-master\examples\ch02\se_proj\se_proj.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\learningjava-master\examples\ch02\se_proj\se_proj.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\learningjava-master\examples\ch03\seprj\seprj.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\learningjava-master\examples\ch03\seprj\seprj.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\learningjava-master\examples\ch07\seprj.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\learningjava-master\examples\ch07\seprj.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\learningjava-master\examples\ch08\seprj.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\learningjava-master\examples\ch08\seprj.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="D:\vc_string\stringhandle\test2\test2.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="D:\vc_string\stringhandle\test2\test2.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="D:\vcplusplus\lisbox\lisbox\testlistbox.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="D:\vcplusplus\lisbox\lisbox\testlistbox.vpj"/>
+				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="D:\vcplusplus\vcplusplus\lisbox\lisbox\testlistbox.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="D:\vcplusplus\vcplusplus\lisbox\lisbox\testlistbox.vpj"/>
+				</class.WORKSPACE_LIST>
+			</array>
+		</p>
+		<p n="def_open_style" v="0"/>
+		<p n="def_jdk_install_dir" v="C:\Program Files\Java\jdk-14.0.1\" configs="win"/>
+		<p n="def_java_live_errors_jdk_6_dir" v="C:\Program Files\Java\jdk-14.0.1\" configs="win"/>
+		<p n="def_java_live_errors_jvm_lib" v="C:\Program Files\Java\jdk-14.0.1\bin\server\jvm.dll"/>
+		<p n="def_encoding" v="+futf8s"/>
+		<p n="def_git_browser_url_list">
+			<array>
+				<p v="C:\W\java\repo\myjava\"/>
+			</array>
+		</p>
+		<p n="def_debug_number_formats">
+			<dict>
+				<p n="char">
+					<class.DebugNumberFormat>
+						<base/>
+					</class.DebugNumberFormat>
+				</p>
+				<p n="double">
+					<class.DebugNumberFormat>
+						<base/>
+					</class.DebugNumberFormat>
+				</p>
+				<p n="float">
+					<class.DebugNumberFormat>
+						<base/>
+					</class.DebugNumberFormat>
+				</p>
+				<p n="int">
+					<class.DebugNumberFormat>
+						<base/>
+					</class.DebugNumberFormat>
+				</p>
+				<p n="long">
+					<class.DebugNumberFormat>
+						<base/>
+					</class.DebugNumberFormat>
+				</p>
+				<p n="short">
+					<class.DebugNumberFormat>
+						<base/>
+					</class.DebugNumberFormat>
+				</p>
+				<p n="unsigned">
+					<class.DebugNumberFormat>
+						<base/>
+					</class.DebugNumberFormat>
+				</p>
+			</dict>
+		</p>
+		<p n="def_project_auto_build" v="1"/>
+		<p n="def_keys" v="eclipse-keys" configs="win unix"/>
+		<p n="def_deselect_copy" v="0"/>
+		<p n="def_vcpp_word" v="1"/>
+		<p n="def_subword_nav" v="1"/>
+		<p n="def_re_search_flags" v="0x4004000"/>
+		<p n="def_vcproj_debug_prefs" v="2"/>
+		<p n="def_mfsearch_init_flags" v="0xA"/>
+		<p n="def_active_java_config" v="JDK 14.0.1"/>
+	</misc.def_vars>
+	<misc.tag_file_list_all n="misc.tag_file_list_all" version="1" configs="win">
+		<p n="cs" v="%SLICKEDITCONFIGVERSION%tagfiles\dotnet.vtg;%SLICKEDITCONFIGVERSION%tagfiles\unity.vtg"/>
+		<p n="c" v="%SLICKEDITCONFIGVERSION%tagfiles\dotnet.vtg"/>
+		<p n="bas" v="%SLICKEDITCONFIGVERSION%tagfiles\dotnet.vtg"/>
+		<p n="e" v="%SLICKEDITCONFIGVERSION%tagfiles\slickc.vtg"/>
+	</misc.tag_file_list_all>
+	<misc.fonts n="misc.fonts" version="1">
+		<sbcs_dbcs_source_window font_name="Fixedsys" sizex10="120" flags="0x0" configs="win"/>
+		<unicode_source_window font_name="Fixedsys" sizex10="120" flags="0x0" configs="win"/>
+	</misc.fonts>
+	<language n="language.dll" version="1">
+		<p n="mode_name" v="dll"/>
+	</language>
+	<misc.file_extensions n="misc.file_extensions" version="1">
+		<p n="encoding-def" v=""/>
+		<p n="encoding-cs" v=""/>
+		<p n="encoding-rb" v=""/>
+		<p n="encoding-mp3" v=""/>
+		<p n="encoding-7zip" v=""/>
+		<p n="encoding-f90" v=""/>
+		<p n="encoding-cfm" v=""/>
+		<p n="encoding-f" v=""/>
+		<p n="encoding-cpio" v=""/>
+		<p n="encoding-coffee" v=""/>
+		<p n="encoding-p4gl" v=""/>
+		<p n="encoding-xhtml" v=""/>
+		<p n="encoding-tagdoc" v=""/>
+		<p n="encoding-cghlsl" v=""/>
+		<p n="encoding-properties" v=""/>
+		<p n="encoding-vtg" v=""/>
+		<p n="encoding-exp" v=""/>
+		<p n="encoding-plist" v=""/>
+		<p n="encoding-c" v=""/>
+		<p n="encoding-verilog" v=""/>
+		<p n="encoding-bin" v=""/>
+		<p n="encoding-adb" v=""/>
+		<p n="encoding-vcproj" v=""/>
+		<p n="encoding-docx" v=""/>
+		<p n="encoding-w" v=""/>
+		<p n="encoding-txt" v=""/>
+		<p n="encoding-py" v=""/>
+		<p n="encoding-ada" v=""/>
+		<p n="encoding-aspx" v=""/>
+		<p n="encoding-cob" v=""/>
+		<p n="encoding-rpm" v=""/>
+		<p n="encoding-build" v=""/>
+		<p n="encoding-pas" v=""/>
+		<p n="encoding-less" v=""/>
+		<p n="encoding-ttcn" v=""/>
+		<p n="encoding-cbl" v=""/>
+		<p n="encoding-antlr" v=""/>
+		<p n="encoding-svh" v=""/>
+		<p n="encoding-sqlserver" v=""/>
+		<p n="encoding-h" v=""/>
+		<p n="encoding-fs" v=""/>
+		<p n="encoding-plsql" v=""/>
+		<p n="encoding-h++" v=""/>
+		<p n="encoding-mk" v=""/>
+		<p n="encoding-asax" v=""/>
+		<p n="encoding-bat" v=""/>
+		<p n="encoding-dll" v=""/>
+		<p n="encoding-pm" v=""/>
+		<p n="encoding-plm" v=""/>
+		<p n="encoding-fsx" v=""/>
+		<p n="encoding-php3" v=""/>
+		<p n="encoding-pdf" v=""/>
+		<p n="encoding-vsm" v=""/>
+		<p n="encoding-inc" v=""/>
+		<p n="encoding-xaml" v=""/>
+		<p n="encoding-png" v=""/>
+		<p n="encoding-asm390" v=""/>
+		<p n="encoding-plx" v=""/>
+		<p n="encoding-m" v=""/>
+		<p n="encoding-db2" v=""/>
+		<p n="encoding-htm" v=""/>
+		<p n="encoding-i" v=""/>
+		<p n="encoding-gsh" v=""/>
+		<p n="encoding-exe" v=""/>
+		<p n="encoding-dpr" v=""/>
+		<p n="encoding-rs" v=""/>
+		<p n="encoding-rul" v=""/>
+		<p n="encoding-masm" v=""/>
+		<p n="encoding-dtd" v=""/>
+		<p n="encoding-docbook" v=""/>
+		<p n="encoding-xpm" v=""/>
+		<p n="encoding-xml" v=""/>
+		<p n="encoding-rexx" v=""/>
+		<p n="encoding-mpeg" v=""/>
+		<p n="encoding-suo" v=""/>
+		<p n="encoding-cpy" v=""/>
+		<p n="encoding-tld" v=""/>
+		<p n="encoding-winmd" v=""/>
+		<p n="encoding-pl" v=""/>
+		<p n="encoding-ascx" v=""/>
+		<p n="encoding-class" v=""/>
+		<p n="encoding-pro" v=""/>
+		<p n="encoding-gl" v=""/>
+		<p n="encoding-cob85" v=""/>
+		<p n="encoding-vlx" v=""/>
+		<p n="encoding-editorconfig" v=""/>
+		<p n="encoding-perl" v=""/>
+		<p n="encoding-cfscript" v=""/>
+		<p n="encoding-vhdl" v=""/>
+		<p n="encoding-hlsl" v=""/>
+		<p n="encoding-rmd" v=""/>
+		<p n="encoding-rhtml" v=""/>
+		<p n="encoding-phpscript" v=""/>
+		<p n="encoding-tiff" v=""/>
+		<p n="encoding-l" v=""/>
+		<p n="encoding-sdef" v=""/>
+		<p n="encoding-for" v=""/>
+		<p n="encoding-ruby" v=""/>
+		<p n="encoding-qml" v=""/>
+		<p n="encoding-psm1" v=""/>
+		<p n="encoding-vsdelta" v=""/>
+		<p n="encoding-cginc" v=""/>
+		<p n="encoding-mak" v=""/>
+		<p n="encoding-groovy" v=""/>
+		<p n="encoding-g" v=""/>
+		<p n="encoding-chf" v=""/>
+		<p n="encoding-yaml" v=""/>
+		<p n="encoding-pp" v=""/>
+		<p n="encoding-mdown" v=""/>
+		<p n="encoding-inl" v=""/>
+		<p n="encoding-m4" v=""/>
+		<p n="encoding-applescript" v=""/>
+		<p n="encoding-tex" v=""/>
+		<p n="encoding-gz" v=""/>
+		<p n="encoding-p" v=""/>
+		<p n="encoding-ansic" v=""/>
+		<p n="encoding-v2k" v=""/>
+		<p n="encoding-hp" v=""/>
+		<p n="encoding-g4" v=""/>
+		<p n="encoding-bbc" v=""/>
+		<p n="encoding-rc" v=""/>
+		<p n="encoding-scala" v=""/>
+		<p n="encoding-frm" v=""/>
+		<p n="encoding-prg" v=""/>
+		<p n="encoding-vri" v=""/>
+		<p n="encoding-ps1" v=""/>
+		<p n="encoding-svgz" v=""/>
+		<p n="encoding-ds" v=""/>
+		<p n="encoding-asp" v=""/>
+		<p n="encoding-slk" v=""/>
+		<p n="encoding-csh" v=""/>
+		<p n="encoding-cfml" v=""/>
+		<p n="encoding-qth" v=""/>
+		<p n="encoding-ps" v=""/>
+		<p n="encoding-patch" v=""/>
+		<p n="encoding-js" v=""/>
+		<p n="encoding-jpeg" v=""/>
+		<p n="encoding-awk" v=""/>
+		<p n="encoding-ocb" v=""/>
+		<p n="encoding-cpp" v=""/>
+		<p n="encoding-xmldoc" v=""/>
+		<p n="encoding-tcl" v=""/>
+		<p n="encoding-r" v=""/>
+		<p n="encoding-bas" v=""/>
+		<p n="encoding-ansisql" v=""/>
+		<p n="encoding-projitems" v=""/>
+		<p n="encoding-zip" v=""/>
+		<p n="encoding-hxx" v=""/>
+		<p n="encoding-lex" v=""/>
+		<p n="encoding-vcxproj" v=""/>
+		<p n="encoding-shader" v=""/>
+		<p n="encoding-erl" v=""/>
+		<p n="encoding-ads" v=""/>
+		<p n="encoding-tsv" v=""/>
+		<p n="encoding-wxi" v=""/>
+		<p n="encoding-d" v=""/>
+		<p n="encoding-xslt" v=""/>
+		<p n="encoding-mm" v=""/>
+		<p n="encoding-cc" v=""/>
+		<p n="encoding-cics" v=""/>
+		<p n="encoding-npasm" v=""/>
+		<p n="encoding-cfc" v=""/>
+		<p n="encoding-ini" v=""/>
+		<p n="encoding-master" v=""/>
+		<p n="encoding-yacc" v=""/>
+		<p n="encoding-pli" v=""/>
+		<p n="encoding-java" v=""/>
+		<p n="encoding-seq" v=""/>
+		<p n="encoding-lib" v=""/>
+		<p n="encoding-vb" v=""/>
+		<p n="encoding-html" v=""/>
+		<p n="encoding-a" v=""/>
+		<p n="encoding-di" v=""/>
+		<p n="encoding-sh" v=""/>
+		<p n="encoding-asm" v=""/>
+		<p n="encoding-proto" v=""/>
+		<p n="encoding-err" v=""/>
+		<p n="encoding-csv" v=""/>
+		<p n="encoding-asc" v=""/>
+		<p n="encoding-log" v=""/>
+		<p n="encoding-vr" v=""/>
+		<p n="encoding-sv" v=""/>
+		<p n="encoding-hpp" v=""/>
+		<p n="encoding-gvy" v=""/>
+		<p n="encoding-itk" v=""/>
+		<p n="encoding-if" v=""/>
+		<p n="encoding-sql" v=""/>
+		<p n="encoding-so" v=""/>
+		<p n="encoding-obj" v=""/>
+		<p n="encoding-mod" v=""/>
+		<p n="encoding-bib" v=""/>
+		<p n="encoding-cp" v=""/>
+		<p n="encoding-hh" v=""/>
+		<p n="encoding-sybase" v=""/>
+		<p n="encoding-jar" v=""/>
+		<p n="encoding-lua" v=""/>
+		<p n="encoding-css" v=""/>
+		<p n="encoding-md" v=""/>
+		<p n="encoding-y" v=""/>
+		<p n="encoding-ninja" v=""/>
+		<p n="encoding-kt" v=""/>
+		<p n="encoding-scriptterminology" v=""/>
+		<p n="encoding-wxl" v=""/>
+		<p n="encoding-vbproj" v=""/>
+		<p n="encoding-cpgz" v=""/>
+		<p n="encoding-wxs" v=""/>
+		<p n="encoding-ch" v=""/>
+		<p n="encoding-avi" v=""/>
+		<p n="encoding-bourneshell" v=""/>
+		<p n="encoding-pl1" v=""/>
+		<p n="encoding-cljs" v=""/>
+		<p n="encoding-jsfl" v=""/>
+		<p n="encoding-ico" v=""/>
+		<p n="encoding-cgfx" v=""/>
+		<p n="encoding-bmp" v=""/>
+		<p n="encoding-vpt" v=""/>
+		<p n="encoding-cg" v=""/>
+		<p n="encoding-matlab" v=""/>
+		<p n="encoding-vsdelta2" v=""/>
+		<p n="encoding-vpw" v=""/>
+		<p n="encoding-swift" v=""/>
+		<p n="encoding-eventhandlers" v=""/>
+		<p n="encoding-itcl" v=""/>
+		<p n="encoding-cmd" v=""/>
+		<p n="encoding-imakefile" v=""/>
+		<p n="encoding-cmake" v=""/>
+		<p n="encoding-gradle" v=""/>
+		<p n="encoding-xslx" v=""/>
+		<p n="encoding-pdb" v=""/>
+		<p n="encoding-sl" v=""/>
+		<p n="encoding-xsl" v=""/>
+		<p n="encoding-vhd" v=""/>
+		<p n="encoding-tlib" v=""/>
+		<p n="encoding-hrl" v=""/>
+		<p n="encoding-diff" v=""/>
+		<p n="encoding-cljc" v=""/>
+		<p n="encoding-e" v=""/>
+		<p n="encoding-clj" v=""/>
+		<p n="encoding-bash" v=""/>
+		<p n="encoding-svg" v=""/>
+		<p n="encoding-php" v=""/>
+		<p n="encoding-scriptsuite" v=""/>
+		<p n="encoding-tsx" v=""/>
+		<p n="encoding-vpj" v=""/>
+		<p n="encoding-war" v=""/>
+		<p n="encoding-vbs" v=""/>
+		<p n="encoding-tar" v=""/>
+		<p n="encoding-jpg" v=""/>
+		<p n="encoding-as" v=""/>
+		<p n="encoding-s" v=""/>
+		<p n="encoding-z" v=""/>
+		<p n="encoding-diffpatch" v=""/>
+		<p n="encoding-vrh" v=""/>
+		<p n="encoding-sca" v=""/>
+		<p n="encoding-xz" v=""/>
+		<p n="encoding-v" v=""/>
+		<p n="encoding-ts" v=""/>
+		<p n="encoding-7z" v=""/>
+		<p n="encoding-hs" v=""/>
+		<p n="encoding-setemplate" v=""/>
+		<p n="encoding-mathml" v=""/>
+		<p n="encoding-jsp" v=""/>
+		<p n="encoding-csproj" v=""/>
+		<p n="encoding-sta" v=""/>
+		<p n="encoding-idl" v=""/>
+		<p n="encoding-4gl" v=""/>
+		<p n="encoding-rar" v=""/>
+		<p n="encoding-tif" v=""/>
+		<p n="encoding-conf" v=""/>
+		<p n="encoding-tgz" v=""/>
+		<p n="encoding-jsl" v=""/>
+		<p n="encoding-xsd" v=""/>
+		<p n="encoding-vpe" v=""/>
+		<p n="encoding-unixasm" v=""/>
+		<p n="encoding-tcc" v=""/>
+		<p n="encoding-cxx" v=""/>
+		<p n="encoding-go" v=""/>
+		<p n="encoding-kts" v=""/>
+		<p n="encoding-o" v=""/>
+		<p n="encoding-msi" v=""/>
+		<p n="encoding-vbscript" v=""/>
+		<p n="encoding-yml" v=""/>
+		<p n="encoding-c++" v=""/>
+		<p n="encoding-chm" v=""/>
+		<p n="encoding-xlsx" v=""/>
+		<p n="encoding-cls" v=""/>
+		<p n="encoding-shtml" v=""/>
+		<p n="encoding-svi" v=""/>
+		<p n="encoding-resx" v=""/>
+		<p n="encoding-gy" v=""/>
+		<p n="encoding-bz2" v=""/>
+		<p n="encoding-gif" v=""/>
+		<p n="encoding-markdown" v=""/>
+		<p n="encoding-cljx" v=""/>
+		<p n="encoding-wmv" v=""/>
+		<p n="encoding-ex" v=""/>
+		<p n="encoding-rby" v=""/>
+		<p n="encoding-jcl" v=""/>
+		<p n="encoding-json" v=""/>
+		<p n="encoding-cf" v=""/>
+		<p n="encoding-f95" v=""/>
+		<p n="encoding-sas" v=""/>
+		<p n="encoding-chs" v=""/>
+		<p n="encoding-model204" v=""/>
+		<p n="encoding-1" v=""/>
+		<p n="encoding-backup" v=""/>
+		<p n="encoding-0" v=""/>
+		<p n="encoding-bak2" v=""/>
+		<p n="encoding-4" v=""/>
+		<p n="encoding-orig" v=""/>
+		<p n="encoding-2" v=""/>
+		<p n="encoding-working" v=""/>
+		<p n="encoding-bak" v=""/>
+		<p n="encoding-copy" v=""/>
+		<p n="encoding-bak3" v=""/>
+		<p n="encoding-mine" v=""/>
+		<p n="encoding-3" v=""/>
+		<p n="encoding-bak1" v=""/>
+		<p n="encoding-save" v=""/>
+	</misc.file_extensions>
+	<language n="language.*ALL_LANGUAGES*" version="1">
+		<line_numbers_flags v="0x3"/>
+		<indent_with_tabs v="1"/>
+	</language>
+	<language.ada.beautifier_profiles n="language.ada.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.ada.beautifier_profiles>
+	<language.android.beautifier_profiles n="language.android.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.android.beautifier_profiles>
+	<language.ant.beautifier_profiles n="language.ant.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.ant.beautifier_profiles>
+	<language.as.beautifier_profiles n="language.as.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.as.beautifier_profiles>
+	<language.bas.beautifier_profiles n="language.bas.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.bas.beautifier_profiles>
+	<language.c.beautifier_profiles n="language.c.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.c.beautifier_profiles>
+	<language.cfml.beautifier_profiles n="language.cfml.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.cfml.beautifier_profiles>
+	<language.cs.beautifier_profiles n="language.cs.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.cs.beautifier_profiles>
+	<language.docbook.beautifier_profiles n="language.docbook.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.docbook.beautifier_profiles>
+	<language.groovy.beautifier_profiles n="language.groovy.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.groovy.beautifier_profiles>
+	<language.html.beautifier_profiles n="language.html.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.html.beautifier_profiles>
+	<language.java.beautifier_profiles n="language.java.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.java.beautifier_profiles>
+	<language.js.beautifier_profiles n="language.js.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.js.beautifier_profiles>
+	<language.json.beautifier_profiles n="language.json.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.json.beautifier_profiles>
+	<language.m.beautifier_profiles n="language.m.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.m.beautifier_profiles>
+	<language n="language.ninja" version="1">
+		<indent_with_tabs v="1"/>
+	</language>
+	<language.phpscript.beautifier_profiles n="language.phpscript.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.phpscript.beautifier_profiles>
+	<language.scala.beautifier_profiles n="language.scala.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.scala.beautifier_profiles>
+	<language.systemverilog.beautifier_profiles n="language.systemverilog.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.systemverilog.beautifier_profiles>
+	<language.tld.beautifier_profiles n="language.tld.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.tld.beautifier_profiles>
+	<language.vbs.beautifier_profiles n="language.vbs.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.vbs.beautifier_profiles>
+	<language.verilog.beautifier_profiles n="language.verilog.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.verilog.beautifier_profiles>
+	<language.vpj.beautifier_profiles n="language.vpj.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.vpj.beautifier_profiles>
+	<language.xhtml.beautifier_profiles n="language.xhtml.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.xhtml.beautifier_profiles>
+	<language.xml.beautifier_profiles n="language.xml.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.xml.beautifier_profiles>
+	<language.xsd.beautifier_profiles n="language.xsd.beautifier_profiles.Default" version="1">
+		<indent_with_tabs v="1"/>
+	</language.xsd.beautifier_profiles>
+	<language n="language.clojure" version="1">
+		<tabs v="+4"/>
+	</language>
+	<language n="language.protocolbuf" version="1">
+		<tabs v="+4"/>
+	</language>
+	<language n="language.c" version="1">
+		<smart_paste v="0"/>
+	</language>
+	<language.aliases n="language.c.aliases" version="1">
+		<p n="xc_printf">
+			<text>
+				<![CDATA[#include <stdio.h>
+#include <limits.h>     // Contains the macros CHAR_MIN, INT_MIN, etc.
+
+
+  printf("Storage sizes and value ranges of the types char and int\n\n");
+
+  printf("The type char is %s.\n\n", CHAR_MIN < 0 ? "signed" :"unsigned");
+
+  printf(" Type   Size (in bytes)   Minimum         Maximum\n"
+         "---------------------------------------------------\n");
+  printf(" char %8zu %20d %15d\n", sizeof(char), CHAR_MIN, CHAR_MAX );
+  printf(" int  %8zu %20d %15d\n", sizeof(int), INT_MIN, INT_MAX );
+
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_printf2">
+			<text>
+				<![CDATA[#include <stdio.h>
+#include <float.h>
+
+printf("Storage size: %d bytes\n"
+          "Smallest positive value: %E\n"
+          "Greatest positive value: %E\n"
+          "Precision: %d decimal digits\n",
+          sizeof(float), FLT_MIN, FLT_MAX, FLT_DIG);
+
+   puts("\nAn example of float precision:\n");
+   double d_var = 12345.6;          // A variable of type double.
+   float f_var = (float)d_var;      // Initializes the float
+                                    // variable with the value of d_var.
+   printf("The floating-point number    "
+          "%18.10f\n", d_var);
+   printf("has been stored in a variable\n"
+          "of type float as the value   "
+          "%18.10f\n", f_var);
+   printf("The rounding error is        "
+          "%18.10f\n", d_var - f_var);
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_rand">
+			<text>
+				<![CDATA[#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+
+int i,                              // Obtain some storage space.
+       *pNumbers = malloc(ARR_LEN * sizeof(int));
+
+   if ( pNumbers == NULL )
+   {
+      fprintf(stderr, "Insufficient memory.\n");
+      exit(1);
+   }
+
+   srand( (unsigned)time(NULL) );      // Initialize the
+                                       // random number generator.
+
+   for ( i=0; i < ARR_LEN; ++i )
+      pNumbers[i] = rand() % 10000;    // Store some random numbers.
+
+   printf("\n%d random numbers between 0 and 9999:\n", ARR_LEN );
+   for ( i=0; i < ARR_LEN; ++i )       // Output loop:
+   {
+     printf("%6d", pNumbers[i]);       // Print one number per loop %\S
+     if ( i % 10 == 9 ) putchar('\n'); // iteration and a newline after
+                                       // every 10 numbers.
+   }
+   free( pNumbers );                   // Release the storage space.
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_qsort">
+			<text>
+				<![CDATA[#include <stdlib.h>
+#define ARR_LEN 20
+#include <stdio.h>
+#include <time.h>
+
+float *pNumbers = malloc( ARR_LEN * sizeof(float) );
+
+   /* ... Handle errors, initialize array elements ... */
+   if( pNumbers == NULL)
+   {
+       fprintf(stderr, "Insufficient memory.\n");
+       exit(1);
+   }
+   srand( (unsigned)time(NULL));
+   for( int i=0; i < ARR_LEN; ++i)              // random numbers
+       pNumbers[i] = (rand() - RAND_MAX/2) * (100.0F /RAND_MAX);
+
+   /* Sort the array: */
+   qsort( pNumbers, ARR_LEN, sizeof(float), floatcmp );
+
+   /* ... Work with the sorted array ... */
+   for( int i=0; i < ARR_LEN; ++i)              // The sorted array
+       printf("%8.2f", pNumbers[i]);]]>
+			</text>
+		</p>
+		<p n="xc_mv_element">
+			<text>
+				<![CDATA[#include <stdio.h>
+
+
+  double dArr[5] = { 0.0, 1.1, 2.2, 3.3, 4.4 },  // Initialize an array and
+  *dPtr = dArr;                                  // a pointer to its first
+                                                 // element.
+  int i = 0;                         // An index variable.
+  dPtr = dPtr + 1;                   // Advance dPtr to the second element.
+  dPtr = 2 + dPtr;                   // Addends can be in either order.
+                                     // dPtr now points to dArr[3].
+
+  printf( "%.1f\n", *dPtr );         // Print the element referenced by dPtr.
+  printf( "%.1f\n", *(dPtr -1) );    // Print the element before that, without
+                                     // modifying the pointer dPtr.
+  i = dPtr - dArr;                   // Result: the index of the
+                                     // array element that dPtr points to.
+  printf( "%.d\n", i );              // Print the index (3).
+
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_setbit">
+			<text>
+				<![CDATA[#include <limits.h>
+
+unsigned int setBit( unsigned int mask, unsigned int p )
+{
+   if ( p >= CHAR_BIT * sizeof(int) )
+      return mask;
+   else
+      return mask | (1 << p);
+}]]>
+			</text>
+		</p>
+		<p n="xc_strcpy_">
+			<text>char *strcpy_( char* restrict s1, const char* restrict s2 )
+{
+   int i = 0;
+   do
+      s1[i] = s2[i];           // The loop body: copy each character
+   while ( s2[i++] != '\0' );  // End the loop if we just copied a '\0'.
+   return s1;
+}</text>
+		</p>
+		<p n="xc_menu">
+			<text>int menu( void )               // Prints the menu and returns
+{                              // a character that the user types.
+   static char menuStr[] =
+   "\n               A = Action 1"
+   "\n               B = Action 2"
+   "\n               Q = Quit the program"
+   "\n Your choice:  ";
+
+   fputs( menuStr,stdout);
+
+   int choice = 0;
+   do %\S
+     if( (choice = getchar()) == EOF)
+         choice = 'Q'; %\S
+   while( isspace(choice) );
+
+   return choice;
+}</text>
+		</p>
+		<p n="xc_bubblesort">
+			<text>
+				<![CDATA[void bubbleSort( float arr[], int len )   // The array arr and
+{                                         // its length len.
+   int isSorted = 0;
+   do
+   {
+      float temp;             // Holder for values being swapped.
+      isSorted = 1;
+      --len;
+      for ( int i = 0; i < len; ++i )
+        if ( arr[i] > arr[i+1] )
+        {
+           isSorted = 0;      // Not finished yet.
+           temp = arr[i];     // Swap adjacent values.
+           arr[i] = arr[i+1];
+           arr[i+1] = temp;
+        }
+   } while ( !isSorted );
+}]]>
+			</text>
+		</p>
+		<p n="xc_str_reverse">
+			<text>
+				<![CDATA[#include <string.h>
+
+void strReverse( char* str)
+{
+   char ch;
+   for ( size_t i = 0, j = strlen(str)-1; i < j; ++i, --j )
+       ch = str[i], str[i] = str[j], str[j] = ch;
+}]]>
+			</text>
+		</p>
+		<p n="xc_selectionsort">
+			<text>
+				<![CDATA[// With gcc use the option -O  
+// GCC does not inline any functions when not optimizing
+
+// The function swapf() exchanges the values of two float variables.
+// Arguments:    Two pointers to float.
+// Return value: None.
+
+inline void swapf( float *p1, float *p2 )      // An inline function.
+{
+   float tmp = *p1; *p1 = *p2; *p2 = tmp;
+}
+
+// The function selection_sortf() uses the selection-sort
+// algorithm to sort an array of float elements.
+// Arguments:    An array of float, and its length.
+// Return value: None.
+
+void selection_sortf( float a[], int n )   // Sort an array a of length n.
+{
+   register int i, j, mini;                // Three index variables.
+   for ( i = 0; i < n - 1; ++i )
+   {
+      mini = i;             // Search for the minimum starting at index i.
+      for ( j = i+1; j < n; ++j )
+         if ( a[j] < a[mini] )
+           mini = j;
+      swapf( a+i, a+mini); // Swap the minimum with the element at index i.
+   }
+}]]>
+			</text>
+		</p>
+		<p n="xc_factorial">
+			<text>
+				<![CDATA[// factorial() calculates n!, the factorial of a non-negative number n.
+// For n > 0, n! is the product of all integers from 1 to n inclusive.
+// 0! equals 1.
+// Argument: A whole number, with type unsigned int.
+// Return value: The factorial of the argument, with type long double.
+
+long double factorial( register unsigned int n )
+{
+   long double f = 1;
+   while ( n > 1 )
+     f *= n--;
+   return f;
+}
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_max">
+			<text>
+				<![CDATA[// The function maximum() obtains the greatest value in a
+// two-dimensional matrix of double values.
+// Arguments:    The number of rows, the number of columns, and the matrix.
+// Return value: The value of the greatest element.
+
+double maximum( int nrows, int ncols, double matrix[nrows][ncols] )
+{
+   double max = matrix[0][0];
+   for ( int r = 0; r < nrows; ++r )
+      for ( int c = 0; c < ncols; ++c )
+         if ( max < matrix[r][c] )
+            max = matrix[r][c];
+   return max;
+}]]>
+			</text>
+		</p>
+		<p n="xc_swapf">
+			<text>// With gcc use the option -O  
+// GCC does not inline any functions when not optimizing
+
+// The function swapf() exchanges the values of two float variables.
+// Arguments:    Two pointers to float.
+// Return value: None.
+
+inline void swapf( float *p1, float *p2 )      // An inline function.
+{
+   float tmp = *p1; *p1 = *p2; *p2 = tmp;
+}</text>
+		</p>
+		<p n="xc_binarysearch">
+			<text>
+				<![CDATA[// The binarySearch() function searches a sorted array.
+// Arguments:    The value of the element to find;
+//               the array of long to search; the array length.
+// Return value: A pointer to the element found,
+//               or NULL if the element is not present in the array.
+
+long *binarySearch( long val, long array[ ], int n )
+{
+   int m = n/2;
+   if ( n <= 0 )          return NULL;
+   if ( val == array[m] ) return array + m;
+   if ( val < array[m] )  return binarySearch( val, array, m );
+   else                   return binarySearch( val, array+m+1, n-m-1 );
+}
+
+int main()
+{
+  long lArr[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 };
+  int len = sizeof(lArr)/sizeof(*lArr);
+
+  for ( int i = 0; i < len; ++i )
+     printf("%6ld", lArr[i]);
+  putchar('\n');
+
+  long value = 0;
+  printf( "\nEnter a whole number: ");
+  scanf( "%ld", &value );
+
+  long *ptr = binarySearch( value, lArr, len);
+
+  if( ptr == NULL)
+    printf("%ld is not an element of the array.\n", value);
+  else
+  { %\S
+    int n = ptr+1 - lArr;
+    printf("%ld is the %dth element in the arry.\n", value, n );
+  }
+  return 0;
+}
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_strcat_">
+			<text>char *strcat_( char * restrict s1, const char * restrict s2 )
+{
+   char *rtnPtr = s1;
+   while ( *s1 != '\0' )               // Find the end of string s1.
+      ++s1;
+   while (( *s1++ = *s2++ ) != '\0' )  // The first character from s2
+     ;                                 // replaces the terminator of s1.
+   return rtnPtr;
+}</text>
+		</p>
+		<p n="xc_printMatrix">
+			<text>
+				<![CDATA[#define NCOLS 10                    // The number of columns.
+typedef float ROW_t[NCOLS];         // A type for the "row"
+
+// Print one "row" array.
+void printRow( const ROW_t pRow )
+{
+   for( int c = 0; c < NCOLS; ++c )
+      printf( "%6.2f", pRow[c] );
+   putchar( '\n' );
+}
+
+// Print the whole matrix.
+void printMatrix( ROW_t *pMat, int nRows )
+{
+   for( int r = 0; r < nRows; ++r )
+      printRow( pMat[r] );           // Print each row.
+}]]>
+			</text>
+		</p>
+		<p n="xc_selection_sort_ptr">
+			<text>
+				<![CDATA[inline void swapf( float *p1, float *p2 )
+{
+   float tmp = *p1; *p1 = *p2; *p2 = tmp;      // Swap *p1 and *p2.
+}
+
+// The function selection_sortf() uses the selection-sort
+// algorithm to sort an array of float elements.
+// Arguments: An array of float, and its length.
+
+void selection_sortf( float a[], int n )       // Sort an array a of
+{                                              // n float elements.
+   if ( n <= 1 ) return;               // Nothing to sort.
+
+   register float *last = a + n-1,     // A pointer to the last element.
+                  *p,                  // A pointer to a selected element.
+                  *minPtr;             // A pointer to the current minimum.
+
+   for ( ; a < last; ++a )             // Walk pointer a through the array.
+   {
+      minPtr = a;                      // Find the smallest element
+      for ( p = a+1; p <= last; ++p )  // between a and the last element.
+         if ( *p < *minPtr )
+           minPtr = p;
+      swapf( a, minPtr );              // Swap the smallest element
+   }                                   // with the element at a.
+}]]>
+			</text>
+		</p>
+		<p n="xc_sorttext">
+			<text>
+				<![CDATA[// Example 9-4. A simple program to sort lines of text
+// sorttext.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+char *getLine(void);                // Reads a line of text
+int str_compare(const void *, const void *);
+
+#define NLINES_MAX 1000             // Maximum number of text lines.
+char *linePtr[NLINES_MAX];          // Array of pointers to char.
+
+int main()
+{
+   // Read lines:
+   int n = 0;                       // Number of lines read.
+   for ( ; n < NLINES_MAX && (linePtr[n] = getLine()) != NULL; ++n )
+     ;
+
+   if ( !feof(stdin) )              // Handle errors.
+   {
+      if ( n == NLINES_MAX )
+         fputs( "sorttext: too many lines.\n", stderr );
+      else
+         fputs( "sorttext: error reading from stdin.\n", stderr );
+   }
+   else                             // Sort and print.
+   {
+      qsort( linePtr, n, sizeof(char*), str_compare );   // Sort.
+      for ( char **p = linePtr; p < linePtr+n; ++p )     // Print.
+         puts(*p);
+   }
+   return 0;
+}
+
+// Reads a line of text from stdin; drops the terminating
+// newline character.
+// Return value: A pointer to the string read, or
+//               NULL at end-of-file, or if an error occurred.
+
+#define LEN_MAX 512                 // Maximum length of a line.
+
+char *getLine()
+{
+   char buffer[LEN_MAX], *linePtr = NULL;
+
+   if ( fgets( buffer, LEN_MAX, stdin ) != NULL )
+   {
+      size_t len = strlen( buffer );
+
+      if ( buffer[len-1] == '\n' )   // Trim the newline character.
+         buffer[len-1] = '\0';
+      else
+         ++len;
+
+      if ( (linePtr = malloc( len )) != NULL )   // Get memory for the line.
+         strcpy( linePtr, buffer );  // Copy the line to the allocated block.
+   }
+   return linePtr;
+}
+
+// Comparison function for use by qsort().
+// Arguments: Pointers to two elements in the array being sorted:
+//            here, two pointers to pointers to char (char **).
+
+int str_compare( const void *p1, const void *p2 )
+{
+   return strcmp( *(char **)p1, *(char **)p2 );
+}
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_func_ptr">
+			<text>double Add( double x, double y ) { return x + y; }
+double Sub( double x, double y ) { return x - y; }
+double Mul( double x, double y ) { return x * y; }
+double Div( double x, double y ) { return x / y; }
+
+// Array of 5 pointers to functions that take two double parameters
+// and return a double:
+
+// double (*funcTable[5])(double, double)
+//          = { Add, Sub, Mul, Div, pow };       // Initializer list.
+
+typedef double func_t( double, double );    // The functions' type is
+                                            // now named func_t.
+func_t *funcTable[5] = { Add, Sub, Mul, Div, pow };
+
+// An array of pointers to strings for output:
+char *msgTable[5] = {"Sum", "Difference", "Product", "Quotient", "Power"};</text>
+		</p>
+		<p n="xc_BSTree_c">
+			<text>
+				<![CDATA[// A binary search tree (BST)
+// BSTree.c
+
+#include <string.h>          // memcpy()
+#include <stdlib.h>          // malloc(), free()
+#include "BSTree.h"
+
+typedef struct Node { struct Node *left,    // Pointers to the left and
+                                  *right;   // right child nodes.
+                      size_t size;          // Size of the data payload.
+                      char data[];          // The data itself.
+                    } Node_t;
+
+const void *defaultGetKey( const void *pData) { return pData; }
+
+// -----------------------------------------------------------------------------
+// The function newBST() creates a new binary search tree. The pointer to BST_t
+// returned by newBST() is the first argument to all the other binary-tree functions.
+
+BST_t *newBST( CmpFunc_t *cmp, GetKeyFunc_t *getKey)
+{
+   BST_t *pBST = NULL;
+   if( cmp != NULL )
+       pBST = malloc( sizeof( BST_t));
+   if( pBST != NULL)
+   {
+       pBST->pRoot = NULL;
+       pBST->cmp = cmp;
+       pBST->getKey = (getKey != NULL) ? getKey : defaultGetKey;
+   }
+   return pBST;
+}
+
+// -----------------------------------------------------------------------------
+// The function BST_insert() copies a data item to a new leaf node in the tree.
+// The function inserts the new leaf at a position that is consistent with the
+// binary tree sorting condition.
+// BST_insert() returns true if it succeeds in inserting the new data; %\S
+// otherwise, false.
+
+static _Bool insert( BST_t *pBST, Node_t **ppNode, const void *pData, size_t size);
+
+_Bool BST_insert( BST_t *pBST, const void *pData, size_t size)
+{
+    if( pBST == NULL || pData == NULL || size == 0)
+       return false;
+    return insert( pBST, &(pBST->pRoot), pData, size);
+}
+
+// The recursive helper function insert():
+static _Bool insert( BST_t *pBST, Node_t **ppNode, const void *pData, size_t size )
+{
+   Node_t *pNode = *ppNode;                 // Pointer to the root node of the
+                                            // subtree to insert the new node in.
+   if ( pNode == NULL )
+   {                                        // There's a place for a new leaf here.
+     pNode = malloc( sizeof(Node_t) + size );
+     if ( pNode != NULL )
+     {
+       pNode->left = pNode->right = NULL;   // Initialize the new node's
+                                            // members.
+       memcpy( pNode->data, pData, size );
+       *ppNode = pNode;                     // Insert the new node.
+       return true;
+     }
+     else
+       return false;
+   }
+   else                                     // Continue looking for a place ...
+   {
+     const void *key1 = pBST->getKey( pData ),
+                *key2 = pBST->getKey( pNode->data );
+     if ( pBST->cmp( key1, key2 ) < 0 )     // ... in the left subtree,
+       return insert( pBST, &(pNode->left), pData, size );
+     else                                   // or in the right subtree.
+       return insert( pBST, &(pNode->right), pData, size );
+   }
+}
+
+// -------------------------------------------------------------------------------
+// The function BST_search() uses the binary search algorithm to find a data item
+// that matches a given key. The return value is a pointer to the data item
+// of the first node that matches the key, or a null pointer if no match was found.
+
+static const void *search( BST_t *pBST, const Node_t *pNode, const void *pKey);
+
+const void *BST_search( BST_t *pBST, const void *pKey )
+{
+    if( pBST == NULL || pKey == NULL ) %\S
+      return NULL;
+    return search( pBST, pBST->pRoot, pKey);    // Start at the root of the tree.
+}
+
+// The recursive helper function search():
+static const void *search( BST_t *pBST, const Node_t *pNode, const void *pKey )
+{
+    if ( pNode == NULL )
+      return NULL;                                    // No subtree to search;
+                                                      // no match found.
+    else
+    {                                                 // Compare data:
+       int cmp_res = pBST->cmp( pKey, pBST->getKey(pNode->data) );
+       if( cmp_res == 0 )                             // Found a match.
+          return pNode->data;
+       else if( cmp_res < 0 )                         // Continue the search
+          return search( pBST, pNode->left, pKey );   // in the left subtree,
+       else
+          return search( pBST, pNode->right, pKey );  // or in the right subtree.
+    }
+}
+
+// -------------------------------------------------------------------------------
+// The BST_erase() function searches for a node that matches the specified key, and
+// deletes it if found. The function returns false if it fails to find a matching %\S
+// node to delete, or true if successful.
+
+// The removal algorithm uses the recursive helper function detachMin() that plucks
+// the minimum node from a specified subtree, and returns a pointer to the node:
+
+static Node_t *detachMin( Node_t **ppNode )
+{
+    Node_t *pNode = *ppNode;                  // A pointer to the current node.
+    if ( pNode == NULL )
+      return NULL;                            // pNode is an empty subtree.
+    else if ( pNode->left != NULL )
+      return detachMin( &(pNode->left) );     // The minimum is in the left subtree.
+    else
+    {                                         // pNode points to the minimum node.
+      *ppNode = pNode->right;                 // Attach the right child to the parent.
+      return pNode;
+    }
+}
+
+static _Bool erase(BST_t *pBST, Node_t **ppNode, const void *pKey);
+
+_Bool BST_erase(BST_t *pBST, const void *pKey)
+{
+    if( pBST == NULL || pKey == NULL) %\S
+      return false;
+    return erase( pBST, &(pBST->pRoot), pKey);      // Start at the root of the tree.
+}
+
+// The recursive helper function erase():
+static _Bool erase( BST_t *pBST, Node_t **ppNode, const void *pKey )
+{
+   Node_t *pNode = *ppNode;            // Pointer to the current node.
+   if ( pNode == NULL )
+      return false;                    // No match found.
+                                       // Compare data:
+   int cmp_res = pBST->cmp( pKey, pBST->getKey(pNode->data) );
+
+   if ( cmp_res < 0 )                            // Continue the search
+     return erase( pBST, &(pNode->left), pKey);  // in the left subtree,
+   else if ( cmp_res > 0 )
+     return erase( pBST, &(pNode->right), pKey); // or in the right subtree.
+   else
+   {                                   // Found the node to be deleted.
+     if ( pNode->left == NULL )        // If no more than one child,
+       *ppNode = pNode->right;         // attach the child to the parent.
+     else if ( pNode->right == NULL )
+       *ppNode = pNode->left;
+     else                              // Two children: replace the node with
+     {                                 // the minimum from the right subtree.
+       Node_t *pMin = detachMin( &(pNode->right) );
+       *ppNode = pMin;            // Graft it onto the deleted node's parent.
+       pMin->left = pNode->left;       // Graft the deleted node's children.
+       pMin->right = pNode->right;
+     }
+     free( pNode );                    // Release the deleted node's storage.
+     return true;
+   }
+}
+
+// -------------------------------------------------------------------------------
+// The BST_clear() function deletes all the nodes of a tree.
+
+static void clear( Node_t *pNode );
+void BST_clear( BST_t *pBST )
+{
+    if ( pBST != NULL)
+    {
+       clear( pBST->pRoot );
+       pBST->pRoot = NULL;
+    }
+}
+
+// The recursive helper function clear():
+static void clear( Node_t *pNode )
+{
+    if ( pNode != NULL )
+    {
+       clear( pNode->left );
+       clear( pNode->right );
+       free( pNode );
+    }
+}
+
+// -------------------------------------------------------------------------------
+// Each of the following traversal functions takes as its second argument a pointer
+// to an ction?function that it calls for each node visited. %\S
+// The return value is the number of times the action was performed successfully.
+
+static int inorder( Node_t *pNode, _Bool (*action)(void *pData));
+
+int BST_inorder( BST_t *pBST, _Bool (*action)(void *pData))
+{
+    if( pBST == NULL || action == NULL)
+        return 0;
+    else
+        return inorder( pBST->pRoot, action);
+}
+
+// The recursive helper function inorder():
+static int inorder( Node_t *pNode, _Bool (*action)(void *pData))
+{
+    int count = 0;
+    if( pNode == NULL)
+        return 0;
+
+    count = inorder( pNode->left, action );        // L: Traverse the left
+                                                   // subtree.
+    if ( action( pNode->data ))                    // N: Visit the current
+      ++count;                                     // node itself.
+    count += inorder( pNode->right, action );      // R: Traverse the right
+                                                   // subtree.
+    return count;
+}
+
+// -------------------------------------------------------------------------------
+static int rev_inorder( Node_t *pNode, _Bool (*action)(void *pData));
+
+int BST_rev_inorder( BST_t *pBST, _Bool (*action)(void *pData))
+{
+    if( pBST == NULL || action == NULL)
+        return 0;
+    else
+        return rev_inorder( pBST->pRoot, action);
+}
+
+// The recursive helper function rev_inorder():
+static int rev_inorder( Node_t *pNode, _Bool (*action)(void *pData))
+{
+    int count = 0;
+    if( pNode == NULL)
+        return 0;
+
+    count = rev_inorder( pNode->right, action );   // R: Traverse the right
+                                                   // subtree.
+    if ( action( pNode->data ))                    // N: Visit the current
+      ++count;                                     // node itself.
+    count += rev_inorder( pNode->left, action );   // L: Traverse the left
+                                                   // subtree.
+    return count;
+}
+
+// -------------------------------------------------------------------------------
+static int preorder( Node_t *pNode, _Bool (*action)(void *pData));
+
+int BST_preorder( BST_t *pBST, _Bool (*action)(void *pData))
+{
+    if( pBST == NULL || action == NULL)
+        return 0;
+    else
+        return preorder( pBST->pRoot, action);
+}
+
+// The recursive helper function preorder():
+static int preorder( Node_t *pNode, _Bool (*action)(void *pData))
+{
+    int count = 0;
+    if( pNode == NULL)
+        return 0;
+
+    if ( action( pNode->data ))                    // N: The current node.
+      ++count;
+    count += preorder( pNode->left, action );      // L: Traverse the left
+                                                   // subtree.
+    count += preorder( pNode->right, action );     // R: Traverse the right
+                                                   // subtree.
+    return count;
+}
+
+// -------------------------------------------------------------------------------
+static int postorder( Node_t *pNode, _Bool (*action)(void *pData));
+
+int BST_postorder( BST_t *pBST, _Bool (*action)(void *pData))
+{
+    if( pBST == NULL || action == NULL)
+        return 0;
+    else
+        return postorder( pBST->pRoot, action);
+}
+
+// The recursive helper function postorder():
+static int postorder( Node_t *pNode, _Bool (*action)(void *pData))
+{
+    int count = 0;
+    if( pNode == NULL)
+        return 0;
+
+    count = postorder( pNode->left, action );      // L: Traverse the left
+                                                   // subtree.
+    count += postorder( pNode->right, action );    // R: Traverse the right
+                                                   // subtree.
+    if ( action( pNode->data ))                    // N: Visit the current
+      ++count;                                     // node itself.
+
+    return count;
+}
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_BSTree_h">
+			<text>
+				<![CDATA[// A binary search tree (BST)
+// BSTree.h
+
+#include <stdbool.h>
+
+typedef int CmpFunc_t( const void *pKey1, const void *pKey2);
+typedef const void *GetKeyFunc_t( const void *pData);
+
+typedef struct { struct Node  *pRoot;       // Pointer to the root.
+                 CmpFunc_t    *cmp;         // Compares two keys.
+                 GetKeyFunc_t *getKey;      // Converts data into a key value
+               } BST_t;
+
+BST_t *     newBST( CmpFunc_t *cmp, GetKeyFunc_t *getKey);
+_Bool       BST_insert( BST_t *pBST, const void *pData, size_t size);
+const void *BST_search( BST_t *pBST, const void *pKey);
+_Bool       BST_erase( BST_t *pBST, const void *pKey);
+void        BST_clear( BST_t *pBST);
+
+// Each of the folowing functions traverses the tree in a certain order, and %\S
+// calls the function referenced by action for each node. If the action modifies %\S
+// the node's data, then at least the key value must remain unchanged to preserve %\S
+// the tree's sorting order.
+int BST_inorder( BST_t *pBST, _Bool (*action)(void *pData));
+int BST_rev_inorder( BST_t *pBST, _Bool (*action)(void *pData));
+int BST_preorder( BST_t *pBST, _Bool (*action)(void *pData));
+int BST_postorder( BST_t *pBST, _Bool (*action)(void *pData));
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_sortline">
+			<text>
+				<![CDATA[// Example 12-3. The sortlines program
+// sortlines.c
+
+// This program reads each line of text into a node of a binary tree,
+// and then prints the text in sorted order.
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "BSTree.h"               // Prototypes of the BST functions.
+
+#define LEN_MAX 1000              // Maximum length of a line.
+char buffer[LEN_MAX];
+
+// Action to perform for each line:
+_Bool printStr( void *str ) { return printf( "%s", str ) >= 0; }
+
+int main()
+{
+    BST_t *pStrTree = newBST( (CmpFunc_t*)strcmp, NULL );
+    int n;
+
+    while ( fgets( buffer, LEN_MAX, stdin ) != NULL )   // Read each line.
+    {
+       size_t len = strlen( buffer );                   // Length incl.
+                                                        // newline character.
+       if ( !BST_insert( pStrTree, buffer, len+1 ))     // Insert the line in
+          break;                                        // the tree.
+    }
+    if ( !feof(stdin) )
+    {                                     // If unable to read the entire text:
+       fprintf( stderr, "sortlines: "
+                "Error reading or storing text input.\n" );
+       exit( EXIT_FAILURE );
+    }
+
+    n = BST_inorder( pStrTree, printStr );     // Print each line, in sorted order.
+
+    fprintf( stderr, "\nsortlines: Printed %d lines.\n", n );
+
+    BST_clear( pStrTree );                     // Discard all nodes.
+    return 0;
+}]]>
+			</text>
+		</p>
+		<p n="xc_getline">
+			<text>
+				<![CDATA[// Read a line of text from stdin into a dynamically allocated buffer.
+// Replace the newline character with a string terminator.
+// Arguments:    The maximum line length to read.
+// Return value: A pointer to the string read, or
+//               NULL if end-of-file was read or if an error occurred.
+
+char *getLine( unsigned int len_max )
+{
+   char *linePtr = malloc( len_max+1 );  // Reserve storage for "worst case."
+   if ( linePtr != NULL )
+   {
+     // Read a line of text and replace the newline characters with
+     // a string terminator:
+     int c = EOF;
+     unsigned int i = 0;
+     while ( i < len_max && ( c = getchar() ) != '\n' && c != EOF )
+       linePtr[i++] = (char)c;
+     linePtr[i] = '\0';
+
+     if ( c == EOF && i == 0 )          // If end-of-file before any
+     {                                  // characters were read,
+        free( linePtr );                // release the whole buffer.
+        linePtr = NULL;
+     }
+     else                               // Otherwise, release the unused portion.
+        linePtr = realloc( linePtr, i+1 );           // i is the string length.
+   }
+   return linePtr;
+}]]>
+			</text>
+		</p>
+		<p n="xc_createDataFile">
+			<text>
+				<![CDATA[#include <stdio.h>
+#include "record.h"
+
+char dataFile[ ] = "records.dat";                  // Filename.
+
+int main()// Creates a file records.dat (inFile) with some test data.
+{
+    FILE *fp;
+    Record_t records[] = { { 1789L, "George" },
+                           { 1797L, "John" }, %\S
+                           {    0L, "Harry" },
+                           { 1801L, "Thomas"},
+                           { 1809L, "James"},
+                           { 1825L, "Quincy" }
+                         };
+    size_t n = sizeof(records) / sizeof(*records); %\S
+ %\S
+    if( (fp = fopen( dataFile, "wb")) == NULL)
+    {
+        fprintf( stderr, "Error on opening output file \"%s\".\n", dataFile);
+        return 1;
+    }
+    if( fwrite( records, sizeof(Record_t), n, fp) < n)
+    {
+        fprintf( stderr, "Error on writing to output file \"%s\".\n", dataFile);
+        return 1;
+    }
+    printf( "%d records written.\n", n);
+    return 0;
+}]]>
+			</text>
+		</p>
+		<p n="xc_isReadWriteable">
+			<text>_Bool isReadWriteable( const char *filename )
+{
+    FILE *fp = fopen( filename, "r+" );    // Open a file to read and write.
+
+    if ( fp != NULL )                      // Did fopen() succeed?
+    {
+        fclose(fp);                        // Yes: close the file; no error handling.
+        return true;
+    }
+    else                                   // No.
+        return false;
+}</text>
+		</p>
+		<p n="xc_searchFile">
+			<text>int searchFile( FILE *fpIn, const char *keyword )
+{
+   #define MAX_LINE 256
+   char line[MAX_LINE] = "";
+   int count = 0;
+
+   if ( fpIn == NULL || keyword == NULL )
+      return -1;
+   else
+      rewind( fpIn );
+
+   while ( fgets( line, MAX_LINE, fpIn ) != NULL )
+      if ( strstr( line, keyword ) != NULL )
+      {
+         ++count;
+         fputs( line, stdout );
+      }
+
+   if ( !feof( fpIn ) )
+      return -1;
+   else
+      return count;
+}</text>
+		</p>
+		<p n="xc_searchNewName">
+			<text>
+				<![CDATA[// setNewName.c : 
+// The following example uses an index table to store the positions of records in the
+// file. This approach permits direct access to a record that needs to be updated.
+
+// setNewName(): Finds a keyword in an index table
+// and updates the corresponding record in the file.
+// The file containing the records must be opened in
+// "update mode"; i.e., with the mode string "r+b".
+// Arguments: - A FILE pointer to the open data file;
+//            - The key;
+//            - The new name.
+// Return value: A pointer to the updated record,
+//               or NULL if no such record was found.
+// ---------------------------------------------------------------
+#include <stdio.h>
+#include <string.h>
+#include "record.h"   // Defines the types Record_t, IndexEntry_t:
+                      // typedef struct { long key; char name[32];
+                      //                  /* ... */ } Record_t;
+                      // typedef struct { long key, pos; } IndexEntry_t;
+
+extern IndexEntry_t indexTab[];         // The index table.
+extern int indexLen;                    // The number of table entries.
+
+Record_t *setNewName( FILE *fp, long key, const char *newname )
+{
+   static Record_t record;
+   int i;
+
+   for ( i = 0; i < indexLen; ++i )
+   {
+      if ( key == indexTab[i].key )
+         break;                             // Found the specified key.
+   }
+   if ( i == indexLen )
+      return NULL;                          // No match found.
+
+   // Set the file position to the record:
+   if (fseek( fp, indexTab[i].pos, SEEK_SET ) != 0 )
+      return NULL;                          // Positioning failed.
+
+   // Read the record:
+   if ( fread( &record, sizeof(Record_t), 1, fp ) != 1 )
+      return NULL; // Error on reading.
+   if ( key != record.key )                 // Test the key.
+      return NULL;
+   else
+   {                                        // Update the record:
+      size_t size = sizeof(record.name);
+      strncpy( record.name, newname, size-1 );
+      record.name[size-1] = '\0';
+
+      if ( fseek( fp, indexTab[i].pos, SEEK_SET ) != 0 )
+         return NULL;                       // Error setting file position.
+      if ( fwrite( &record, sizeof(Record_t), 1, fp ) != 1 )
+         return NULL;                       // Error writing to file.
+
+      return &record;
+   }
+}
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_searNewNAme_call">
+			<text>
+				<![CDATA[// setNewName_call.c : 
+// The main function creates an index table for the file records.dat
+// and calls the setNewName() function.
+
+#include <stdio.h>
+#include <string.h>
+#include "record.h"   // Defines the types Record_t, IndexEntry_t:
+                      // typedef struct { long key; char name[32];
+                      //                  /* ... */ } Record_t;
+                      // typedef struct { long key, pos; } IndexEntry_t;
+
+#define TAB_LEN 100
+IndexEntry_t indexTab[TAB_LEN];         // The index table.
+int indexLen = 0;                       // The number of table entries.
+
+char dataFile[] = "records.dat";
+
+int main()
+{
+    FILE *fpData = NULL;
+    Record_t record;
+    int i;
+
+    if( (fpData = fopen( dataFile, "r+b")) == NULL)
+    {
+        fprintf( stderr, "Error on opening the file \"%s\".\n", dataFile);
+        return 1;
+    }
+    for( i = 0; i < TAB_LEN; ++i)
+    {
+        indexTab[i].pos = ftell(fpData);          // current file position.
+        if( fread( &record, sizeof(Record_t), 1, fpData) < 1)
+            break;
+        indexTab[i].key = record.key;
+//        printf("%4ld : %ld\n", indexTab[i].key, indexTab[i].pos);
+    }
+    if( !feof( fpData))
+    {
+        fprintf( stderr, "Error on reading the file \"%s\".\n", dataFile);
+        return 2;
+    }
+    indexLen = i;
+
+    if( setNewName( fpData, 1825L, "John Quincy") == NULL)
+       fprintf( stderr, "Error on updating the file \"%s\".\n", dataFile);
+
+    // List the records:
+    rewind( fpData);
+    while( fread( &record, sizeof(Record_t), 1, fpData) == 1) %\S
+    {
+       printf("%8ld : %s\n", record.key, record.name);
+    }
+
+    fclose( fpData);
+    return 0;
+}
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_cputime_dif">
+			<text>
+				<![CDATA[#include <time.h>
+clock_t t1 = clock();
+clock_t t2 = clock();]]>
+			</text>
+		</p>
+		<p n="xc_parallel_sum">
+			<text>
+				<![CDATA[// Example 14-1. Calculating the sum of array elements in several parallel threads
+// parallelSum.c
+// ----------------------------------------------------------------------------
+#include <stdbool.h>
+#include <threads.h>
+
+#define MAX_THREADS 8             // 1, 2, 4, 8 ... Maximum number
+                                  // of threads to create.
+#define MIN_BLOCK_SIZE 100        // Minimum size of an array block.
+
+typedef struct                    // Arguments for the parallel_sum() function.
+{
+    float *start;                 // Start and length of the
+    int len;                      // array block passed to parallel_sum().
+    int block_size;               // Size of the smallest blocks.
+    double sum;                   // The result.
+} Sum_arg;
+
+int parallel_sum(void *arg);      // Prototype of the thread function.
+
+// ---------------------------------------------------------------
+// Calculate the sum of array elements and write it to *sumPtr.
+// sum() calls the function parallel_sum() for parallel processing.
+// Return value: true if no error occurs, otherwise false.
+
+bool sum(float arr[], int len, double* sumPtr)
+{
+    int block_size = len / MAX_THREADS;
+    if (block_size < MIN_BLOCK_SIZE) block_size = len;
+
+    Sum_arg args = { arr, len, block_size, 0.0 };
+    if (parallel_sum(&args))
+    { %\S
+        *sumPtr = args.sum; %\S
+        return true;
+    }
+    else
+        return false;
+}
+
+// ---------------------------------------------------------------
+// Recursive helper function to divide the work among several threads.
+
+int parallel_sum(void *arg)
+{
+    Sum_arg *argp = (Sum_arg*)arg;       // A pointer to the arguments.
+    if (argp->len <= argp->block_size)   // If length <= block_size,
+    {                                    // add up the elements.
+        for (int i = 0; i < argp->len; ++i)
+        argp->sum += argp->start[i];
+        return 1;
+    }
+    else                                  // If length > block_size,
+    {                                     // divide the array.
+        int mid = argp->len / 2;
+        Sum_arg arg2 = { argp->start+mid, argp->len-mid,
+                         argp->block_size, 0};   // Specifies 2nd half
+        argp->len = mid;                         // Length of first half
+
+        thrd_t th;                     // Process 1st half in a new thread.
+        int res = 0;
+
+        if (thrd_create(&th, parallel_sum, arg) != thrd_success)
+            return 0;                  // Couldn't spawn a thread
+
+        if (!parallel_sum(&arg2))      // Process 2nd half by recursion
+                                       // in the current thread.
+        {
+            thrd_detach(th); return 0; // Recursive call failed
+        }
+        thrd_join(th, &res);
+        if (!res)
+            return 0;                  // Sibling thread reported failure
+
+        argp->sum += arg2.sum;
+        return 1;
+    }
+}
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_thread">
+			<text>
+				<![CDATA[// Example 14-2. Concurrent memory access without synchronization
+// inc_dec.c
+
+#include <stdio.h>
+#include <threads.h>
+//#include <stdatomic.h>
+
+#define COUNT 10000000L
+
+long counter = 0;
+//_Atomic long counter = ATOMIC_VAR_INIT(0L);
+
+void incFunc(void) { for (long i = 0; i < COUNT; ++i) ++counter; }
+void decFunc(void) { for (long i = 0; i < COUNT; ++i) --counter; }
+
+int main(void)
+{
+    clock_t cl = clock();
+    thrd_t th1, th2;
+
+    if( thrd_create(&th1, (thrd_start_t)incFunc, NULL) != thrd_success
+        || thrd_create(&th2, (thrd_start_t)decFunc, NULL) != thrd_success)
+    {
+        fprintf(stderr,"Error creating thread\n"); return -1;
+    }
+    thrd_join(th1, NULL);
+    thrd_join(th2, NULL);
+
+    printf("Counter: %ld \t", counter);
+    printf("CPU time: %ld ms\n", (clock()-cl)*1000L/CLOCKS_PER_SEC);
+
+    return 0;
+}
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_mutex">
+			<text>
+				<![CDATA[// Example 14-3. Adding a mutex to the program in Example 14-2
+
+#include <stdio.h>
+#include <threads.h>
+
+#define COUNT 10000000L
+
+long counter = 0;
+mtx_t mtx;                        // A mutex for access to counter
+
+void incFunc(void)
+{
+    for (long i = 0; i < COUNT; ++i)
+    { mtx_lock(&mtx); ++counter; mtx_unlock(&mtx); }
+}
+void decFunc(void)
+{
+    for (long i = 0; i < COUNT; ++i)
+    { mtx_lock(&mtx); --counter; mtx_unlock(&mtx); }
+}
+
+int main(void)
+{
+    if (mtx_init(&mtx, mtx_plain) != thrd_success)
+    {
+        fprintf(stderr, "Error initializing the mutex.\n");
+        return -1;
+    }
+
+    // As in Example 14-2: %\S
+    // start threads, wait for them to finish, print output:
+    clock_t cl = clock();
+    thrd_t th1, th2;
+
+    if( thrd_create(&th1, (thrd_start_t)incFunc, NULL) != thrd_success
+        || thrd_create(&th2, (thrd_start_t)decFunc, NULL) != thrd_success)
+    {
+        fprintf(stderr,"Error creating thread\n"); return -1;
+    }
+    thrd_join(th1, NULL);
+    thrd_join(th2, NULL);
+
+    printf("Counter: %ld \t", counter);
+    printf("CPU time: %ld ms\n", (clock()-cl)*1000L/CLOCKS_PER_SEC);
+
+    mtx_destroy(&mtx);
+    return 0;
+}
+
+%\l]]>
+			</text>
+		</p>
+	</language.aliases>
+</options>
