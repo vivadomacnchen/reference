@@ -2337,5 +2337,2982 @@ int main(void)
 %\l]]>
 			</text>
 		</p>
+		<p n="xc_ring_buffer_c">
+			<text>
+				<![CDATA[// Example 14-4. A ring buffer for the producer-consumer model
+
+/* -------------------------------------------------------------
+ * buffer.c
+ * Definitions of functions operating on Buffer.
+ */
+
+#include "buffer.h"
+#include <stdlib.h>           // For malloc() and free()
+
+bool bufInit( Buffer *bufPtr, size_t size)
+{
+    if ((bufPtr->data = malloc( size * sizeof(int))) == NULL)
+       return false;
+    bufPtr->size = size;
+    bufPtr->count = 0;
+    bufPtr->tip = bufPtr->tail = 0;
+    return    mtx_init( &bufPtr->mtx, mtx_plain) == thrd_success
+           && cnd_init( &bufPtr->cndPut) == thrd_success
+           && cnd_init( &bufPtr->cndGet) == thrd_success;
+}
+
+void bufDestroy(Buffer *bufPtr)
+{
+    cnd_destroy( &bufPtr->cndGet );
+    cnd_destroy( &bufPtr->cndPut );
+    mtx_destroy( &bufPtr->mtx );
+    free( bufPtr->data );
+}
+
+// Insert a new element in the buffer:
+bool bufPut(Buffer *bufPtr, int data)
+{
+    mtx_lock( &bufPtr->mtx );
+
+    while (bufPtr->count == bufPtr->size)
+       if (cnd_wait( &bufPtr->cndPut, &bufPtr->mtx ) != thrd_success)
+          return false;
+
+    bufPtr->data[bufPtr->tip] = data;
+    bufPtr->tip = (bufPtr->tip + 1) % bufPtr->size;
+    ++bufPtr->count;
+
+    mtx_unlock( &bufPtr->mtx );
+    cnd_signal( &bufPtr->cndGet );
+
+    return true;
+}
+
+// Remove an element from the buffer. If the buffer is empty,
+// wait no more than sec seconds.
+bool bufGet(Buffer *bufPtr, int *dataPtr, int sec)
+{
+    struct timespec ts;
+    timespec_get( &ts, TIME_UTC );     // The current time
+    ts.tv_sec += sec;                  // + sec seconds delay.
+
+    mtx_lock( &bufPtr->mtx );
+
+    while ( bufPtr->count == 0 )
+       if (cnd_timedwait(&bufPtr->cndGet,
+                         &bufPtr->mtx, &ts) != thrd_success)
+           return false;
+
+    *dataPtr = bufPtr->data[bufPtr->tail];
+    bufPtr->tail = (bufPtr->tail + 1) % bufPtr->size;
+    --bufPtr->count;
+
+    mtx_unlock( &bufPtr->mtx );
+    cnd_signal( &bufPtr->cndPut );
+
+    return true;
+}
+
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_ring_buffer_h">
+			<text>
+				<![CDATA[#include <stdbool.h>
+#include <threads.h>
+
+typedef struct Buffer
+{
+    int *data;              // Pointer to the array of data.
+    size_t size, count;     // Maximum and current numbers of elements.
+    size_t tip, tail;       // tip = index of the next free spot.
+    mtx_t mtx;              // A mutex and
+    cnd_t cndPut, cndGet;   // two condition variables.
+} Buffer;
+
+bool bufInit( Buffer *bufPtr, size_t size );
+void bufDestroy(Buffer *bufPtr);
+
+bool bufPut(Buffer *bufPtr, int data);
+bool bufGet(Buffer *bufPtr, int *dataPtr, int sec);]]>
+			</text>
+		</p>
+		<p n="xc_abort_ex">
+			<text>void abort_ex()
+{   %\S
+   /* ... */
+   struct record *new = (struct record *)malloc( sizeof(struct record) );
+   if ( new != NULL )                   // Check whether malloc failed!
+   {
+       fprintf( stderr, "%s: out of memory!\n", __func__ );
+       abort();
+   }
+   else
+   { %\S
+       puts("working ...");
+       // a fatal error occurs:
+       abort();                          // abort the programm.
+   }
+}</text>
+		</p>
+		<p n="xc_asctime_ex">
+			<text>
+				<![CDATA[time_t now;
+time( &now );          /* Get the time (seconds since 1/1/70) */
+printf( "Date: %.24s GMT\n", asctime( gmtime( &now ) ));]]>
+			</text>
+		</p>
+		<p n="xc_acos">
+			<text>#define PI 3.141593
+#define DEG_PER_RAD (180.0/PI)
+
+
+    double floor_width = 30.0;
+    double roof_width = 34.6;
+
+    double roof_pitch = acos( floor_width / roof_width ) * DEG_PER_RAD ;
+%\l</text>
+		</p>
+		<p n="xc_abs_ex">
+			<text>
+				<![CDATA[int amount = -1234;
+    char currencysym[2] = "$";
+    char sign[2] = "-";
+    div_t dollarsandcents = { 0, 0 };
+
+    if ( amount >= 0 )
+       sign[0] = '\0';
+
+    dollarsandcents = div(abs( amount ), 100 );]]>
+			</text>
+		</p>
+		<p n="xc_acosh_ex">
+			<text>double x, y1, y2;
+errno = 0;
+y1 = acosh(x);
+if ( errno == EDOM)
+{
+perror("acosh"); break;
+}
+y2 = log( x + sqrt( x*x - 1));
+printf("x = %f; acosh(x) = %f; log(x + sqrt(x*x-1)) = %f\n",x, y1, y2);</text>
+		</p>
+		<p n="xc_asctime_s_ex">
+			<text>
+				<![CDATA[#include <time.h>
+time_t now;
+struct tm timeStruct;
+char timeStr[26];
+time(&now);                       // Date and time as an integer.
+localtime_s(&now, &timeStruct);   // Convert to a structure.
+if( asctime_s( timeStr, sizeof(timeStr), &timeStruct) == 0)
+printf("Date and time: %s", timeStr);]]>
+			</text>
+		</p>
+		<p n="xc_asin_ex">
+			<text>
+				<![CDATA[#include <math.h> 
+#define PI 3.141593
+#define DEG_PER_RAD (180.0/PI)
+float height = 2.20F;
+float length = 1.23F;
+float altitude = asinf( height / sqrtf( height*height + length*length));]]>
+			</text>
+		</p>
+		<p n="xc_asinh_ex">
+			<text>
+				<![CDATA[#include <math.h> 
+for ( double x = -2.0; x < 2.1; x += 0.5)
+printf("%6.2f %15f %20f\n", x, asinh(x), log( x + sqrt(x*x+1)));]]>
+			</text>
+		</p>
+		<p n="xc_assert_ex">
+			<text>
+				<![CDATA[#include <assert.h>
+int units_in_stock = 10;
+int units_shipped = 9;
+units_shipped++;
+units_in_stock--;
+units_in_stock -= units_shipped;
+assert(units_in_stock >= 0);]]>
+			</text>
+		</p>
+		<p n="xc_at_quick_exit_ex">
+			<text>
+				<![CDATA[void nexit(void) { puts("Program terminated normally."); }
+void qexit(void) { puts("Programm terminated by \"quick_exit()\"."); }
+int a = -1;
+atexit( nexit);
+at_quick_exit( qexit);
+if( a < 0)
+quick_exit(EXIT_FAILURE);]]>
+			</text>
+		</p>
+		<p n="xc_atan_ex">
+			<text>  #ifdef PI
+    printf("The symbol PI was already defined.\n");
+    long double pi = (long double) PI;
+  #else
+    long double pi = 4.0L * atanl( 1.0L );    // Because tan(pi/4) = 1
+  #endif
+    printf( "Assume pi equals %.17Lf.\n", pi);</text>
+		</p>
+		<p n="xc_atoi">
+			<text>
+				<![CDATA[%\l
+#include <stdlib.h>       // int atoi( const char *s );
+                          // long atol( const char *s );
+                          // long long atoll( const char *s );
+#include <stdio.h>
+
+int main()
+{
+    char *s = " -135792468.00 Balance on Dec. 31";
+    printf("\"%s\" becomes %ld\n", s, atol(s));
+
+    return 0;
+}
+%\l]]>
+			</text>
+		</p>
+		<p n="xc_atof">
+			<text>%\l</text>
+		</p>
+		<p n="xc_erf">
+			<text>
+				<![CDATA[// erf_ex.c : erf() example
+// -------------------------------------------------------------
+
+#include <math.h>   // double erf( double x );
+                    // float erff( float x );
+                    // long double erfl( long double x );
+#include <stdio.h>
+
+/*
+ * Given a normal distribution with mean 0 and standard deviation 1,
+ * calculate the probability that the random variable is within the
+ * range [0, 1.125]
+ */
+
+int main()
+{
+    double sigma = 1.0;     // The standard deviation
+    double bound = 1.125;
+    double probability;     // probability that mean <= value <= bound
+
+    probability = 0.5 *erf( bound / (sigma * sqrt(2.0)) );
+
+    printf("Given a normal distribution with mean 0 and standard deviation 1,\n"
+           "the probability that a random variable is within the range [0, 1.125]\n"
+           "is %%lf.\n", probability ); 
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_exit_ex">
+			<text>
+				<![CDATA[// exit_ex.c : exit() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>     // _Noreturn void exit( int status );
+#include <stdio.h>
+
+int main( int argc, char *argv[])
+{
+    FILE *f_in, *f_out;
+
+    enum { X_OK = 0, X_ARGS, X_NOIN, X_NOOUT };
+
+    if ( argc != 3 ) {
+       fprintf( stderr, "Usage: program input-file output-file\n");
+       exit( X_ARGS );
+    }
+
+    f_in = fopen(argv[1], "r");
+    if ( f_in == NULL ) {
+       fprintf( stderr, "Unable to open input file.\n");
+       exit( X_NOIN );
+    }
+    f_out = fopen(argv[2], "a+");
+    if ( f_out == NULL ) {
+       fprintf( stderr, "Unable to open output file.\n");
+       exit( X_NOOUT );
+    }
+
+    /* ... read, process, write, close files ... */
+
+    exit( X_OK );           //  return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_exp2_ex">
+			<text>
+				<![CDATA[// exp2_ex.c : exp2() example
+// -------------------------------------------------------------
+
+#include <math.h>        // double exp2( double x );
+                         // float exp2f( float x );
+                         // long double exp2l( long double x );
+#include <stdio.h>
+
+// The famous grains-of-rice-on-a-chessboard problem.
+// The sultan loses a chess game. The wager was one grain for square 1
+// on the chessboard, then double the last number for each successive
+// square. How much rice in all?
+
+int main()
+{
+    int squares = 64;
+    long double gramspergrain = 0.0025L;   // A grain of rice weighs 25 mg.
+    long double sum = 0.0L;
+
+    for ( int i = 0; i < squares; i++ )
+        sum += gramspergrain * exp2l( (long double)i );
+
+    printf( "The sultan's wager costs him %%.3Lf metric tons of rice.\n",
+             sum / 1000000.0L );           // A million grams per ton.
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_exp_ex">
+			<text>
+				<![CDATA[// exp_ex.c : exp() example
+// -------------------------------------------------------------
+
+#include <math.h>        // double exp( double x );
+                         // float expf( float x );
+                         // long double expl( long double x );
+#include <stdio.h>
+
+int main()
+{
+    /* Amount owed = principal * e^(interest_rate * time) */
+
+    int principal = 10000;   // Initial debt is ten thousand dollars.
+    int balance = 0;
+    double rate = 0.055;     // Interest rate is 5.5%% annually.
+    double time = 1.5;       // Period is eighteen months.
+
+    balance = principal * exp( rate * time );
+
+    printf("Invest %%d dollars at %%.1f%%%% compound interest, and "
+           "in %%.1f years \nyou'll have %%d dollars.\n",
+           principal, rate*100.0, time, balance );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fclose_ex">
+			<text>
+				<![CDATA[// fclose_ex.c : fclose() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   // int fclose( FILE *fp );
+
+/* Print a file to the console, line by line. */
+
+int main()
+{
+    FILE *fp_infile;
+    char linebuffer[512];
+
+    if (( fp_infile= fopen("input.dat", "r")) == NULL )
+    {
+       fprintf(stderr, "Couldn't open input file.\n");
+       return -1;
+    }
+
+    while ( fgets( linebuffer, sizeof(linebuffer), fp_infile ) != NULL )
+        fputs( linebuffer, stdout );
+
+    if ( ! feof(fp_infile) )         // This means "if not end of file"
+       fprintf( stderr, "Error reading from input file.\n" );
+
+    if ( fclose(fp_infile) != 0 )
+    {
+       fprintf(stderr, "Error closing input file.\n");
+       return -2;
+    }
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fdim_ex">
+			<text>
+				<![CDATA[// fdim_ex.c : fdim() example
+// -------------------------------------------------------------
+
+#include <math.h>        // double fdim( double x, double y );
+                         // float fdimf( float x, float y );
+                         // long double fdiml( long double x, long double y );
+#include <stdio.h>
+
+int main()
+{
+    /* Make sure an argument is within the domain of asin() */
+
+    double sign, argument = -1.5, result;
+    /* ... */
+
+    sign = copysign( 1.0, argument );           // Save the sign ...
+    argument = copysign( argument, 1.0 );       // then use only positive values
+
+    argument = 1.0 - fdim( 1.0, argument );     // Trim excess beyond 1.0
+    result = asin( copysign(argument, sign) );  // Restore sign and
+                                                // call asin()
+    printf( "For the argument %%.2lf the asin function returns %%lf.\n",
+             copysign(argument, sign), result );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_deholdexcept_ex">
+			<text>
+				<![CDATA[// feholdexcept_ex.c : feholdexcept() example
+// -------------------------------------------------------------
+
+#include <fenv.h>     // int feholdexcept( fenv_t *envp );
+#include <math.h>
+#include <float.h>
+
+/*
+ * Compute the hypotenuse of a right triangle, avoiding intermediate
+ * overflow or underflow.
+ *
+ * (This example ignores the case of one argument having
+ * great magnitude and the other small, causing both overflow
+ * and underflow!)
+ */
+double hypotenuse(double sidea, double sideb)
+{
+#pragma STDC FENV_ACCESS ON
+    double sum, scale, ascaled, bscaled, invscale;
+    fenv_t fpenv;
+    int fpeflags;
+
+    if ( signbit(sidea))  sidea = fabs(sidea);
+    if ( signbit(sideb))  sideb = fabs(sideb);
+
+    feholdexcept(&fpenv);        // Save previous environment,
+                                 // clear exceptions,
+                                 // switch to nonstop processing.
+    invscale = 1.0;
+    sum = sidea * sidea + sideb * sideb;    // First try whether a^2 + b^2
+                                            // causes any exceptions.
+
+    fpeflags = fetestexcept(FE_UNDERFLOW | FE_OVERFLOW);    // Did it?
+    if (fpeflags & FE_OVERFLOW && sidea > 1.0 && sideb > 1.0)
+    {
+        /* a^2 + b^2 caused an overflow. Scale the triangle down. */
+        feclearexcept(FE_OVERFLOW);
+        scale = scalbn( 1.0, (DBL_MIN_EXP / 2));
+
+        invscale = 1.0 / scale;
+        ascaled = scale * sidea;
+        bscaled = scale * sideb;
+        sum = ascaled * ascaled + bscaled * bscaled;
+    }
+    else if (fpeflags & FE_UNDERFLOW && sidea < 1.0 && sideb < 1.0)
+    {
+        /* a^2 + b^2 caused an underflow. Scale the triangle up. */
+        feclearexcept(FE_UNDERFLOW);
+        scale = scalbn( 1.0, (DBL_MAX_EXP / 2));
+
+        invscale = 1.0 / scale;
+        ascaled = scale * sidea;
+        bscaled = scale * sideb;
+        sum = ascaled * ascaled + bscaled * bscaled;
+    }
+
+    feupdateenv(&fpenv);     // restore the caller's environment, and
+                             // raise any new exceptions
+
+    /* c = (1/scale) * sqrt((a * scale)^2 + (b * scale)^2): */
+    return invscale * sqrt(sum);
+}
+
+#include <stdio.h>
+
+int main()
+{
+    double sidec = hypotenuse( 1E-10, 2E-200);
+    printf("The hypotenuse of the right triangle is %%.10lG\n", sidec);
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_deraiseexcept_ex">
+			<text>
+				<![CDATA[// feraiseexcept_ex.c : feraiseexcept() example
+// -------------------------------------------------------------
+
+#include <fenv.h>     // int feraiseexcept( int excepts );
+//#include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+// Although user programs rarely need to raise a floating-point exception by artificial
+// means, the following example illustrates how to do so:
+
+int main()
+{
+    int result, except_set, except_test;
+
+    #pragma STDC FENV_ACCESS ON
+
+    feclearexcept (FE_ALL_EXCEPT);
+
+    except_set = FE_OVERFLOW;
+    result = feraiseexcept( except_set );
+    if ( result != 0 )
+    {
+        printf( "feraisexcept() failed (%%d)\n", result );
+        exit( result );
+    }
+
+    except_test = fetestexcept( except_set );
+    if ( except_test != except_set )
+        printf( "Tried to raise flags %%X, but only raised flags %%X.\n",
+                 except_set, except_test );
+    else
+       printf( "Raised the floating-point exception FE_ALL_EXCEPT = %%X\n",
+                except_set );       
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fflush_ex">
+			<text>
+				<![CDATA[// fflush_ex.c : fflush() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   // int fflush( FILE *fp );
+#include <signal.h>
+
+/* Tests the effect of flushing output file buffers. */
+
+int main()
+{
+    FILE *fp;
+
+#ifdef FLUSH
+    char filename[ ] = "twice.txt";
+#else
+    char filename[ ] = "once.txt";
+#endif  /* FLUSH */
+
+    fp = fopen( filename, "w" );
+    if ( fp == NULL)
+       fprintf( stderr, "Failed to open file '%%s' to write.\n", filename );
+
+    fputs( "Going once ...\n", fp );
+    fflush( fp );                 // Flush the output unconditionally
+
+    fputs( "Going twice ...\n", fp );
+
+#ifdef FLUSH
+    fflush( fp );                 // Now flush only if compiled with '-DFLUSH'
+#endif
+
+    raise( SIGKILL );             // End the program abruptly.
+
+    fputs( "Gone.\n", fp );       // These three lines will never be executed.
+    fclose( fp );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fgets_ex">
+			<text>
+				<![CDATA[// fgets_ex.c : fgets() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   // char *fgets( char * restrict buffer, int n,
+                     //              FILE * restrict fp );
+#include <string.h>
+
+int main()
+{
+    FILE *titlefile;
+    char title[256];
+    int counter = 0;
+
+    if ((titlefile = fopen("titles.txt", "r")) == NULL)
+       perror( "Opening title file" );
+    else
+    {
+       while ( fgets( title, 256, titlefile ) != NULL )
+       {
+          title[ strlen(title) -1 ] = '\0';   // Trim off newline character.
+          printf( "%%3d: \"%%s\"\n", ++counter, title );
+       }
+       /* fgets() returned NULL: either EOF or an error occurred. */
+       if ( feof(titlefile) )
+         printf("Total: %%d titles.\n", counter);
+    }
+    fclose( titlefile );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fgetwc_ex">
+			<text>
+				<![CDATA[// fgetwc_ex.c : fgetwc() example
+// -------------------------------------------------------------
+
+#include <stdio.h>
+#include <wchar.h>   // wint_t fgetwc( FILE *fp );
+#include <stdlib.h>
+#include <locale.h>
+
+int main()
+{
+    char file_in[ ]  = "local_in.txt",
+         file_out[ ] = "local_out.txt";
+    FILE *fp_in_wide, *fp_out_wide;
+    wint_t wc;
+
+    if ( setlocale( LC_CTYPE, "" ) == NULL)
+       fwprintf( stderr,
+                 L"Sorry, couldn't change to the system's native locale.\n"),
+       exit(1);
+
+    if (( fp_in_wide = fopen( file_in, "r" )) == NULL )
+       fprintf( stderr, "Error opening the file %%s\n", file_in), exit(2);
+
+    if (( fp_out_wide = fopen( file_out, "w" )) == NULL )
+       fprintf( stderr, "Error opening the file %%s\n", file_out), exit(3);
+
+    fwide( fp_in_wide, 1);            // Not strictly necessary, since first
+    fwide( fp_out_wide, 1);           // file access also sets wide or byte mode.
+
+    while (( wc = fgetwc( fp_in_wide )) != WEOF )
+    {
+       // ... process each wide character read ...
+
+       if ( fputwc( (wchar_t)wc, fp_out_wide) == WEOF)
+         break;
+    }
+    if ( ferror( fp_in_wide))
+       fprintf( stderr, "Error reading the file %%s\n", file_in);
+    if ( ferror( fp_out_wide))
+       fprintf( stderr, "Error writing to the file %%s\n", file_out);
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fgetws_ex">
+			<text>
+				<![CDATA[// fgetws_ex.c : fgetws() example
+// -------------------------------------------------------------
+
+#include <stdio.h>
+#include <wchar.h>   // wchar_t *fgetws( wchar_t * restrict buffer,
+                     //                  int n, FILE * restrict fp );
+//#include <stdlib.h>
+#include <locale.h>
+
+int main()
+{
+    FILE *fp_in_wide;
+    wchar_t buffer[4096];
+    wchar_t *line = buffer;
+
+    if ( setlocale( LC_CTYPE, "" ) == NULL)
+    {
+       fwprintf( stderr, L"Sorry, couldn't change to the system's native locale.\n");
+       return -1;
+    }
+    if (( fp_in_wide = fopen( "local_in.txt", "r" )) == NULL )
+    {   perror( "Opening input file");  return -1;   }
+
+    fwide( fp_in_wide, 1);
+
+    line = fgetws( buffer, sizeof(buffer), fp_in_wide );
+    if ( line == NULL )
+       perror( "Reading from input file" );
+    else
+       if( fputws( line, stdout) < 0)
+          perror( "Writing to stdout" );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fma_ex">
+			<text>
+				<![CDATA[// fma_ex.c : fma() example
+// -------------------------------------------------------------
+
+#include <math.h>   // double fma( double x, double y, double z );
+                    // float fmaf( float x, float y, float z );
+                    // long double fmal( long double x, 
+                    //             long double y, long double z );
+#include <stdio.h>
+
+int main()
+{
+    double x, y, z;
+
+    x = nextafter( 3.0, 4.0 );     // Smallest possible double value
+                                   // greater than 3
+    y = 1.0/3.0;
+    z = -1.0;
+
+    printf( "x = %%.15G\n"
+            "y = %%.15G\n"
+            "z = %%.15G\n", x, y, z );
+
+// #ifdef FP_FAST_FMA
+
+    printf( "fma( x, y, z) = %%.15G\n", fma( x, y, z) );
+
+// #else // i.e., not def FP_FAST_FMA
+
+   double product = x * y;
+   printf( "x times y = %%.15G\n", product );
+   printf( "%%.15G + z = %%.15G\n", product, product + z );
+
+// #endif // def FP_FAST_FMA
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fmax_ex">
+			<text>
+				<![CDATA[// fmax_ex.c : fmax() example
+// -------------------------------------------------------------
+
+#include <math.h>   // double fmax( double x, double y );
+                    // float fmaxf( float x, float y );
+                    // long double fmaxl( long double x , long double y );
+#include <float.h>
+#include <stdio.h>
+
+int main()
+{
+    // Let big equal the second-greatest-possible double value ...
+    const double big = nextafter( DBL_MAX, 0.0 );
+    // ... and small the second-least possible-double value:
+    const double small = nextafter( DBL_MIN, 0.0 );
+
+    double a, b, c;
+    /* ... */
+    a = DBL_MIN;  b = 0.0;  c = 1.0;
+
+    if ( fmin( fmin( a, b ), c ) <= small )
+       printf( "At least one value is too small.\n" );
+    if ( fmax( fmax( a, b ), c ) >= big )
+       printf( "At least one value is too great.\n" );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fmod_ex">
+			<text>
+				<![CDATA[// fmod_ex.c : fmod() example
+// -------------------------------------------------------------
+
+#include <math.h>   // double fmod( double x, double y );
+                    // float fmodf( float x, float y );
+                    // long double fmodl( long double x, long double y );
+#include <fenv.h>
+#include <stdio.h>
+
+int main()
+{
+    double people = -2.25, 
+           apples = 3.3, 
+           eachgets = 0.0, 
+           someleft = 0.0;
+
+    int saverounding = fegetround();       // Save previous setting
+    fesetround(FE_TOWARDZERO);
+
+    eachgets = rint( apples / people );
+    someleft = fmod( apples, people );
+
+    printf( "If there are %%+.2f of us and %%+.2f apples, \n"
+            "each of us gets %%+.2f, with %%+.2f left over.\n",
+            people, apples, eachgets, someleft );
+
+    fesetround( saverounding );            // Restore previous setting
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fopen_ex">
+			<text>
+				<![CDATA[// fopen_ex.c : fopen() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   // FILE *fopen( const char * restrict name,
+                     //              const char * restrict mode );
+#include <stdlib.h>
+#include <string.h>
+
+int main( int argc, char *argv[])
+{
+    FILE *in, *out;
+    int c;
+
+    if ( argc != 3 )
+       fprintf( stderr, "Usage: program input-file output-file\n"), exit(1);
+
+    // If "-" appears in place of input filename, use stdin:
+    in = (strcmp(argv[1], "-") == 0) ? stdin : fopen(argv[1], "r");
+    if ( in == NULL )
+    {  perror( "Opening input file" ); return -1;  }
+
+    // If "-" appears in place of output filename, use stdout:
+    out = (strcmp(argv[2], "-") == 0) ? stdout : fopen(argv[2], "a+");
+    if ( out == NULL )
+    {   perror( "Opening output file" ); return -1; }
+
+    while (( c = fgetc( in )) != EOF)
+       if ( fputc(c, out) == EOF )
+          break;
+
+    if ( !feof( in ))
+       perror( "Error while copying" );
+
+    fclose(in), fclose(out);
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fpclassify_ex">
+			<text>
+				<![CDATA[// fpclassify_ex.c : fpclassify() example
+// -------------------------------------------------------------
+
+#include <math.h>       // int fpclassify( x );
+#include <stdio.h>
+
+double minimum( double a, double b )
+{
+    register int aclass = fpclassify( a );
+    register int bclass = fpclassify( b );
+
+    if ( aclass == FP_NAN || bclass == FP_NAN )
+       return NAN; 
+
+    if ( aclass == FP_INFINITE )         // -Inf is less than anything;
+       return ( signbit( a ) ? a : b );  // +inf is greater than anything.
+
+    if ( bclass == FP_INFINITE )
+       return ( signbit( b ) ? b : a );
+
+    return ( a < b ? a : b );
+}
+
+int main()
+{
+    double x = 0.0;
+
+    double min = minimum( x, -HUGE_VAL); 
+
+    printf( "min = %%G\n", min);
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fputws_ex">
+			<text>
+				<![CDATA[// fputws_ex.c : fputws() example
+// -------------------------------------------------------------
+
+#include <wchar.h>   // int fputws( const wchar_t * restrict ws,
+                     //              FILE * restrict fp );
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    FILE *fpw;
+    char fname_wide[] = "widetest.txt";
+    int widemodeflag = 1;
+    int result;
+
+    if ( setlocale( LC_CTYPE, "" ) == NULL)
+    {
+       fwprintf( stderr, L"Sorry, couldn't change to the system's native locale.\n");
+       return -1;
+    }
+    wchar_t widestring[] = L"How many umlauts are there in Fahrvergnügen?\n";
+
+    if ((fpw = fopen(fname_wide, "a")) == NULL)
+    {    perror( "Opening output file" ); return -1; }
+
+    // Set file to wide-character orientation:
+    widemodeflag = fwide(fpw, widemodeflag);
+    if ( widemodeflag <= 0 )
+    {
+       fprintf(stderr, "Unable to set output file %%s to wide characters\n",
+                       fname_wide);
+       (void)fclose(fpw);
+       return -1;
+    }
+    // Write wide-character string to the file:
+    result = fputws( widestring, fpw );
+    if ( result < 0 )
+    {
+       fprintf(stderr, "Error on writing file %%s.\n", fname_wide);
+       return -1;
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_freopen_s_ex">
+			<text>
+				<![CDATA[// freopen_s_ex.c : freopen_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <stdio.h>   // errno_t freopen_s( FILE * restrict * restrict fpPtr,
+                     //                    const char * restrict name,
+                     // const char * restrict mode,
+                     // FILE * restrict fp );
+#include <stdlib.h>
+#include <errno.h>
+
+int main()      // Redirect standard output to the file redirect.txt:
+{
+    char filename[] = "redirect.txt";
+    FILE *fp;
+
+    errno_t err = freopen_s( &fp, filename, "w", stdout);
+    if( err != 0)
+    { 
+       fprintf( stderr, "Unable to redirect stdout to %%s\n", filename);
+       exit(err);
+    }
+
+    printf("This text is being written to the file %%s.\n", filename);
+
+    fclose(stdout);
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_frexp_ex">
+			<text>
+				<![CDATA[// frexp_ex.c : frexp() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double frexp( double x, int *exp );
+                     // float frexpf( float x, int *exp );
+                     // long double frexpl( long double x, int *exp );
+#include <stdio.h>
+#include <stdlib.h>
+
+double fourthrt( double x )
+{
+    int exponent, exp_mod_4;
+    double mantissa = frexp( x, &exponent );
+
+    exp_mod_4 = exponent %% 4;
+    exponent -= ( exp_mod_4 );    // Get an exponent that's
+                                  // divisible by four ...
+    for ( int i = abs( exp_mod_4 ); i > 0; i-- )
+    {
+        if ( exp_mod_4 > 0 )      // ... and compensate in the mantissa.
+           mantissa *= 2.0;
+       else
+           mantissa /= 2.0;
+    }
+    return ldexp( sqrt( sqrt( mantissa )), exponent / 4 );
+}
+
+int main()
+{
+    double x = 64.0;      // 16 * 4
+
+    printf( "The fourth root of %%f is %%G.\n", x, fourthrt(x) );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fscnf_ex">
+			<text>
+				<![CDATA[// fscanf_ex.c : fscanf() example
+//
+// The example code reads information about a user from a file, which we will
+// suppose contains a line of colon-separated strings like this:
+//    tony:x:1002:31:Tony Crawford,,:/home/tony:/bin/bash// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1   // for fscanf_s()
+#include <stdio.h> 
+// int fscanf( FILE * restrict fp, const char * restrict format, ... );
+// int fscanf_s( FILE * restrict fp, const char * restrict format, ... ); 
+
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+
+struct pwrecord {             // Structure for contents of passwd fields.
+    unsigned int uid;
+    unsigned int gid;
+    char user[32];
+    char pw [32];
+    char realname[128];
+    char home [128];
+    char shell [128];
+};
+
+int main()
+{
+    FILE *fp;
+    char pwfile[] = "pwfile.txt";
+    int results = 0;
+    struct pwrecord record, *recptr = &record;;
+    char gecos[256] = "";
+
+    /* ... Open the password file to read ... */
+
+    fp = fopen( pwfile, "r");
+    if ( fp == NULL )
+    {  perror( "Opening input file" ); return -1;  }
+
+    /* 1. Read login name, password, UID and GID. */
+
+    record = (struct pwrecord) { UINT_MAX, UINT_MAX, "", "", "", "", "" };
+    results = fscanf( fp, "%%31[^:]:%%31[^:]:%%u:%%u:",
+                      recptr->user, recptr->pw, &recptr->uid, &recptr->gid );
+
+    // If the implementation supports the secure functions, the function fscanf_s()
+    // can be used as an alternative to fscanf():
+    /*
+    results = fscanf_s( fp, "%%31[^:]:%%31[^:]:%%u:%%u:",
+                        recptr->user, sizeof(recptr->user),
+                        recptr->pw, sizeof(recptr->pw),
+                        &recptr->uid, &recptr->gid );
+    */
+    if ( results < 4 )
+    {
+       fprintf( stderr, "Unable to parse line.\n" );
+       fscanf( fp, "%%*[^\n]\n" ); // Read and discard rest of line.
+    }
+
+    /* 2. Read the "gecos" field, which may contain nothing, or just the
+     * real name, or comma-separated sub-fields.
+    */
+    results = fscanf( fp, "%%255[^:]:", gecos );
+    if ( results < 1 )
+       strcpy( recptr->realname, "[No real name available]" );
+    else
+       sscanf( gecos, "%%127[^,]", recptr->realname );    // Truncate at
+                                                         // first comma.
+
+    /* 3. Read two more fields before the end of the line. */
+
+    results = fscanf( fp, "%%127[^:]:%%127[^:\n]\n", recptr->home, recptr->shell );
+    if ( results < 2 )
+    {
+        fprintf( stderr, "Unable to parse line.\n" );
+        fscanf( fp, "%%*[^\n]\n" );            // Read and discard rest of line.
+    }
+    printf( "The user account %%s with UID %%u belongs to %%s.\n",
+             recptr->user, recptr->uid, recptr->realname );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fscanf_ex">
+			<text>
+				<![CDATA[// fscanf_ex.c : fscanf() example
+//
+// The example code reads information about a user from a file, which we will
+// suppose contains a line of colon-separated strings like this:
+//    tony:x:1002:31:Tony Crawford,,:/home/tony:/bin/bash// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1   // for fscanf_s()
+#include <stdio.h> 
+// int fscanf( FILE * restrict fp, const char * restrict format, ... );
+// int fscanf_s( FILE * restrict fp, const char * restrict format, ... ); 
+
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+
+struct pwrecord {             // Structure for contents of passwd fields.
+    unsigned int uid;
+    unsigned int gid;
+    char user[32];
+    char pw [32];
+    char realname[128];
+    char home [128];
+    char shell [128];
+};
+
+int main()
+{
+    FILE *fp;
+    char pwfile[] = "pwfile.txt";
+    int results = 0;
+    struct pwrecord record, *recptr = &record;;
+    char gecos[256] = "";
+
+    /* ... Open the password file to read ... */
+
+    fp = fopen( pwfile, "r");
+    if ( fp == NULL )
+    {  perror( "Opening input file" ); return -1;  }
+
+    /* 1. Read login name, password, UID and GID. */
+
+    record = (struct pwrecord) { UINT_MAX, UINT_MAX, "", "", "", "", "" };
+    results = fscanf( fp, "%%31[^:]:%%31[^:]:%%u:%%u:",
+                      recptr->user, recptr->pw, &recptr->uid, &recptr->gid );
+
+    // If the implementation supports the secure functions, the function fscanf_s()
+    // can be used as an alternative to fscanf():
+    /*
+    results = fscanf_s( fp, "%%31[^:]:%%31[^:]:%%u:%%u:",
+                        recptr->user, sizeof(recptr->user),
+                        recptr->pw, sizeof(recptr->pw),
+                        &recptr->uid, &recptr->gid );
+    */
+    if ( results < 4 )
+    {
+       fprintf( stderr, "Unable to parse line.\n" );
+       fscanf( fp, "%%*[^\n]\n" ); // Read and discard rest of line.
+    }
+
+    /* 2. Read the "gecos" field, which may contain nothing, or just the
+     * real name, or comma-separated sub-fields.
+    */
+    results = fscanf( fp, "%%255[^:]:", gecos );
+    if ( results < 1 )
+       strcpy( recptr->realname, "[No real name available]" );
+    else
+       sscanf( gecos, "%%127[^,]", recptr->realname );    // Truncate at
+                                                         // first comma.
+
+    /* 3. Read two more fields before the end of the line. */
+
+    results = fscanf( fp, "%%127[^:]:%%127[^:\n]\n", recptr->home, recptr->shell );
+    if ( results < 2 )
+    {
+        fprintf( stderr, "Unable to parse line.\n" );
+        fscanf( fp, "%%*[^\n]\n" );            // Read and discard rest of line.
+    }
+    printf( "The user account %%s with UID %%u belongs to %%s.\n",
+             recptr->user, recptr->uid, recptr->realname );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fseek_ex">
+			<text>
+				<![CDATA[// fseek_ex.c : fseek() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   // int fseek( FILE *fp, long offset, int origin );
+
+typedef struct { long id;
+                 double value;
+               } record;
+
+// void writeRecords();
+
+int main()
+{
+    FILE *fp;
+    record cur_rec = (record) { 0, 0.0 };
+    int reclength_file = sizeof(record);
+    long seek_id = 123L;
+
+    if ( (fp = fopen("records", "rb")) == NULL)
+        perror( "Unable to open records file" );
+    else do
+    {
+        if ( 1 > fread( &cur_rec.id, sizeof (long), 1, fp ))
+        {
+           fprintf( stderr, "Record with ID %%ld not found.\n", seek_id );
+           break;
+        }
+        else                                      // Skip rest of record
+           if ( fseek( fp, reclength_file - sizeof(long), 1 ) )
+           {
+              perror( "fseek failed" );
+              break;
+           }
+    } while ( cur_rec.id != seek_id );
+
+    if( cur_rec.id == seek_id )
+        printf( "Record with ID %%ld found.\n", seek_id );
+   
+    return 0;
+}
+/*
+void writeRecords()
+{
+    FILE *fp;
+    record someRecords[] = {  { 101L, 10.0 }, { 123L, 20.0 },{ 146L, 30.0 } };
+    size_t n = sizeof( someRecords) / sizeof( *someRecords);
+
+    if ((fp = fopen("records", "wb")) == NULL)
+       perror( "Unable to open records file" );
+    else 
+    {
+       if( fwrite( someRecords, sizeof(record), n, fp) < n) 
+          perror( "Unable to write records" );
+       fclose(fp);
+    }
+}
+*/
+]]>
+			</text>
+		</p>
+		<p n="xc_ftell_ex">
+			<text>
+				<![CDATA[// ftell_ex.c : ftell() example
+// -------------------------------------------------------------
+
+// This example searches in a file, whose name is the second command-line
+// argument, for a string, which the user can specify in the first
+// command-line argument.
+
+#include <stdio.h>       // long ftell( FILE *fp );
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_LINE 256
+
+int main( int argc, char *argv[])
+{
+    FILE *fp;
+    long lOffset = 0L;
+    char sLine[MAX_LINE] = "";
+    int  lineno = 0;
+
+    if ( argc != 3 )
+       fprintf( stderr, "Usage: program search_string file_name\n"), exit(1);
+
+    if ((fp = fopen(argv[2], "r")) == NULL)
+    {
+        fprintf(stderr, "Unable to open file %%s\n", argv[2]);
+        exit(-1);
+    }
+    do
+    {
+        lOffset = ftell(fp);      // Bookmark the beginning of
+                                  // the line we're about to read.
+        if ( -1L == lOffset )
+            fprintf(stderr, "Unable to obtain offset in %%s\n", argv[2]);
+        else
+            lineno++;
+
+        if ( !fgets(sLine, MAX_LINE, fp))     // Read next line from file.
+            break;
+    } while ( strstr( sLine, argv[1]) == NULL);    // Test for argument
+                                                   // in sLine.
+
+    /* Dropped out of loop: Found search keyword or EOF */
+    if ( feof(fp) || ferror(fp) )
+    {
+        fprintf(stderr, "Unable to find \"%%s\" in %%s\n", argv[1], argv[2]);
+        rewind(fp);
+    }
+    else
+    {
+        printf( "%%s (%%d): %%s\n", argv[2], lineno, sLine);
+        fseek( fp, lOffset, 0);           // Set file pointer at beginning of
+                                          // the line containing the keyword
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_fwprintf_ex">
+			<text>
+				<![CDATA[// fwprintf_ex.c : fwprintf() example
+// -------------------------------------------------------------
+
+#include <stdio.h>     // int fwprintf( FILE * restrict fp,
+#include <wchar.h>     //               const wchar_t * restrict format, ... );
+                       // int fwprintf_s( FILE * restrict fp,
+                       //                 const wchar_t * restrict format, ...);
+#include <wchar.h>
+#include <locale.h>
+
+int main()
+{
+    wchar_t name_local[ ] = L"Ka\u0142u\u017Cny";
+    char name_portable[ ]= "Kaluzny";
+    char locale[ ] = "pl_PL.UTF-8";
+    char * newlocale;
+
+    newlocale = setlocale( LC_ALL, locale );
+    if ( newlocale == NULL )
+       fprintf( stderr, "Sorry, couldn't change the locale to %%s.\n"
+                "The current locale is %%s.\n",
+                locale, setlocale( LC_ALL, NULL ));
+
+    fwprintf( stdout,
+              L"Customer's name: %%ls (Single-byte transliteration: %%s)\n",
+              name_local, name_portable );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_getenv_s_ex">
+			<text>
+				<![CDATA[// getenv_s_ex.c : getenv_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <stdlib.h>  // errno_t getenv_s( size_t * restrict len,
+                     //                   char * restrict value,
+                     //                   rsize_t maxsize,
+                     //                   const char * restrict name);
+#include <stdio.h>
+#include <errno.h>
+
+int main()
+{
+    char envStr[512];
+    size_t len;
+
+    if( getenv_s( &len, envStr, sizeof(envStr),"PATH") == 0)
+        printf("PATH variable (%%zu characters): \n%%s\n", len, envStr);
+    else if( len > 0)
+        printf("The PATH variable (%%zu characters) is more than "
+               "%%zu bytes long.\n", len, sizeof(envStr));
+    else
+        printf("PATH variable not found.\n");
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_gmtime_ex">
+			<text>
+				<![CDATA[// gmtime_ex.c : gmtime() example
+// -------------------------------------------------------------
+
+#include <time.h>   // struct tm *gmtime( const time_t *timer );
+#include <stdio.h>
+#include <string.h>
+
+int main()
+{
+    time_t rawtime;
+    struct tm utc_tm, local_tm, *ptr_tm;
+    char buffer[1024] = "";
+
+    time( &rawtime );                 // Get current time as an integer.
+
+    ptr_tm = gmtime( &rawtime );      // Convert to UTC in a struct tm.
+    memcpy( &utc_tm, ptr_tm, sizeof(struct tm) ); // Save a local copy.
+
+    ptr_tm = localtime( &rawtime );   // Do the same for local time zone.
+    memcpy( &local_tm, ptr_tm, sizeof(struct tm) );
+
+    if ( strftime( buffer, sizeof(buffer),
+                   "It's %%A, %%B %%d, %%Y, %%R o'clock, UTC.", &utc_tm ) )
+       puts( buffer );
+
+    if ( strftime( buffer, sizeof(buffer),
+                   "Here it's %%A, %%B %%d, %%Y, %%R o'clock, UTC %%z.", &local_tm ) )
+       puts( buffer );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_hypot_ex">
+			<text>
+				<![CDATA[// hypot_ex.c : hypot() example
+// -------------------------------------------------------------
+
+#include <math.h>   // double hypot( double x, double y );
+                    // float hypotf( float x, float y );
+                    // long double hypotl( long double x, long double y );
+#include <stdio.h>
+#include <errno.h>
+
+int main()
+{
+    double x, y, h;        // Three sides of a triangle
+
+    printf( "How many kilometers do you want to go westward? " );
+    scanf( "%%lf", &x );
+
+    printf( "And how many southward? " );
+    scanf( "%%lf", &y );
+
+    errno = 0;
+    h = hypot( x, y );
+    if ( errno )
+       perror( __FILE__ );
+    else
+       printf( "Then you'll be %%4.2lf km from where you started.\n", h );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_ignore_handler_s_ex">
+			<text>
+				<![CDATA[// ignore_handler_s_ex.c : ignore_handler_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <stdlib.h>  // void ignore_handler_s( const char * restrict msg,
+                     //                        void * restrict ptr, 
+                     //                        errno_t error);
+#include <string.h>
+#include <stdio.h>
+#include <errno.h>
+
+// Handle runtime constraint violations using only
+// the return value of secure functions.
+
+int main()
+{
+    char message[20] = "Hello, ",
+         name[20];
+    set_constraint_handler_s(ignore_handler_s);
+
+    printf("Please enter your name: ");
+    if( gets_s( name, sizeof(name)) == NULL)
+    { 
+       puts("Error: You entered more than 19 characters."); 
+       // ...
+    }
+    else if( strcat_s( message, sizeof(message), name) != 0)
+    {
+       puts("Error: message array is too small.");
+       // ...
+    }
+    else
+       puts( message);
+
+    // ...
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_ilogb_ex">
+			<text>
+				<![CDATA[// ilogb_ex.c : ilogb() example
+// -------------------------------------------------------------
+
+#include <math.h>    // int ilogb( double x )
+                     // int ilogbf( float x )
+                     // int ilogbl( long double x )
+#include <stdio.h>
+#include <limits.h>
+
+int main()
+{
+    int exponent = 0;
+    double x = -1.509812734e200;
+
+    while ( exponent < INT_MAX )
+    {
+       exponent = ilogb( x );
+       printf( "The exponent of %%g is %%d.\n", x, exponent );
+
+       if ( x < 0.0 && x * x > 1.0 )
+          x /= 1e34;
+       else
+          x += 1.1, x *= 2.2e34 ;
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_imaxdiv_ex">
+			<text>
+				<![CDATA[// imaxdiv_ex.c : imaxdiv() example
+// -------------------------------------------------------------
+
+#include <inttypes.h>  // imaxdiv_t imaxdiv( intmax_t dividend, 
+                       //                    intmax_t divisor );
+#include <stdio.h>
+
+int main()
+{
+    intmax_t people = 110284, apples = 9043291;
+    imaxdiv_t share;
+
+    if ( people == 0 )       // Avoid dividing by zero.
+    {
+       printf( "There's no one here to take the apples.\n" ); 
+       return -1;
+    }
+    else
+       share = imaxdiv( apples, people );
+
+    printf( "If there are %%ji of us and %%ji apples,\n"
+            "each of us gets %%ji, with %%ji left over.\n",
+            people, apples, share.quot, share.rem );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_isfinite_ex">
+			<text>
+				<![CDATA[// isfinite_ex.c : isfinite() example
+// -------------------------------------------------------------
+
+#include <math.h>     // int isfinite( float x );
+                      // int isfinite( double x );
+                      // int isfinite( long double x );
+
+#include <stdarg.h>
+
+double vsum( int n, ... )
+// n is the number of arguments in the list
+{
+    va_list argptr;
+    double sum = 0.0, next = 0.0;
+
+    va_start( argptr, n );
+    while ( n-- )
+    {
+        next = va_arg( argptr, double );
+        sum += next;
+        if ( isfinite( sum ) == 0 )
+           break;         // If sum reaches infinity, stop adding.
+    }
+    va_end( argptr );
+    return sum;
+}
+
+#include <stdio.h>
+#include <float.h>
+
+int main()
+{
+    printf( "1. Sum: %%lf\n", vsum( 3, 1.0, 2.0, 3.0) );
+
+    double x = DBL_MAX;
+    printf( "2. Sum: %%lf\n", vsum( 2, x, x) );
+   
+    return 0;
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xc_isprintf_ex">
+			<text>
+				<![CDATA[// isprint_ex.c : isprint() example
+// And also an example for
+// isalnum(), isalpha(), isblank(), iscntrl(), isdigit(),
+// isgraph(), islower(), ispunct(), isspace().
+// -------------------------------------------------------------
+
+#include <ctype.h>    // int isprint( int c); int isalnum( int c); ...
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    unsigned int c;
+
+//    setlocale(LC_CTYPE, "");
+    printf("\nThe current locale for the 'is ...' functions is '%%s'.\n",
+           setlocale(LC_CTYPE, NULL));
+
+    printf("Here is a table of the 'is ...' values for the characters"
+           " from 0 to 127 in this locale:\n\n");
+
+    for ( c = 0; c < 128; c++ )   // Loop iteration for each table row.
+    {
+        if ( c %% 24 == 0 )        // Repeat table header every 24 rows.
+        {
+            printf("Code char alnum alpha blank cntrl digit graph lower"
+                   " print punct space\n");
+            printf("---------------------------------------------------"
+                   "------------------\n");
+        }
+        printf( "%%4u %%4c %%3c %%5c %%5c %%5c %%5c %%5c %%5c %%5c %%5c %%5c\n",
+                 c,                             // Print numeric character code.
+                 ( isprint( c ) ?  c  : ' ' ),  // Print the glyph, or a space
+                                                // if it's not printable.
+                 ( isalnum( c ) ? 'X' : '-' ),  // In a column for each category,
+                 ( isalpha( c ) ? 'X' : '-' ),  // print X for yes or - for no.
+                 ( isblank( c ) ? 'X' : '-' ),
+                 ( iscntrl( c ) ? 'X' : '-' ),
+                 ( isdigit( c ) ? 'X' : '-' ),
+                 ( isgraph( c ) ? 'X' : '-' ),
+                 ( islower( c ) ? 'X' : '-' ),
+                 ( isprint( c ) ? 'X' : '-' ),
+                 ( ispunct( c ) ? 'X' : '-' ),
+                 ( isspace( c ) ? 'X' : '-' ) );
+    }  // end of loop for each character value
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_iswalnum_ex">
+			<text>
+				<![CDATA[// iswalnum_ex.c : iswalnum() example
+// -------------------------------------------------------------
+
+#include <wctype.h>     // int iswalnum( wint_t wc );
+#include <wchar.h>
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    wint_t wc;
+    int i, dummy;
+
+    setlocale( LC_CTYPE, "" );
+    wprintf( L"\nThe current locale for the 'is ...' functions is '%%s'.\n",
+             setlocale( LC_CTYPE, NULL ) );
+
+    wprintf( L"These are the alphanumeric wide characters"
+             " in this locale:\n\n" );
+    for ( wc = 0, i = 0; wc < 1024; wc++ )
+    if ( iswalnum( wc ) )
+    {
+       if ( i %% 25 == 0 )
+       {
+           wprintf( L"... more ...\n" );
+           dummy = getchar();              // Wait before printing more
+           wprintf( L"Wide character Code\n" );
+           wprintf( L"-----------------------\n" );
+       }
+       wprintf( L"%%5lc %%4lu\n", wc, wc );
+       i++;
+    }
+    wprintf( L"-----------------------\n" );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_iswalpha_Ex">
+			<text>
+				<![CDATA[// iswalpha_ex.c : iswalpha() example
+// And also an example for
+// iswalnum(), iswblank(), iswcntrl(), iswdigit(), iswgraph(),
+// iswlower(), iswprint(), iswpunct(), iswspace().
+// -------------------------------------------------------------
+
+#include <wctype.h>    // int iswalpha( wint_t wc);  ...
+#include <wchar.h>
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    wint_t wc;
+
+    if ( setlocale( LC_CTYPE, "" ) == NULL)
+    {
+       fwprintf( stderr,
+                 L"Sorry, couldn't change to the system's native locale.\n");
+       return 1;
+    }
+    wprintf( L"The current locale for the 'isw ...' functions is '%%s'.\n",
+             setlocale(LC_CTYPE, NULL));
+
+    wprintf( L"Here is a table of the 'isw ...' values for the characters "
+             L"from 128 to 255 in this locale:\n\n");
+
+    for ( wc = 128; wc < 255; ++wc ) // Loop iteration for each table row.
+    {
+       if ( (wc-128) %% 24 == 0 ) // Repeat table header every 24 rows.
+       {
+         wprintf(L"Code char alnum alpha blank cntrl digit graph lower"
+                 L" print punct space\n");
+         wprintf(L"---------------------------------------------------"
+                 L"------------------\n");
+       }
+       wprintf(L"%%4u %%4lc %%3c %%5c %%5c %%5c %%5c %%5c %%5c %%5c %%5c %%5c\n",
+               wc,                              // Print numeric character code.
+               ( iswprint( wc ) ? wc  : ' ' ),  // Print the glyph, or a space
+                                                // if it's not printable.
+               ( iswalnum( wc ) ? 'X' : '-' ),  // In a column for each
+               ( iswalpha( wc ) ? 'X' : '-' ),  // category, print X for
+               ( iswblank( wc ) ? 'X' : '-' ),  // yes or - for no.
+               ( iswcntrl( wc ) ? 'X' : '-' ),
+               ( iswdigit( wc ) ? 'X' : '-' ),
+               ( iswgraph( wc ) ? 'X' : '-' ),
+               ( iswlower( wc ) ? 'X' : '-' ),
+               ( iswprint( wc ) ? 'X' : '-' ),
+               ( iswpunct( wc ) ? 'X' : '-' ),
+               ( iswspace( wc ) ? 'X' : '-' ) );
+    } // end of loop for each character value
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_iswctype_ex">
+			<text>
+				<![CDATA[// iswctype_ex.c : iswctype() example
+// -------------------------------------------------------------
+
+#include <wctype.h>    // int iswctype( wint_t wc, wctype_t description );
+#include <wchar.h>
+#include <locale.h>
+
+int main()
+{
+    wint_t wc = L'ß';
+
+    setlocale( LC_CTYPE, "de_DE.UTF-8" );
+    if ( iswctype( wc, wctype( "alpha" )) )
+    {
+        if ( iswctype( wc, wctype( "lower" ) ))
+           wprintf( L"The character %%lc is lowercase.\n", wc );
+        if ( iswctype( wc, wctype( "upper" ) ))
+           wprintf( L"The character %%lc is uppercase.\n", wc );
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_localtime_s_ex">
+			<text>
+				<![CDATA[// gmtime_ex.c : gmtime() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <time.h>    // struct tm *localtime_s( const time_t * restrict timer,
+                     //                         struct tm * restrict result);
+#include <stdio.h>
+
+int main()
+{
+    time_t now;    struct tm timeStruct;    char timeStr[26];
+
+    time(&now);                           // Current time as an integer.
+
+    // Convert to local time as a struct tm:
+    if( localtime_s(&now, &timeStruct) != NULL)
+    {
+        timeStruct.tm_year += 1;          // One year later.
+        if( asctime_s( timeStr, sizeof(timeStr), &timeStruct) == 0)
+            printf("A year from today: %%s", timeStr);
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_log1p_ex">
+			<text>
+				<![CDATA[// log1p_ex.c : log1p() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double log1p( double x )
+                     // float log1pf( float x )
+                     // long double log1pl( long double x )
+#include <stdio.h>
+
+// atanh(x) is defined as 0.5 * ( log(x+1) - log(-x+1).
+// Rounding errors can result in different results
+// for different methods.
+
+int main()
+{
+    puts("   x         atanh(x)    atanh(x) - 0.5*(log1p(x) - log1p(-x))\n"
+         "--------------------------------------------------------------");
+    for ( double x = -0.8; x < 1.0; x += 0.4)
+    {
+       double y = atanh(x);
+       printf("%%6.2f %%14f %%20E\n", x, y, y - 0.5*(log1p(x) - log1p(-x)) );
+    }
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_log2_ex">
+			<text>
+				<![CDATA[// log2_ex.c : log2() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double log2( double x )
+                     // float log2f( float x )
+                     // long double log2l( long double x )
+#include <errno.h>
+#include <stdio.h>
+
+int main()
+{
+    double x[] = { 0, 0.7, 1.8, 1234, INFINITY };
+
+    for ( int i = 0; i < sizeof( x ) / sizeof( double ); i++ )
+    {
+        errno = 0;
+        printf( "The base 2 log of  %%.1f is %%.3f.\n", x[i], log2( x[i] ) );
+        if ( errno == EDOM || errno == ERANGE )
+           perror( __FILE__ );
+    }
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_log_ex">
+			<text>
+				<![CDATA[// log_ex.c : log() example
+// The following code prints some sample values for base 2, 
+// base e, and base 10 logarithms.
+// -------------------------------------------------------------
+
+#include <math.h>    // double log( double x )
+                     // float logf( float x )
+                     // long double logl( long double x )
+#include <stdio.h>
+
+int main()
+{
+    double x[] = { 1E-100, 0.5, 2, exp(1), 10, 1E+100 };
+
+    puts("       x           log2(x)            log(x)          log10(x)\n"
+         " ---------------------------------------------------------------");
+    for ( int i = 0; i < sizeof(x) / sizeof(x[0]); ++i )
+    {
+        printf("%%#10.3G %%+17.10G %%+17.10G %%+17.10G\n",
+                x[i], log2(x[i]), log(x[i]), log10(x[i]) );
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_logb_ex">
+			<text>
+				<![CDATA[// logb_ex.c : logb() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double logb( double x )
+                     // float logbf( float x )
+                     // long double logbl( long double x )
+#include <errno.h>
+#include <stdio.h>
+
+int main()
+{
+    double x[] = { 0, 0, 0.7, 1.8, 1234, INFINITY };
+
+    x[1] = nextafter( 0.0, 1.0 );
+
+    for ( int i = 0; i < sizeof( x ) / sizeof( double ); i++ )
+    {
+        errno = 0;
+        printf( "The exponent in the binary representation of %%g is %%g.\n",
+                x[i], logb( x[i] ) );
+        if ( errno == EDOM || errno == ERANGE )
+           perror( __FILE__ );
+    }
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_malloc_ex">
+			<text>
+				<![CDATA[// malloc_ex.c : malloc() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>    // void *malloc( size_t size );
+#include <stdio.h>
+#include <string.h>
+//#include <errno.h>
+
+int main()
+{
+    struct linelink { char *line;
+                      struct linelink *next;
+    };
+    struct linelink *head = NULL, *tail = NULL;
+
+    char buffer[2048];
+    FILE *fp_in;
+
+    /* ... 0pen input file ... */
+    char filename[] = "malloc.txt";
+    if ((fp_in = fopen( filename, "r")) == NULL)
+       perror( "Opening input file" );
+
+    while ( NULL != fgets(buffer, sizeof(buffer), fp_in ))
+    {
+        if ( head == NULL )    /* Chain not yet started; add first link */
+        {
+            head = tail = malloc( sizeof(struct linelink));
+            if ( head != NULL )
+            {
+               head->line = malloc( strlen( buffer ) + 1 );
+               if ( head->line != NULL )
+               {  strcpy( head->line, buffer);  head->next = NULL; }
+               else
+               {  fprintf( stderr, "Out of memory\n" ); return -1; }
+            }
+            else
+            {  fprintf( stderr, "Out of memory\n" ); return -1; }
+         }
+         else          /* Chain already started; add another link ... */
+         {
+             puts( "Adding another link ...");
+             /* ... */ 
+             break;
+         }
+    }
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_mblen_ex">
+			<text>
+				<![CDATA[// mblen_ex.c : mblen() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>   // int mblen( const char *s, size_t maxsize );
+#include <wchar.h>
+#include <string.h>
+
+size_t mbsrcat( char * restrict s1, char * restrict s2,
+                mbstate_t * restrict p_s1state, size_t n )
+/* mbsrcat: multibyte string restartable concatenation.
+ * Appends s2 to s1, respecting final shift state of destination string,
+ * indicated by *p_s1state. String s2 must start in the initial shift
+ * state.
+ * Returns: number of bytes written, or (size_t)-1 on encoding error.
+ * Max. total length (incl. terminating null byte) is <= n;
+ * stores ending state of concatenated string in *s1state.
+ */
+{
+   int result;
+   size_t i = strlen( s1 );
+   size_t j = 0;
+
+   if ( i >= n - (MB_CUR_MAX+1))   // Sanity check: room for 1 multibyte
+                                   // char + string terminator.
+      return 0;                    // Report 0 bytes written.
+
+   // Shift s1 down to initial state:
+
+   if ( !mbsinit( p_s1state ))     // If not initial state, then append
+   {                               // shift sequence to get initial state.
+      if ( ( result = wcrtomb( s1+i, L'\0', p_s1state )) == -1 )
+      {                            // Encoding error:
+         s1[i] = '\0';             // Try restoring termination.
+         return (size_t)-1;        // Report error to caller.
+      }
+      else
+        i += result;
+   }
+
+   // Copy only whole multibyte characters at a time.
+   // Get length of next char w/o changing state:
+   while (( result = mblen( s2+j, MB_CUR_MAX )) <= (n - ( 1 + i )) )
+   {
+      if ( result == 0 ) break;
+      if ( result == -1 )
+      {                        // Encoding error:
+         s1[i] = '\0';         // Terminate now.
+         return (size_t)-1;    // Report error to caller.
+      }
+      // Next character fits; copy it and update state:
+      strncpy( s1+i, s2+j, mbrlen( s2+j, MB_CUR_MAX, p_s1state ));
+      i += result;
+      j += result;
+   }
+   s1[i] = '\0';
+   return j;
+}
+
+#include <locale.h>
+#include <stdio.h>
+
+int main()
+{
+   if( setlocale(LC_ALL, "") == NULL)
+      fputs("Unable to set the locale.\n", stderr);
+   printf( "\nThe current locale is '%%s'.\n", setlocale( LC_CTYPE, NULL ) );
+
+   char str1[100] = "";
+   mbstate_t mbstate = {0};
+   size_t nChars = 0;
+
+   nChars = mbsrcat( str1, "große ", &mbstate, sizeof(str1) );
+   if( (int)nChars < 0)
+   {   fputs("Error ...", stderr);  return -1;  }
+   printf("%%zu characters.\n", nChars);
+
+   nChars = mbsrcat( str1, "Füße", &mbstate, sizeof(str1) );
+   if( (int)nChars < 0)
+   {   fputs("Error ...", stderr);  return -1;  }
+   printf("%%zu characters.\n", nChars);
+
+   puts( str1);
+
+   return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_mbrtoc16_ex">
+			<text>
+				<![CDATA[// mbrtoc16_ex.c : mbrtoc16() example
+// -------------------------------------------------------------
+
+#include <uchar.h>     // size_t mbrtoc16( char16_t * restrict pc16,
+                       //                  const char * restrict s,
+                       //                  size_t n, 
+                       //                  mbstate_t * restrict state );
+//#include <stdlib.h>
+#include <string.h>
+
+// The function mbsToC16s() uses mbrtoc16() to convert a string of
+// multibyte characters into a string of 16-bit characters
+// (typically in UTF-16 encoding).
+// Return value: the number of char16_t characters produced, or
+//               -1 if an error occurred.
+
+int mbsToC16s( const char *mbStr, char16_t *c16Str, size_t len)
+{
+   if( mbStr == NULL || c16Str == NULL || len == 0)   // Sanity checks.
+      return -1;
+
+   mbstate_t mbstate = {0};
+   char16_t c16;
+   int count = 0, i = 0, rv = 0,
+       nBytes = (int)strlen(mbStr)+1;
+
+   do {
+      rv = (int)mbrtoc16( &c16, mbStr+i, nBytes-i, &mbstate);
+      switch( rv)
+      {
+        case 0:  c16Str[count] = 0; i = nBytes;   // End of string.
+                 break;
+        case -1:                                  // Encoding error.
+        case -2: count = -1;
+                 break;
+        default:
+           if( count < (int)len-1 )
+           {
+              c16Str[count++] = c16;
+              if( rv > 0) i += rv;                // rv != -3
+           }
+           else count = -1;
+      }
+   } while( count > 0 && i < nBytes);
+
+   return count;
+}
+
+#include <locale.h>
+#include <stdio.h>
+
+int main(void)
+{
+   if( setlocale(LC_ALL, "en_US.utf8") == NULL)
+      fputs("Unable to set the locale.\n", stderr);
+
+   char *u8Str = u8"Grüße";
+   char16_t c16Str[100];
+   int nChars = 0;
+
+   nChars = mbsToC16s( u8Str, c16Str, 100);
+   if( nChars < 0)
+      fputs("Error ...", stderr);
+   else
+   {
+      printf("%%d UTF-16 characters.\n", nChars);
+      // ...
+   }
+   return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_mbrtowc_ex">
+			<text>
+				<![CDATA[// mbrtowc_ex.c : mbrtowc() example
+// -------------------------------------------------------------
+
+#include <wchar.h>    // size_t mbrtowc( wchar_t * restrict widebuffer,
+                      //                 const char * restrict string,
+                      //                 size_t maxsize, 
+                      //                 mbstate_t * restrict state );
+#include <wctype.h>
+#include <stdlib.h>
+#include <string.h>
+
+size_t mbstoupper( char *s1, char *s2, size_t n )
+/* Copies the multibyte string from s2 to s1, converting all the
+   characters to uppercase on the way.
+   Because there are no standard functions for case-mapping in multibyte
+   encodings, converts to and from the wide-character encoding (using the
+   current locale setting for the LC_CTYPE category). The source string
+   must begin in the initial shift state.
+   Returns: the number of bytes written;
+            or (size_t)-1 on an encoding error.
+*/
+{
+   char *inptr = s2, *outptr = s1;
+   wchar_t thiswc[1];
+   size_t inresult, outresult;
+
+   mbstate_t states[2], *instate = &states[0], *outstate = &states[1];
+
+   memset( states, '\0', sizeof states );
+
+   do
+   {
+      inresult = mbrtowc( thiswc, inptr, MB_CUR_MAX, instate );
+      switch ( inresult )
+      {
+      case (size_t)-2:     // The (MB_CUR_MAX) bytes at inptr do not make
+                           // a complete mb character. Maybe there is a
+                           // redundant sequence of shift codes. Treat the
+                           // same as an encoding error.
+         *outptr = '\0';
+         return (size_t)-1;
+
+      case (size_t)-1:     // Found an invalid mb sequence at inptr:
+         return inresult;  // pass the error to the caller.
+
+      case 0:              // Got a null character. Make a last null wc.
+                           // The default action, with wcrtomb, does this
+                           // nicely, so *no break statement* necessary here.
+
+      default:             // Read <result> mb characters to get one wide
+                           // character.
+      /* Check for length limit before writing anything but a null.
+         Note: Using inresult as an approximation for the output
+         length.
+         The actual output length could conceivably be different
+         due to a different succession of state-shift sequences.
+      */
+      if (( outptr - s1 ) + inresult + MB_CUR_MAX > n )
+      {   // i.e., if bytes written + bytes to write + termination > n,
+          // then terminate now by simulating a null-character input.
+         thiswc[0] = L'\0';
+         inresult = 0;
+      }
+      inptr += inresult;
+      if (( outresult = wcrtomb( outptr,
+                                (wchar_t)towupper(thiswc[0]),
+                                 outstate )) == -1 )
+      {                               // Encoding error on output:
+         *outptr = '\0';              // Terminate and return error.
+         return outresult;
+      }
+      else
+         outptr += outresult;
+      }
+   } while ( inresult );              // Drop out after handling '\0'.
+   return outptr - s1;
+}
+
+#include <locale.h>
+#include <stdio.h>
+
+int main()
+{
+   if( setlocale(LC_ALL, "en_US.utf-8") == NULL)
+      fputs("Unable to set the locale.\n", stderr);
+   printf( "\nThe current locale is '%%s'.\n", setlocale( LC_CTYPE, NULL ) );
+
+   char strin[] = "Grüße", strout[64];
+   size_t nByte = 0;
+
+   nByte = mbstoupper( strout, strin, 64 );
+
+   if( (int)nByte < 0)
+   {   fputs("Error ...", stderr);  return -1;  }
+
+   puts( strout);
+
+   return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_mbsrtowcs_ex">
+			<text>
+				<![CDATA[// mbsrtowcs_ex.c : mbsrtowcs() example
+// -------------------------------------------------------------
+
+#include <wchar.h>   // size_t mbsrtowcs( wchar_t * restrict dest, 
+                     //                   const char ** restrict src,
+                     //                   size_t n,
+                     //                   mbstate_t * restrict state );
+#include <string.h>
+#include <locale.h>
+#include <stdio.h>
+
+int main()
+{
+   size_t result;
+
+   char mbstring[ ] = "This is originally a multibyte string.\n";
+   const char *mbsptr = mbstring;
+
+   wchar_t widestring[256] = { L'\0' };
+
+   mbstate_t state;
+   memset( &state, '\0', sizeof state );
+
+   printf( "The current locale is %%s.\n", setlocale( LC_CTYPE, "" ));
+
+   result = mbsrtowcs( widestring, &mbsptr, 256, &state );
+   if ( result == (size_t)-1 )
+   {
+      fputs( "Encoding error in multibyte string", stderr );
+      return -1;
+   }
+   else
+   {
+      printf( "Converted %%u multibyte characters. The result:\n", result );
+      printf( "%%ls", widestring );
+   }
+   return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_mbsrtowcs_s_ex">
+			<text>
+				<![CDATA[// mbsrtowcs_s_ex.c : mbsrtowcs_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <wchar.h>   // errno_t mbsrtowcs_s(size_t * restrict retval,
+                     //                     wchar_t * restrict dst,
+                     //                     size_t dstmax,
+                     //                     const char ** restrict src,
+                     //                     size_t n,
+                     //                     mbstate_t * restrict state );
+#include <stdio.h>
+
+int main()
+{
+    const char *mbptr = "Any multibyte string";
+    wchar_t wcstr[10];            // A buffer for wide characters
+    size_t len;                   // and its capacity.
+    mbstate_t state = {0};
+
+    if( mbsrtowcs_s( &len, wcstr, 10, &mbptr, 9, &state) != 0)
+        printf("The array contains an invalid multibyte character.\n");
+    else
+    {
+       printf("Length: %%zu; text: %%ls\n", len, wcstr);
+       printf("The remaining characters: %%s\n", mbptr);
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_mbtowc_ex">
+			<text>
+				<![CDATA[// mbtowc_ex.c : mbtowc() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>   // int mbtowc( wchar_t * restrict wc,
+                      //             const char * restrict s,
+                      //             size_t maxsize );
+#include <locale.h>
+#include <stdio.h>
+
+int main()
+{
+    int i = 0, n = 0;
+    wchar_t wc;
+    char mbstring[256] = "This is originally a multibyte string.\n";
+
+    printf( "The current locale is %%s.\n", setlocale(LC_CTYPE, "" ));
+    while ( (n = mbtowc( &wc, &mbstring[i], MB_CUR_MAX )) != 0 )
+    {
+        if ( n == -1 )
+        {
+           fputs( "Encoding error in multibyte string", stderr );
+           break;
+        }
+        printf( "%%lc", (wint_t)wc );
+        i += n;
+   }
+   return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_mktime_ex">
+			<text>
+				<![CDATA[// mktime_ex.c : mkctime() example
+// -------------------------------------------------------------
+
+#include <time.h>    // time_t mktime( struct tm *timeptr );
+#include <stdio.h>
+
+int main()
+{
+    time_t seconds;
+    struct tm sometime;
+
+    sometime.tm_sec   = 10;
+    sometime.tm_min   = 80;
+    sometime.tm_hour  = 40;
+    sometime.tm_mday  = 23;
+    sometime.tm_mon   = 1;
+    sometime.tm_year  = 105;
+    sometime.tm_wday  = 11;
+    sometime.tm_yday  = 111;
+    sometime.tm_isdst = -1;
+
+    seconds = mktime( &sometime );
+
+    if ( seconds == -1 )
+    {
+        printf( "mktime() couldn't make sense of its input.\n" );
+        return -1;
+    }
+
+    printf( "The return value, %%ld, represents %%s",
+            (long)seconds, ctime(&seconds) );
+
+    printf( "The structure has been adjusted as follows:\n"
+            "tm_sec   == %%d\n"
+            "tm_min   == %%d\n"
+            "tm_hour  == %%d\n"
+            "tm_mday  == %%d\n"
+            "tm_mon   == %%d\n"
+            "tm_year  == %%d\n"
+            "tm_wday  == %%d\n"
+            "tm_yday  == %%d\n"
+            "tm_isdst == %%d\n",
+
+            sometime.tm_sec,
+            sometime.tm_min,
+            sometime.tm_hour,
+            sometime.tm_mday,
+            sometime.tm_mon,
+            sometime.tm_year,
+            sometime.tm_wday,
+            sometime.tm_yday,
+            sometime.tm_isdst );
+
+    printf( "The structure now represents %%s", asctime( &sometime ));
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_mtx_timedlock_ex">
+			<text>
+				<![CDATA[// mtx_timedlock_ex.c : mtx_timedlock() example
+// -------------------------------------------------------------
+
+#include <threads.h>   // int mtx_timedlock( mtx_t *restrict mtx,
+                       //                    const struct timespec *restrict ts);
+#include <stdio.h>
+
+mtx_t mtx;
+int func(void * thrd);                   // Thread function.
+
+int main()
+{
+    thrd_t th;
+    if( mtx_init(&mtx, mtx_timed) != thrd_success)
+    { fputs("Initialization error.\n", stderr); return 1; }
+
+    mtx_lock(&mtx);                      // Lock the mutex.
+    if( thrd_create(&th, func, "Thread A") != thrd_success)
+    { fputs("Thread error.\n", stderr); return 2; }
+
+    thrd_join(th, NULL);
+    mtx_destroy( &mtx);
+    return 0;
+}
+
+int func(void * thrd)
+{
+    struct timespec ts;
+    timespec_get( &ts, TIME_UTC);        // The current time;
+    ts.tv_sec += 3;                      // 3 seconds from now.
+
+    printf("%%s waiting ...\n", (char*)thrd);
+    int res = mtx_timedlock(&mtx, &ts);
+    switch(res)
+    {
+        case thrd_success:
+           puts("Obtained mutex\n... releasing ...");
+           mtx_unlock(&mtx);   break;
+        case thrd_timedout:
+           puts("Timed out.");   break;
+        default:
+           puts("mtx_timedlock: error.");
+    };
+    return res;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_mtx_trylock_ex">
+			<text>
+				<![CDATA[// mtx_trylock_ex.c : mtx_trylock() example
+// -------------------------------------------------------------
+
+#include <threads.h>   // int mtx_trylock( mtx_t *mtx);
+#include <stdio.h>
+
+#define NUM_THREADS 3
+mtx_t mtx;
+
+struct timespec duration = { .tv_nsec = 1 };   // One nanosecond.
+int func(void * thrd_num)                      // Thread function.
+{
+    int num = *(int*)thrd_num;
+    int res, count = 1;
+
+    while( (res = mtx_trylock(&mtx)) == thrd_busy)
+    { ++count;  thrd_sleep( &duration, NULL); }
+
+    if( res == thrd_success)
+    {
+       printf("Thread %%d succeeded after %%d attempts.\n", num, count);
+       thrd_sleep( &duration, NULL);
+       mtx_unlock(&mtx);
+       return 0;
+    }
+    else return -1;
+}
+int main(void)
+{
+    struct { thrd_t th; int id; } th_arr[NUM_THREADS];
+
+    if( mtx_init(&mtx, mtx_plain) != thrd_success)
+       return 1;
+
+    // Create threads:
+    for( int i = 0; i < NUM_THREADS; ++i)
+    {
+       th_arr[i].id = i;
+       if( thrd_create( &th_arr[i].th, func, &th_arr[i].id) 
+           != thrd_success)
+          return -2;
+    }
+    // Wait for threads to finish:
+    for( int i = 0; i < NUM_THREADS; ++i)
+     thrd_join( th_arr[i].th, NULL);
+
+    mtx_destroy( &mtx);
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_nearbyint_ex">
+			<text>
+				<![CDATA[// nearbyint_ex.c : nearbyint() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double nearbyint( double x );
+                     // float nearbyintf( float x );
+                     // long double nearbyintl( long double x );
+#include <fenv.h>
+#include <stdio.h>
+
+int main()
+{
+    if ( fesetround( FE_TOWARDZERO) == 0)
+       printf("The current rounding mode is \"round toward 0.\"\n");
+    else
+       printf("The rounding mode is unchanged.\n");
+
+    printf( "nearbyint(1.9) = %%4.1f    nearbyint(-1.9) = %%4.1f\n",
+            nearbyint(1.9), nearbyint(-1.9) );
+
+    printf( "round(1.9) = %%4.1f        round(-1.9) = %%4.1f\n",
+            round(1.9), round(-1.9) );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_perror_ex">
+			<text>
+				<![CDATA[// perror_ex.c : perror() example
+// -------------------------------------------------------------
+
+#include <stdio.h>      // void perror( const char *string );
+#include <errno.h>
+
+#define MSGLEN_MAX 256
+
+int main( int argc, char *argv[] )
+{
+    FILE *fp;
+    char msgbuf[MSGLEN_MAX] = "";
+
+    if (( fp = fopen( "nonexistentfile", "r" )) == NULL )
+    {
+       snprintf( msgbuf, MSGLEN_MAX, "%%s, function %%s, file %%s, line %%d",
+                 argv[0], __func__, __FILE__, __LINE__ );
+       perror( msgbuf );
+       return errno;
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_printf_ex">
+			<text>
+				<![CDATA[// printf_ex.c : printf() example
+// -------------------------------------------------------------
+
+#include <stdio.h>      // int printf( const char * restrict format, ... );
+#include <math.h>
+#include <assert.h>
+
+void print_line( double x);
+
+int main()
+{
+    double pi = 3.1415926;
+    double bignumber = 8 * 8 * 8 * pi * pi * pi;
+    printf("512 times pi cubed equals %%.2e, or %%.2a.\n",
+                                      bignumber, bignumber);
+
+    print_line( 11.22);
+    return 0;
+}
+
+// The print_line function illustrates the use of the %%n conversion specification
+// to count the characters in the output string:
+void print_line( double x)
+{
+    int n1, n2;
+    printf("x = %%5.2f exp(x) = %%n%%10.5f%%n\n", x, &n1, exp(x), &n2);
+    assert( n2-n1 <= 10);           // Did printf() stretch the field width?
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_putchar_ex">
+			<text>
+				<![CDATA[// putchar_ex.c : putchar() example
+// -------------------------------------------------------------
+
+// The following example reads the beginning of a file repetitively,
+// and reports its progress on stdout.
+
+#include <stdio.h>      // int putchar( int c );
+
+int main()
+{
+    long count; const long CYCLES = 5000;
+    char readback[1024];
+
+    FILE *fp = fopen( "infile.txt", "r" );
+    if( fp == NULL)
+    { fprintf( stderr, "Couldn't open input file.\n" ); return -1; }
+
+    for (count = 0; count <= CYCLES; ++count)
+    {
+      /* Start output with '\r' to re-use same screen line. */
+       printf( "\rPerformed %%li file reads. ", count );
+
+       rewind( fp );
+       fgets( readback, 1024, fp );
+
+      /* Scroll a new screen line every hundred cycles. */
+       if (count %% 100 != 0) continue;
+       putchar( '\n' );
+    }
+    puts( "Done." );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_qsort_ex">
+			<text>
+				<![CDATA[// qsort_ex.c : qsort() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>
+         // void qsort( void *array, size_t n, size_t size,
+         //             int (*compare)( const void *, const void *) );
+
+#include <stdio.h>
+
+int strptrcmp( const void *sp1, const void *sp2 );
+
+int main()
+{
+    char *words[] = { "Then", "he", "shouted", "What", "I",
+                      "didn't", "hear", "what", "you", "said" };
+
+    int n = sizeof(words) / sizeof(char *);
+
+    qsort( words, n, sizeof(char *), strptrcmp );
+
+    for ( int j = 0 ; j < n ; j++ )
+        puts( words[j] );
+}
+
+#include <string.h>
+
+int strptrcmp( const void *sp1, const void *sp2 )
+// Compare two strings by reference.
+{
+    // qsort() passes a pointer to the pointer:
+    // dereference it to pass a char * to strcmp.
+    const char * s1 = *(char **)sp1;
+    const char * s2 = *(char **)sp2;
+    return strcmp( s1, s2 );
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_rand_ex">
+			<text>
+				<![CDATA[// rand_ex.c : rand() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>       // int rand( void );
+#include <time.h>
+#include <ctype.h>
+#include <stdio.h>
+
+int main()
+{
+    printf( "Think of a number between one and twenty.\n"
+            "Press Enter when you're ready." );
+    getchar();
+
+    srand( (unsigned)time( NULL ) );
+    for ( int i = 0; i < 3; i++ )     // We get three guesses.
+    {
+        printf( "Is it %%u? (y or n) ", 1 + rand() %% 20 );
+        if ( tolower( getchar() ) == 'y' )
+        {
+            printf( "Ha! I knew it!\n" );
+            exit( 0 );
+        }
+        getchar();                     // Discard newline character.
+    }
+    printf( "I give up.\n" );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="ex_realloc_ex">
+			<text>
+				<![CDATA[// realloc_ex.c : realloc() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>       // void *realloc( void *ptr, size_t n );
+#include <stdio.h>
+
+int main()
+{
+    typedef struct { int len;
+                     float array[];
+                   } DynArray_t;
+
+    DynArray_t *daPtr = malloc( sizeof(DynArray_t) + 10*sizeof(float) );
+    if ( daPtr == NULL ) return -1;
+
+    daPtr->len = 10;
+
+    for ( int i = 0; i < daPtr->len; ++i )
+        daPtr->array[i] = 1.0F/(i+1);
+
+    /* daPtr->array[10] = 0.1F               // Invalid array index! */
+
+    DynArray_t *daResizePtr = realloc( daPtr,
+                                       sizeof(DynArray_t) + 11*sizeof(float));
+    if ( daResizePtr != NULL )
+    {
+       daPtr = daResizePtr ;
+       daPtr->len = 11;
+       daPtr->array[10] = 0.1F / 12;         // OK now.
+    }
+    else
+    {
+       /* We'll just have to get along with the array of 10 floats.
+       ...   */
+       return -1;
+    }
+      
+    for ( int i = 0; i < daPtr->len; ++i )
+        printf( "%%2d : %%8f\n", i, daPtr->array[i] );
+    
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_remainder_ex">
+			<text>
+				<![CDATA[// remainder_ex.c : remainder() example
+// -------------------------------------------------------------
+
+#include <math.h>   // double remainder( double x, double y );
+                    // float remainderf( float x, float y );
+                    // long double remainderl( long double x, long double y );
+#include <stdio.h>
+
+int main()
+{
+    double apples = 0.0, people = 0.0, share = 0.0, left = 0.0;
+
+    printf( "\nHow many people? ");
+    scanf( "%%lf", &people );
+
+    printf( "\nHow many apples? ");
+    scanf( "%%lf", &apples );
+
+    left = remainder( apples, people );     // left may be negative!
+    share = ( apples - left ) / people;
+
+    printf( "If there are %%.1lf of us and %%.1lf apples, "
+            "each of us gets %%.1lf of %%s, with %%.1lf left over.\n",
+             people, apples, share, ( share < 1 ) ? "one" : "them", left );
+    
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_remove_ex">
+			<text>
+				<![CDATA[// remove_ex.c : remove() example
+// -------------------------------------------------------------
+
+#include <stdio.h>     // int remove( const char *filename );
+#include <errno.h>
+
+int main()
+{
+    char fname_tmp[L_tmpnam] = "";
+    FILE *fp;
+    int result;
+
+    tmpnam( fname_tmp );
+    fp = fopen( fname_tmp, "w+" );
+    if( fp == NULL)
+    {  fprintf(stderr, "Couldn't open file \"%%s\".\n", fname_tmp);
+       return -1;
+    }
+
+    /* ... write something in the file, edit it ... */
+    fputs( "hello ...\n", fp);
+
+    fclose( fp );
+
+    result = rename( fname_tmp, "finished.txt" );
+    if ( result )     // Delete previous "finished.txt" and try again.
+    {
+        remove( "finished.txt" );
+        result = rename( fname_tmp, "finished.txt" );
+        if ( result )                   // Give up and log the error.
+           fprintf( stderr, "Error %%d on trying to rename output file\n",
+                                                                   errno );
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_remquo_ex">
+			<text>
+				<![CDATA[// remquo_ex.c : remquo() example
+// -------------------------------------------------------------
+
+#include <math.h>   // double remquo( double x, double y, int *quo );
+                    // float remquof( float x, float y, int *quo );
+                    // long double remquol( long double x, long double y,
+                    //                      int *quo );
+#include <stdio.h>
+
+int main()
+{
+    double apples = 0.0, people = 0.0, left = 0.0, share = 0.0;
+    int quotient = 0;
+
+    printf( "\nHow many people? ");
+    scanf( "%%lf", &people );
+
+    printf( "\nHow many apples? ");
+    scanf( "%%lf", &apples );
+
+    share = nearbyint( apples / people );
+    left = remquo( apples, people, &quotient );    
+
+    printf( "If there are %%.2lf of us and %%.2lf apples, "
+            "each of us gets %%.2lf apple%%s, with %%.2lf left over.\n",
+            people, apples, share, ( share == 1 ) ? "" : "s", left );
+
+    printf( "remquo() stored %%d as the quotient "
+            " of the division (modulo 8).\n", quotient );
+
+    printf( "Test: share modulo 8 - quotient = %%d\n",
+            (int) share %% 8 - quotient );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_rewind_ex">
+			<text>
+				<![CDATA[// rewind_ex.c : rewind() example
+// This example prints the contents of a file twice, converting 
+// each character to lowercase the first time through, and to 
+// uppercase the second time:
+// -------------------------------------------------------------
+
+#include <stdio.h>   // void rewind( FILE *fp );
+#include <stdlib.h>
+#include <ctype.h>
+
+int main( int argc, char *argv[])
+{
+    FILE *fp; int c;
+
+    if ( argc != 2 )
+       printf( "Usage: program input-file\n"), exit(1);
+
+    if (( fp = fopen( argv[1], "r" )) == NULL )
+        fprintf( stderr, "Failed to open file %%s\n", argv[1] );
+    else
+    {
+        puts( "Contents of the file in lowercase:" );
+        while (( c = fgetc( fp )) != EOF )
+            putchar( tolower( c ));
+
+        rewind( fp );
+
+        puts( "Same again in uppercase:" );
+        while (( c = fgetc( fp )) != EOF )
+            putchar( toupper( c ));
+
+       fclose( fp );
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_rint_ex">
+			<text>
+				<![CDATA[// rint_ex.c : rint() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double rint( double x );
+                     // float rintf( float x );
+                     // long double rintl( long double x );
+#include <fenv.h>
+#include <stdio.h>
+
+struct round_modes { int id; char *str; } arrModes[ ] =
+{
+ #ifdef FE_TONEAREST
+   { FE_TONEAREST,
+     "FE_TONEAREST: round to nearest representable value" },
+ #endif
+ #ifdef FE_DOWNWARD
+    { FE_DOWNWARD, "FE_DOWNWARD: round toward -Inf" },
+ #endif
+ #ifdef FE_UPWARD
+   { FE_UPWARD, "FE_UPWARD: round toward +Inf" },
+ #endif
+ #ifdef FE_TOWARDZERO
+   { FE_TOWARDZERO, "FE_TOWARDZERO: round toward 0" }
+ #endif
+};
+
+int main()
+{
+    int nModes = sizeof( arrModes) / sizeof(*arrModes);
+
+    #pragma STDC FENV_ACCESS ON
+
+    for ( int i = 0; i < nModes; ++i)
+    {
+        if ( fesetround( arrModes[i].id) != 0)
+           break;
+        printf( "Rounding mode: %%s\n", arrModes[i].str );
+
+        printf( "rint(1.4)  = %%4.1f    rint(1.5)  = %%4.1f\n",
+                rint(1.4), rint(1.5) );
+        printf( "rint(-1.4) = %%4.1f    rint(-1.5) = %%4.1f\n",
+                rint(-1.4), rint(-1.5) );
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
 	</language.aliases>
 </options>
