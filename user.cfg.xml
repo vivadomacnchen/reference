@@ -5314,5 +5314,5300 @@ int main()
 ]]>
 			</text>
 		</p>
+		<p n="xc_cacukate">
+			<text>
+				<![CDATA[// calculate.c: Perform some calculations.
+// Functions: calculate1(), calculate2().
+// -------------------------------------------------------------
+
+#include <math.h>
+#include <setjmp.h>
+#include <errno.h>
+
+extern jmp_buf jmp_dest;             // Destination for longjmp()
+
+double calculate1( double x)
+{
+    if ( x < 0)
+        longjmp( jmp_dest, EDOM);    // Domain error
+    else
+        return sqrt(x);
+}
+
+double calculate2( double x)
+{
+    double y = exp(x);
+    if ( y == HUGE_VAL)
+        longjmp( jmp_dest, ERANGE);  // Range error
+    else
+        return y;
+}
+]]>
+			</text>
+		</p>
+		<p n="sc_set_constraint_handler_s_ex">
+			<text>
+				<![CDATA[// set_constraint_handler_s_ex.c : set_constraint_handler_s() example
+// -------------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <stdlib.h>  // constraint_handler_t set_constraint_handler_s(
+                     //                      constraint_handler_t handler);
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
+
+// Use a custom handler:
+void myConstraintHandler(const char* msg, void * ptr, errno_t error)
+{
+    printf("A runtime constraint violation "
+           "occurred: \n%%s; ", msg);
+    printf("error code: %%d\n", error);  fflush(stdout);
+    exit(error);
+}
+
+void func( const char *str)
+{
+    constraint_handler_t prevHandler =
+               set_constraint_handler_s(myConstraintHandler);
+    printf_s("The argument: %%s\n", str);        // Error if str
+                                                // is a null pointer.
+    int len = strlen(str);
+    char str2[len];
+    strcpy_s( str2, len, str);    // Error: str2 is one byte too short.
+    // . . .
+    set_constraint_handler_s(prevHandler);
+}
+
+int main()
+{
+    func("Hi");
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_set_constraint_handler_s_ex">
+			<text>
+				<![CDATA[// set_constraint_handler_s_ex.c : set_constraint_handler_s() example
+// -------------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <stdlib.h>  // constraint_handler_t set_constraint_handler_s(
+                     //                      constraint_handler_t handler);
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
+
+// Use a custom handler:
+void myConstraintHandler(const char* msg, void * ptr, errno_t error)
+{
+    printf("A runtime constraint violation "
+           "occurred: \n%%s; ", msg);
+    printf("error code: %%d\n", error);  fflush(stdout);
+    exit(error);
+}
+
+void func( const char *str)
+{
+    constraint_handler_t prevHandler =
+               set_constraint_handler_s(myConstraintHandler);
+    printf_s("The argument: %%s\n", str);        // Error if str
+                                                // is a null pointer.
+    int len = strlen(str);
+    char str2[len];
+    strcpy_s( str2, len, str);    // Error: str2 is one byte too short.
+    // . . .
+    set_constraint_handler_s(prevHandler);
+}
+
+int main()
+{
+    func("Hi");
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_setjmp_ex">
+			<text>
+				<![CDATA[// setjmp_ex.c : setjmp() - longjmp() example
+// -------------------------------------------------------------
+
+#include <setjmp.h>       // int setjmp( jmp_buf env );
+                          // void longjmp( jmp_buf environment,
+                          //               int returnval );
+#include <stdlib.h> 
+#include <stdio.h>
+#include <errno.h>
+
+double calculate1( double x);     // Functions defined
+double calculate2( double x);     // in calculate.c.
+
+jmp_buf jmp_dest;                 // Destination for longjmp()
+
+int main()
+{
+    double x = 0, y1, y2;
+    int n = 0;
+
+    puts("--- Demonstrating non-local jumps ---\n");
+
+    switch( setjmp( jmp_dest)) // Jump to here for error handling
+    {
+    case 0:                    // The original setjmp() call
+        break;
+    case EDOM:                 // Arrived via longjmp() call with EDOM
+        puts("Domain error. "
+             "Negative numbers are not permitted.");
+        break;
+    case ERANGE:               // Arrived via longjmp() call with ERANGE
+        puts("Range error. "
+             "The number you entered is too big.");
+        break;
+    default:                   // We should never arrive here.
+        puts("Unknown error.");
+        exit( EXIT_FAILURE );
+    }
+
+    printf("Enter a number: ");
+    do
+    {
+        if ( (n = scanf("%%lf", &x)) < 0)  // Read in a number.
+           exit( EXIT_FAILURE );          // Read end of file.
+        while ( getchar() != '\n')        // Clear the input buffer.
+          ;
+        if ( n == 0 )
+           printf("Invalid entry. Try again: ");
+    }while ( n == 0 );
+
+    y1 = calculate1(x);
+    y2 = calculate2(x);
+
+    printf("\nResult of Calculation 1: %%G\n", y1);
+    printf(  "Result of Calculation 2: %%G\n", y2);
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_setlocale_ex">
+			<text>
+				<![CDATA[// setlocale_ex.c : setlocale() example
+// -------------------------------------------------------------
+
+#include <locale.h>    // char *setlocale( int category, 
+                       //                  const char *locale_name );
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX_STRING 80
+
+int main()
+{
+    char name[MAX_STRING];
+    char locale[MAX_STRING];
+    char *newlocale;
+    int i;
+
+    printf( "Who are you? " );
+    fgets( name, sizeof(name), stdin );
+
+    printf( "What is your locale? " );
+    fgets( locale, sizeof(locale), stdin );
+
+    name[ strlen(name) - 1 ] = '\0';     // Chomp off the newlines.
+    locale[ strlen(locale) - 1 ] = '\0';
+
+    newlocale = setlocale( LC_CTYPE, locale );
+    if ( newlocale == NULL )
+       printf( "Sorry, couldn't change the locale to %%s.\n"
+               "The current locale is %%s. ",
+               locale, setlocale( LC_CTYPE, NULL ));
+    else
+        printf( "The new locale is %%s. ", newlocale );
+
+    name[0] = toupper( name[0] );   // Force the first letter to uppercase.
+
+    i = 1;
+    if ( isupper( name[i] ) )       // Is the second letter also uppercase?
+    {
+       while ( name[i] != '\0' )    // If so, force all the rest to lowercase.
+       {
+          name[i] = tolower( name[i] );
+          ++i;
+       }
+    }
+    printf( "Hello there, %%s!\n", name );
+
+   return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_signal_ex">
+			<text>
+				<![CDATA[// signal_ex.c : signal() example
+// -----------------------------------------------------------------------
+
+#include <signal.h>   // void ( *signal( int sig, void (*handler)(int) ) )(int);
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <stdint.h>   // Defines SIG_ATOMIC_MAX
+
+void sigint_handler(int sig);
+volatile sig_atomic_t i;   // A counter accessed by main and the
+                           // handler.
+
+int main()
+{
+    if ( signal( SIGINT, sigint_handler ) == SIG_ERR )
+    {
+        perror("Failed to install SIGINT handler");
+        exit(3);
+    }
+
+    while (1)
+    {
+        puts( "Press Ctrl+C to interrupt me.");
+        for ( i = 0 ; i < SIG_ATOMIC_MAX ; i++ )
+            if ( i %% 100000 == 0)
+            {
+                printf( "\r%%d ", i / 100000 );
+                fflush( stdout );
+            }
+        raise( SIGINT );   // Simulate a Ctrl+C in case the user didn't
+                           // type it.
+    }
+    return 0;
+}
+
+void sigint_handler( int sig )
+{
+    int c = 0;
+
+    if ( sig != SIGINT ) exit( 1 );
+
+    signal( SIGINT, SIG_IGN );         // Ignore a second Ctrl+C
+
+    puts( "\nThis is the function sigint_handler()."
+          "\nDo you want to exit the program now? [y/n]");
+    while (( c = tolower( getchar( ) )) != 'y' && c != 'n' && c != EOF )
+      ;
+
+    if ( c != 'n' )
+       exit(0);
+    else
+       i = 0;                          // Reset timer
+
+    signal( SIGINT, sigint_handler );  // Reinstall this handler.
+
+    /* No return value; just fall off the end of the function. */
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_signb_ex">
+			<text>
+				<![CDATA[// signbit_ex.c : signbit() example
+// -------------------------------------------------------------
+
+#include <math.h>   // int signbit(x );
+#include <stdio.h>
+
+int main()
+{
+    double x[ ] = { -0.0, 187.234, sqrt( -1.0 ), 1.0 / -0.0 };
+
+    for ( int i = 0 ; i < ( sizeof(x) / sizeof(double)) ; i++ )
+        printf( "x[%%d] equals %%lF, and is%%s negative.\n",
+                 i, x[i], signbit( x[i] ) ? "" : " not" );    
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_sin_ex">
+			<text>
+				<![CDATA[// sin_ex.c : sin() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double sin( double x );
+                     // double sinf( float x );
+                     // long double sinl( long double x );
+#include <stdio.h>
+#include <stdlib.h>
+
+#define DEG_PER_RAD ( 180.0 / PI )
+
+int main()
+{
+    const double PI = 4.0 * atan( 1.0 );
+    double a[4];
+
+    printf( "\nEnter an acute angle measure, in degrees: " );
+
+    if ( scanf( "%%lf", a ) < 1 || ( a[0] <= 0 || a[0] >= 90 ) )
+        printf( "\nThat's not an acute angle.\n" ), exit( 1 );
+    else
+    {
+        a[1] = a[0] + 90 ;
+        a[2] = 180 - a[0] ;
+        a[3] = 225 + a[0] ;
+
+        for ( int i = 0 ; i < 4 ; i ++ )
+            printf( "The sine of %%6.2lf degrees is %%6.4lf.\n",
+                    a[i], sin( a[i] / DEG_PER_RAD ) );
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_sinh_ex">
+			<text>
+				<![CDATA[// sinh_ex.c : sinh() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double sinh( double x );
+                     // double sinhf( float x );
+                     // long double sinhl( long double x );
+#include <stdio.h>
+
+// A chain hanging from two points forms a curve called a catenary.
+// A catenary is a segment of the graph of the function
+// cosh(k*x)/k, for some constant k.
+// The length along the catenary over a certain span, bounded by the
+// two vertical lines at x=a and x=b, is equal to
+// sinh(k*b)/k - sinh(k*a)/k.
+
+int main()
+{
+    double x, k;
+
+    puts("Catenary f(x) = cosh(k*x)/k\n"
+         "Length along the catenary from a to b: "
+         "sinh(k*b)/k - sinh(k*a)/k)\n");
+
+    puts("            f(-1.0)  f(0.0)   f(1.0)   f(2.0)   Length(-1.0 to 2.0)\n"
+         "-------------------------------------------------------------------");
+    for ( k = 0.5; k < 5; k *= 2)
+    {
+        printf("k = %%.1f: ", k);
+        for ( x = -1.0; x < 2.1; x += 1.0)
+           printf("%%8.2f ", cosh(k*x)/k );
+
+        printf(" %%12.2f\n", (sinh(2*k) - sinh(-1*k))/ k);
+    }
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_snprintf_ex">
+			<text>
+				<![CDATA[// snprintf_ex.c : snprintf() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   // int snprintf( char * restrict dest, size_t n,
+                     //               const char * restrict format, ... );
+
+int main()
+{
+    char buffer[80];
+    double x = 1234.5, y = 678.9, z = -753.1, a = x * y + z;
+    int output_len = 0;
+
+    output_len = snprintf( buffer, 80, "For the input values %%lf, %%lf,"
+                           " and %%lf,\nthe result was %%lf.\n",
+                           x, y, z, a );
+    puts( buffer );
+    if ( output_len >= 80 )
+       fprintf( stderr, "Output string truncated! Lost %%d characters.\n",
+                output_len - 79 );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_sprintf_ex">
+			<text>
+				<![CDATA[// sprintf_ex.c : sprintf() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   // int sprintf( char * restrict dest, 
+                     //              const char * restrict format, ... );
+
+int main()
+{
+    char buffer[80];
+    double x = 1234.5, y = 678.9, z = -753.1, a = x * y + z;
+    int output_len = 0;
+
+    output_len = sprintf( buffer, "For the input values %%lf, %%lf, and %%lf,"
+                          "\nthe result was %%lf.\n",
+                          x, y, z, a );
+    puts( buffer );
+    if ( output_len >= 80 )
+       fprintf( stderr, "Output string overflowed by %%d characters.\n"
+                "The variables x, y, z and a may have been corrupted:\n"
+                "x now contains %%lf, y %%lf, z %%lf, and a %%lf.\n",
+                 output_len - 79, x, y, z, a );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_sqrt_ex">
+			<text>
+				<![CDATA[// sqrt_ex.c : sqrt() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double sqrt( double x );
+                     // double sqrtf( float x );
+                     // long double sqrtl( long double x );
+#include <stdio.h>
+#include <errno.h>
+
+int main()
+{
+    double x[ ] = { 0.5, 0.0, -0.0, -0.5 };
+
+    for ( int i = 0; i < ( sizeof(x) / sizeof(double) ); i++)
+    {
+       printf("The square root of %%.2F equals %%.4F\n", x[i], sqrt( x[i] ) );
+       if ( errno )
+          perror( __FILE__ );
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strcat_ex">
+			<text>
+				<![CDATA[// strcat_ex.c : strcat(), strcat_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1   // for strcat_s()
+
+#include <string.h>  // char *strcat( char * restrict s1, 
+                     //               const char * restrict s2 );
+                     // errno_t strcat_s( char * restrict s1, rsize_t s1max,
+                     //                   const char * restrict s2 );
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    char  lastname[32];
+    char  firstname[32];
+    _Bool ismale;
+} Name;
+
+int main()
+{
+    char displayname[80];
+    Name *newName = calloc( 1, sizeof(Name) );
+
+    /* ... check for calloc failure; read in the name parts ... */
+    if( newName == NULL)
+    {  fprintf( stderr, "Out of memory\n" ); return -1; }
+    *newName = (Name) { "Lincoln", "Abraham", 1 };
+
+    strcpy( displayname, ( newName->ismale ? "Mr. " : "Ms. " ) );
+
+    strcat( displayname, newName->firstname );
+    strcat( displayname, " " );
+    strcat( displayname, newName->lastname );
+
+    // Better to use strcat_s() in case the fields in the Name
+    // structure are ever enlarged:
+    // strcat_s( displayname, sizeof(displayname), newName->firstname );
+    // strcat_s( displayname, sizeof(displayname), " " );
+    // strcat_s( displayname, sizeof(displayname), newName->lastname );
+
+    puts( displayname );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strchr_ex">
+			<text>
+				<![CDATA[// strchr_ex.c : strchr() example
+// -------------------------------------------------------------
+
+#include <string.h>  // char *strchr( const char *s, int c );
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct { char street[32];
+                 char city[32];
+                 char stateprovince[32];
+                 char zip[16];
+               } Address;
+
+char printaddr[128] = "720 S. Michigan Ave.\nChicago, IL 60605\n";
+
+int main()
+{
+    int sublength;
+    Address *newAddr = calloc( 1, sizeof(Address) );
+
+    if ( newAddr != NULL )
+    {
+        sublength = strchr( printaddr, '\n' ) - printaddr;
+        strncpy( newAddr->street, printaddr,
+                 ( sublength < 31 ? sublength : 31 ) );
+        /* ... */
+        puts(newAddr->street);
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strcmp_ex">
+			<text>
+				<![CDATA[// strcmp_ex.c : strcmp() example
+// -------------------------------------------------------------
+
+#include <string.h>  // int strcmp( const char *s1, const char *s2);
+#include <stdio.h>
+
+int main()
+{
+    int result = 0;
+    char word1[256], word2[256], *greaterlessequal;
+
+    while ( result < 2 )
+    {
+        puts( "Type two words, please." );
+        result = scanf( "%%s%%s", word1, word2 );
+    }
+    result = strcmp( word1, word2 );
+
+    if ( result < 0 )
+       greaterlessequal = "less than";
+    else if ( result > 0 )
+       greaterlessequal = "greater than";
+    else
+       greaterlessequal = "the same as";
+
+    printf( "The word \"%%s\" is %%s the word \"%%s\".\n",
+            word1, greaterlessequal, word2 );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strcoll_ex">
+			<text>
+				<![CDATA[// strcoll_ex.c : strcoll() example
+// -------------------------------------------------------------
+
+#include <string.h>  // int strcoll( const char *s1, const char *s2 );
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    char *samples[ ] = { "curso", "churro" };
+
+    if( setlocale( LC_COLLATE, "es_US.UTF-8" ) == NULL)
+       fputs("Unable to set the locale.\n", stderr);
+
+    int result = strcoll( samples[0], samples[1] );
+
+    if ( result == 0 )
+       printf( "The strings \"%%s\" and \"%%s\" are alphabetically "
+               "equivalent.\n", samples[0], samples[1] );
+    else if ( result < 0 )
+       printf( "The string \"%%s\" comes before \"%%s\" alphabetically.\n",
+               samples[0], samples[1] );
+    else if ( result > 0 )
+       printf( "The string \"%%s\" comes after \"%%s\" alphabetically.\n",
+               samples[0], samples[1] );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strcpy_ex">
+			<text>
+				<![CDATA[// strcpy_ex.c : strcpy(), strcpy_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1   // for strcpy_s()
+
+#include <string.h>  // char *strcpy( char * restrict dest,
+                     //               const char * restrict src );
+                     // errno_t strcpy_s( char * restrict dest, 
+                     //                   rsize_t destmax,
+                     //                   const char * restrict src );
+#include <stdio.h>
+
+int main()
+{
+    struct guest {
+       char name[64]; int age; _Bool male, smoking, discount; } this;
+    int result;
+
+    printf( "Last name: " );
+    result = scanf( "%%[^\n]", this.name );
+    if ( result < 1 )
+       strcpy( this.name, "[not available]" );
+   // or
+   // strcpy_s( this.name, sizeof(this.name), "[not available]" );
+
+    printf( "Name: %%s\n", this.name );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strcspn_ex">
+			<text>
+				<![CDATA[// strcspn_ex.c : strcspn() example
+// -------------------------------------------------------------
+
+#include <string.h>  // int strcspn( const char *s1, const char *s2 );
+#include <stdio.h>
+
+int main()
+{
+    char *path = "/usr/local/bin:/usr/bin:/bin:/usr/bin/X11:/usr/games";
+    int separator;
+    char *basename = "aprogram";
+    char fullname[1024] = "";
+
+    separator = strcspn( path, ":" );  // Obtain the index of the first
+                                       // colon.
+    strncpy( fullname, path, separator );
+    fullname[separator] = '\0';        // Terminate the copied string
+                                       // fragment.
+    strncat( fullname, "/", sizeof(fullname) - strlen(fullname) -1 );
+    strncat( fullname, basename, sizeof(fullname) - strlen(fullname) -1 );
+
+    puts( fullname );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strerror_ex">
+			<text>
+				<![CDATA[// strerror_ex.c : strerror() example
+// -------------------------------------------------------------
+
+#include <string.h>     // char *strerror( int errornumber );
+#include <errno.h>
+#include <stdio.h>
+
+int main( int argc, char *argv[])
+{
+    FILE *fp;
+    char msgbuf[1024] = { '\0' };
+
+    /* Open input file: */
+    if (( fp = fopen( "nonexistent", "r" )) == NULL)
+    {
+       int retval = errno;
+       snprintf( msgbuf, sizeof(msgbuf),
+                 "%%s: file %%s, function %%s, line %%d: error %%d,\n%%s.\n",
+                 argv[0], __FILE__, __func__, __LINE__, retval,
+                 strerror( retval ));
+       fputs( msgbuf, stderr );
+       return retval;
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strerror_s_ex">
+			<text>
+				<![CDATA[// strerror_s_ex.c : strerror_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <string.h>     // errno_t strerror_s(char *s, rsize_t maxsize,
+                        //                    errno_t errnum);
+#include <stdio.h>
+#include <errno.h>
+#include <math.h>
+
+int main()
+{
+    double x = -1.0, y = 0;
+  // ...
+    errno = 0;
+    y = sqrt(x);
+    if( errno == EDOM)
+    {
+        char msg[30] = "";
+        strerror_s( msg, sizeof(msg), errno);
+        fprintf( stderr, "sqrt: %%s\n", msg);
+    }
+  // ...
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strftime_ex">
+			<text>
+				<![CDATA[// strftime_ex.c : strftime() example
+// -------------------------------------------------------------
+
+#include <time.h>   // size_t strftime( char * restrict s, size_t n,
+                    //                  const char * restrict format,
+                    //                  const struct tm * restrict timeptr );
+#include <stdio.h>
+
+int main()
+{
+    time_t now;
+    struct tm *localnow;
+    char hdr_date[999] = "";
+
+    time( &now );
+    localnow = localtime( &now );
+
+    if ( strftime( hdr_date, 78, "Date: %%a, %%d %%b %%Y %%T %%z", localnow ) )
+        puts( hdr_date );
+    else
+        return -1;
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strlen_ex">
+			<text>
+				<![CDATA[// strlen_ex.c : strlen() example
+// -------------------------------------------------------------
+
+#include <string.h>  // size_t strlen( const char *s );
+#include <stdio.h>
+
+int main()
+{
+    char line[1024] =
+         "This string could easily be hundreds of characters long.";
+    char *readptr = line;
+    int columns = 80;
+
+    // While the text is longer than a row:
+    while ( strlen( readptr ) > columns )
+    {   // print a row with a backslash at the end:
+        printf( "%%.*s\\", columns-1, readptr);
+        readptr += columns -1;
+    }   
+    // Then print the rest with a newline at the end:
+    printf( "%%s\n", readptr );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strncat_ex">
+			<text>
+				<![CDATA[// strncat_ex.c : strncat(), strncat_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1    // For the secure functions.
+
+#include <string.h>  // char *strncat( char * restrict s1,
+                     //                const char * restrict s2, size_t n );
+                     // errno_t strncat_s( char * restrict s1, rsize_t s1max,
+                     //                    const char * restrict s2, rsize_t n);
+#include <stdlib.h>
+#include <stdio.h>
+
+int main()
+{
+    char str1[] = "hello ",       // 7 bytes
+         str2[10] = "hello ",     // 7 + 3 bytes
+         str3[10] = "hello ";     // 7 + 3 bytes
+
+ // strncat( str1, "Jimi", 1);    // Severe error: buffer overflow!
+ // strncat( str2, "Jimi", 3);    // OK: "hello Jim"
+ // strncat( str3, "Jim", 100);   // OK.
+
+ // Or, using strncat_s(), with the variables defined above:
+    int ret1, ret2, ret3;
+
+    set_constraint_handler_s(ignore_handler_s);
+    ret1 = strncat_s( str1, sizeof(str1), "Jimi", 1);   // ret1 != 0 and
+                                                        // str1[0] == '\0'
+    printf( "ret1: %%d    str1: %%s\n", ret1, str1 );
+
+    ret2 = strncat_s( str2, sizeof(str2), "Jimi", 3);   // OK: ret2 == 0
+    printf( "ret2: %%d    str2: %%s\n", ret2, str2 );
+
+    ret3 = strncat_s( str3, sizeof(str3), "Jim", 100);  // OK: ret3 == 0
+    printf( "ret3: %%d    str3: %%s\n", ret3, str3 );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strneln_s_ex">
+			<text>
+				<![CDATA[// strnlen_s_ex.c : strnlen_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1    // For the secure functions.
+#include <string.h>  // size_t strnlen_s(const char *s, size_t maxsize);
+#include <stdio.h>
+
+int main()
+{
+    char str[] = "hello";
+
+    size_t len = strnlen_s( str, 1000);  // len = 5
+
+    if( strnlen_s( str, 4) == 4)
+    { 
+        puts("str is more than 4 characters long."); 
+    }
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strpbrk_ex">
+			<text>
+				<![CDATA[// strpbrk_ex.c : strpbrk() example
+// -------------------------------------------------------------
+
+#include <string.h>    // char *strpbrk( const char *s1, 
+                       //                const char *s2 );
+#include <stdio.h>
+
+int main()
+{
+    char *story = "He shouted: \"What? I can't hear you!\"\n";
+    char separators[] = " \t\n.:?!\"";
+    char *start = story, *end = NULL;
+    char words[16][16];     // An array of char arrays to collect words in.
+    int i = 0;
+
+    while ( i < 16 && ( end = strpbrk( start, separators ) ) != NULL )
+    {
+      if ( end != start )   // If the separator wasn't the first character,
+      {                     // then save a word in an array.
+         strncpy( words[i], start, end - start );
+         words[i][end - start] = '\0';     // And terminate it.
+         i++;
+      }
+      start = end + 1;      // Next strpbrk call starts with
+    }                       // the character after this separator.
+
+    puts( story );
+
+    for ( int j = 0 ; j < i ; j++ )
+       puts( words[j] );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strrchr_ex">
+			<text>
+				<![CDATA[// strrchr_ex.c : strrchr() example
+// -------------------------------------------------------------
+
+#include <string.h>     // char *strrchr( const char *s, int c );
+#include <stdio.h>
+
+int main( int argc, char *argv[])
+{
+    char *mybasename = strrchr( argv[0], '/' );       // Find end of path.
+    if ( mybasename != NULL )
+        mybasename++;       // Point to the first character after the slash.
+    else
+        mybasename = argv[0];
+
+    printf( "This program was invoked as %%s.\n", mybasename );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strspn_ex">
+			<text>
+				<![CDATA[// strspn_ex.c : strspn() example
+// -------------------------------------------------------------
+
+#include <string.h>  // int strspn( const char *s1, const char *s2 );
+#include <stdio.h>
+
+int main()
+{
+    char wordin[256];
+    double val;
+
+    puts( "Enter a floating-point number, please:" );
+    scanf( "%%s", wordin );
+
+    int index = strspn( wordin, "+-0123456789eE." );
+    if ( index < strlen( wordin ) )
+       printf( "Sorry, but the character %%c is not permitted.\n",
+               wordin[index] );
+    else
+    {
+        sscanf( wordin, "%%lg", &val );
+        printf( "You entered the value %%g\n", val );
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strtod_ex">
+			<text>
+				<![CDATA[// strtod_ex.c : strtod() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>  // double strtod( const char * restrict s,
+                     //                char ** restrict endptr );
+#include <stdio.h>
+
+int main()
+{
+    char in[1024], *this = in, *next = in;
+    double val;
+
+    puts( "Enter some floating-point numbers, please:" );
+    scanf( "%%[^\n]", in );
+
+    puts( "Here are the values you entered:" );
+    while ( 1 )
+    {
+        val = strtod( this, &next );
+        if ( next == this )     // Means no conversion was possible.
+            break ;
+        printf( "\t%%g\n", val );
+        this = next;            // Try again with the rest of the input string.
+    }
+    puts( "Done." );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strtok_ex">
+			<text>
+				<![CDATA[// strtok_ex.c : strtok() example
+// -------------------------------------------------------------
+
+#include <string.h>  // char *strtok( char * restrict s1, 
+                     //               const char * restrict s2 );
+#include <stdio.h>
+
+int main()
+{
+    char *command, *arg1, *arg2, *comment;
+    char line[] = " mul eax,[ebp+4] ; Multiply by y\n";
+
+    command = strtok(line," \t");   // First word, between spaces or tabs.
+    arg1 = strtok( NULL, ",");      // From there to the comma is arg1.
+                                    // (Trim off any spaces later.)
+    arg2 = strtok( NULL, ";\n");    // From there to a semicolon or line end.
+    comment = strtok( NULL, "\n\r\v\f" );  // From there to end of line or
+                                           //page.
+    printf( "Command:      %%s\n"
+            "1st argument: %%s\n"
+            "2nd argument: %%s\n"
+            "Comment:      %%s\n\n",
+            command, arg1, arg2, comment );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strtok_s_ex">
+			<text>
+				<![CDATA[// strtok_s_ex.c : strtok_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <string.h>  // char *strtok_s( char * restrict s1, 
+                     //                 rsize_t * restrict s1max,
+                     //                 const char * restrict s2, 
+                     //                 char ** restrict ptr);
+#include <stdio.h>
+
+int main()
+{
+    char str[] = "Lennon, John: 10/9/1940";
+    char *ptr;
+    size_t size = sizeof(str);
+    char *firstname, *lastname, *birthday;
+
+    lastname = strtok_s( str, &size, ", ", &ptr);
+    if( lastname != NULL)
+       firstname = strtok_s(NULL, &size, ": ", &ptr);
+    if( firstname != NULL)
+       birthday = strtok_s(NULL, &size, "", &ptr);
+    if(birthday != NULL)
+       printf("%%s %%s was born on %%s.\n",
+              firstname, lastname, birthday);
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strtoul_ex">
+			<text>
+				<![CDATA[// strtoul_ex.c : strtoul() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>  // unsigned long strtoul( const char * restrict s,
+                     //                        char ** restrict endptr,
+                     //                        int base );
+#include <stdio.h>
+
+int main()
+{
+    char dotted[ ] = "172.16.2.10", *ptr = dotted, *nextdot = NULL;
+    unsigned long dest = 0;
+
+    // This for loop uses stroul() to convert an IPv4 address from a 
+    // dotted-decimal string to a 32-bit integer value:
+    for ( int i = 0; i < 4; i++)
+    {
+        dest <<= 8;
+        dest += strtoul( ptr, &nextdot, 10 );
+        ptr = nextdot + 1;
+    }
+    printf( "The IPv4 address %%s\n"
+            "represents the 32-bit integer value %%lu\n",
+             dotted, dest );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_strxfrm_ex">
+			<text>
+				<![CDATA[// strxfrm_ex.c : strxfrm() example
+// -------------------------------------------------------------
+
+#include <string.h>  // size_t strxfrm( char * restrict dest,
+                     //                 const char * restrict src,
+                     //                 size_t n );
+#include <locale.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+typedef struct stringpair { char * original;
+                            char * xformed; } Stringpair_t ;
+
+Stringpair_t stringpairs[8] =
+             { { "Chávez", NULL },        { "Carron", NULL },
+               { "Canoso", NULL },        { "Cañoso", NULL },
+               { "Carteño", NULL },       { "Cortillo", NULL },
+               { "Cortiluz S.A.", NULL }, { "Corriando", NULL } };
+
+char xformbuffer[1024];           // Space to catch each strxfrm() result.
+
+int stringpaircmp( const void * p1, const void *p2 );
+                                  // Defined externally.
+
+int main()
+{
+    setlocale( LC_COLLATE, "");    // Use the host system's locale setting.
+//    printf( "The locale is %%s.\n", setlocale( LC_COLLATE, NULL) );
+
+    for ( int i = 0; i < 8 ; i++ )
+    {
+        stringpairs[i].xformed
+        = malloc( strxfrm( xformbuffer, stringpairs[i].original, 1024 ) + 1 );
+        if ( stringpairs[i].xformed != NULL )
+           strcpy(stringpairs[i].xformed, xformbuffer);
+    }
+
+    qsort( stringpairs, 8, sizeof(Stringpair_t), stringpaircmp );
+
+    for ( int i = 0; i < 8 ; i++ )
+        puts( stringpairs[i].original );
+
+    return 0;
+}
+
+int stringpaircmp( const void * sp1, const void *sp2 )
+{
+    const char * s1 = ((Stringpair_t *)sp1)->xformed;
+    const char * s2 = ((Stringpair_t *)sp2)->xformed;
+    return strcmp( s1, s2 );
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_swprintf_ex">
+			<text>
+				<![CDATA[// swprintf_ex.c : swprintf() example
+// -------------------------------------------------------------
+
+#include <wchar.h>  // int swprintf( wchar_t * restrict dest, size_t n,
+                    //               const wchar_t * restrict format, ... );
+#include <stdlib.h>
+
+const wchar_t *dollar_as_wstr( long amount)
+// Converts a number of cents into a wide string
+// showing dollars and cents.
+// For example, converts -123456 into the wide string L"-$1234.56"
+{
+    static wchar_t buffer[16];
+    wchar_t sign[2] = L"";
+
+    if ( amount < 0L)
+       amount = -amount, sign[0] = '-';
+
+    ldiv_t dollars_cents = ldiv( amount, 100);
+    swprintf( buffer, sizeof(buffer),
+              L"%%ls$%%ld.%%2ld", sign, dollars_cents.quot, dollars_cents.rem);
+
+    return buffer;
+}
+
+#include <stdio.h>
+
+int main()
+{
+    fputws( dollar_as_wstr( -123456), stdout );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_system_ex">
+			<text>
+				<![CDATA[// system_ex.c : system() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>    // int system( const char *s );
+#include <stdio.h>
+
+int main()
+{
+    if ( system( NULL ))
+       system( "echo \"Shell: $SHELL; process ID: $$\"");
+    else
+       printf( "No command processor available.\n" );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_tan_ex">
+			<text>
+				<![CDATA[// tan_ex.c : tan() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double tan( double x );
+                     // float tanf( float x );
+                     // long double tanl( long double x );
+#include <stdio.h>
+
+int main()
+{
+    const double pi = 4.0L * atan( 1.0 );     // Because tan(pi/4) = 1
+    double shadow_length = 85.5,
+           angle = 36.2;         // Sun's elevation from the horizon, in
+                                 // degrees
+    double height = shadow_length *tan ( angle * pi/180);
+
+    printf("The tower is %%.2f meters high.\n", height);
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_tanh_ex">
+			<text>
+				<![CDATA[// tanh_ex.c : tanh() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double tanh( double x );
+                     // float tanhf( float x );
+                     // long double tanhl( long double x );
+#include <stdio.h>
+
+int main()
+{
+    double x = -0.5, y1, y2;
+
+    y1 = tanh(x);
+    y2 = exp(2*x);
+    y2 = (y2 -1) / (y2 + 1);
+
+    printf("The tanh() function returns     %%.15f.\n", y1 );
+    printf("Using the function exp() yields %%.15f.\n", y2 );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_thrd_create_ex">
+			<text>
+				<![CDATA[// thrd_create_ex.c : thrd_create() example
+// -------------------------------------------------------------
+
+#include <threads.h>  // int thrd_create(thrd_t *thr, thrd_start_t func, void *arg);
+#include <stdio.h>
+
+int th_func(void * arg)         // The thread function.
+{
+    puts("Hello from th_func ...");
+    ++*(int*)arg;
+    return 0;
+}
+
+int main()
+{
+    thrd_t th; int n = 1;
+
+    if ( thrd_create(&th, th_func, &n) != thrd_success) {
+       fprintf(stderr, "Error creating thread.\n"); return -1;
+    }
+    puts("Main thread here ...");
+
+    thrd_join(th, NULL);
+    printf("The value of n is %%d\n", n);       // n == 2
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_thrd_detach_ex">
+			<text>
+				<![CDATA[// thrd_detach_ex.c : thrd_detach() example
+// -------------------------------------------------------------
+
+#include <threads.h>  // int thrd_detach( thrd_t thr);
+#include <stdio.h>
+
+void independent_thread(void)
+{
+    puts("Working independently in the background ... ");
+    // . . .
+    thrd_exit(0);
+}
+int create_independent_thread(void)
+{
+    thrd_t th;
+    if( thrd_create(&th, (thrd_start_t)independent_thread, "")
+                                              != thrd_success)
+      return -1;
+    if( thrd_detach(th) != thrd_success)
+       return -1;
+    puts("Started independent thread.");
+    return 0;
+}
+
+int main()
+{
+    create_independent_thread();
+
+    puts("Main thread here ...");
+
+    // Working ...
+    struct timespec d = { .tv_nsec = 1E6 };  // 1 ms. 
+    thrd_sleep( &d, NULL);
+
+    puts("Main thread done.");
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_thrd_equal_ex">
+			<text>
+				<![CDATA[// thrd_equal_ex.c : thrd_equal() example
+// -------------------------------------------------------------
+
+#include <threads.h>  // int thrd_equal(thrd_t thr1, thrd_t thr2);
+#include <stdio.h>
+
+thrd_t mainThrd;
+
+int func(void)
+{
+    if( thrd_equal( thrd_current(), mainThrd) )
+    { puts("Main thread here ...");  return 0; }
+    else
+    { puts("Other thread here ..."); return 1; }
+}
+
+int main()
+{
+    thrd_t th;
+
+    mainThrd = thrd_current();
+
+    if ( thrd_create(&th, (thrd_start_t)func, NULL) != thrd_success)
+    { fprintf(stderr, "Error creating thread.\n"); return -1; }
+
+    func();
+    thrd_join(th, NULL);
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_timespec_get_ex">
+			<text>
+				<![CDATA[// timespec_get_ex.c : timespec_get() example
+// -------------------------------------------------------------
+
+#include <time.h>   // int timespec_get(struct timespec *ts, int base);
+#include <stdio.h>
+
+int main()
+{
+    struct timespec ts;
+
+    if( timespec_get( &ts, TIME_UTC) != 0)
+        printf("The exact local time:\n"
+               "%%.24s and %%09lu nanoseconds\n", ctime(&ts.tv_sec), ts.tv_nsec);
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_tmpfile_ex">
+			<text>
+				<![CDATA[// tmpfile_ex.c : tmpfile(), tmpfile_s() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   // FILE *tmpfile( void );
+                     // errno_t tmpfile_s(FILE * restrict * restrict streamPtr);
+#include <errno.h>
+
+int main()
+{
+    FILE *fpTmp, *fpRx;
+    int c;
+
+    /* ... open Rx stream ... */
+    fpRx = stdin;
+
+    if (( fpTmp = tmpfile() ) == NULL )
+    // or
+    // if( tmpfile_s( &fpTmp) != 0 )
+        fputs( "Unable to open a temporary file.", stderr );
+    else
+    {
+        while (( c = fgetc( fpRx )) != EOF )
+            if ( fputc( c, fpTmp ) == EOF )
+               break;
+    }
+    fclose( fpRx );
+
+    /* ... process the data captured in fpTmp ... */
+
+    rewind( fpTmp);
+    while( (c = fgetc( fpTmp)) != EOF)
+       putchar(c);
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_tmpnam_ex">
+			<text>
+				<![CDATA[// tmpnam_ex.c : tmpnam(), tmpnam_s() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   // char *tmpnam( char *s );
+                     // errno_t tmpnam_s(char *s, rsize_t maxsize);
+#include <errno.h>
+
+int main()
+{
+    char fname[L_tmpnam];
+    // or
+    // char fname[L_tmpnam_s];
+    FILE *fpOut;
+
+    if( tmpnam( fname) == NULL)
+    // or
+    // if( tmpnam_s( fname, sizeof(fname)) != 0)
+    {
+        fputs( "Error generating a temporary file name.", stderr );
+        return -1;
+    }
+
+    fpOut = fopen( fname, "w+" );
+
+    fputs( "... write and edit something in the file ...\n", fpOut );    
+    fclose( fpOut );
+    printf( "The results have been saved in %%s.\n", fname );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_towctrans_ex">
+			<text>
+				<![CDATA[// towctrans_ex.c : towctrans() example
+// -------------------------------------------------------------
+
+#include <wctype.h>  // wint_t towctrans( wint_t wc, wctrans_t desc );
+#include <wchar.h>
+
+int main()
+{
+   wint_t before = L'\0', after = L'\0';
+   wctrans_t mapping;
+   mapping = wctrans("toupper");
+
+   while (( before = getwchar() ) != WEOF )
+   {
+       after = towctrans( before, mapping );
+       putwchar( after );
+       if ( after == L'Q' )
+          break;
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_trunc_ex">
+			<text>
+				<![CDATA[// trunc_ex.c : trunc() example
+// -------------------------------------------------------------
+
+#include <math.h>    // double trunc( double x );
+                     // float truncf( float x );
+                     // long double truncl( long double x );
+#include <stdio.h>
+
+int main()
+{
+    printf("trunc(-1.7) = %%.2f  trunc(1.4) = %%.2f  trunc(1.5) = %%.2f\n",
+            trunc(-1.7), trunc(1.4), trunc(1.5) );
+
+    printf("round(-1.7) = %%.2f  round(1.4) = %%.2f  round(1.5) = %%.2f\n",
+            round(-1.7), round(1.4), round(1.5) );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="tss_set_ex">
+			<text>
+				<![CDATA[// tss_set_ex.c : tss_set() example
+// -------------------------------------------------------------
+
+#include <threads.h>  // int tss_set(tss_t *key, void * ptr);
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+tss_t key;               // Global key for a TSS pointer
+                         // tss_create(&key, ...) has been called.
+
+typedef char Data_t;
+
+size_t size_data( Data_t *dPtr)
+{
+    size_t size = strlen( dPtr) + 1;
+    return size;
+}
+
+// Process some data of some type Data_t:
+int process_data(void)   // Use thread-specific storage.
+{
+    Data_t *ptr = (Data_t*)tss_get(key); // Pointer to TSS
+
+    puts("Process data ...");
+    puts( ptr);
+    return 0;
+}
+
+int thread_func( void* arg)
+{
+    size_t size = size_data( arg);   // A helper function to find the
+                                     // required storage size.
+    // Set thread-specific storage:
+    if( tss_set(key, malloc(size)) != thrd_success)
+       return -1;
+
+    // Store and process data ...
+    memcpy( tss_get(key), arg, size);
+    return process_data();           // return calls the destructor, if
+}                                    // the tss_create() call set one.
+
+void destructor(void *data)
+{
+    printf("Destructor for %%s\n", (char*)data);
+    free(data);                    // Release memory.
+}
+
+int main(void)
+{
+    thrd_t th1, th2;
+    int result1 = 0, result2 = 0;
+
+    // Create the TSS key:
+    if (tss_create(&key, destructor) != thrd_success)
+       return -2;
+
+    // Create threads:
+    if ( thrd_create(&th1, thread_func, "Thread_1 ... ")
+                                           != thrd_success
+         || thrd_create(&th2, thread_func, "... Thread_2 ")
+                                           != thrd_success )
+       return -3;
+
+    thrd_join( th1, &result1);
+    thrd_join( th2, &result2);
+    if ( result1 != 0 || result2 != 0)
+       fputs("Thread error\n", stderr);
+    else
+       puts("Threads finished without error.");
+
+    tss_delete(key); // Free all resources of the TSS pointer.
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_ungetc_ex">
+			<text>
+				<![CDATA[// ungetc_ex.c : ungetc() example
+// -------------------------------------------------------------
+
+#include <stdio.h>       // int ungetc( int c, FILE *fp );
+#include <stdlib.h>
+#include <ctype.h>
+
+int main()
+{
+    char file[ ] = "input.dat";
+    FILE *fp;
+    int c;
+    char numstr[64];
+
+    if (( fp = fopen( file, "r" )) == NULL )
+       fprintf( stderr, "Can't read the file %%s\n", file), exit(1);
+
+    while ( (c = getc(fp)) != EOF )
+    {
+       if ( isdigit(c) )              // Collect a sequence of digits.
+       {
+          int i = 0;
+          do
+          {
+             numstr[i++] = (char)c;
+             c = getc(fp);
+          }while ( isdigit(c) && i+1 < sizeof(numstr) );
+
+          numstr[i] = '\0';            // Terminate the numeral string.
+
+          /* ... process the numeral string ... */
+          puts( numstr);
+
+          if ( ungetc( c, fp) == EOF)  // Put back the first non-digit.
+             break;
+          continue;
+       }
+
+       /* ... process any non-digit characters ... */
+    }
+    if ( !feof( fp))
+       fprintf( stderr, "Error processing the file %%s\n", file);
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_va_arg_ex">
+			<text>
+				<![CDATA[// va_arg_ex.c : va_arg(), va_copy, va_end(), va_start() example
+// -------------------------------------------------------------
+
+#include <stdarg.h>  // void va_start( va_list argptr, last_fixed_arg );
+                     // type va_arg( va_list argptr, type );
+                     // void va_copy( va_list dest, va_list src );
+                     // void va_end( va_list argptr );
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+double vproduct( int n, va_list argptr );
+double vsum( int n, va_list argptr );
+
+double vop( const char * op, int argcount, ... );
+
+// main() calls vop() to perform calculations. vop()'s arguments are:
+// (1) the name of the operation ("sum", "product",
+//     "sum minus the product");
+// (2) the number of operands;
+// (3 through n) the operands themselves.
+// Iterates through operations twice: once with three operands, once
+// with six.
+
+int main()
+{
+    double d1, d2, d3, d4, d5, d6;
+
+    puts( "Enter six floating-point numbers, please:" );
+    scanf( "%%lf%%lf%%lf%%lf%%lf%%lf", &d1, &d2, &d3, &d4, &d5, &d6 );
+
+    char *operation[] = {"sum", "product", "product minus the sum",NULL};
+
+    printf("\nUsing the three numbers %%lf, %%lf, and %%lf.\n", d1, d2, d3);
+    for ( int i = 0; operation[i] != NULL; i++ )
+    {
+        printf( "The %%s of these %%d numbers is %%lf\n", 
+                 operation[i], 3, vop( operation[i], 3, d1, d2, d3 ) );
+    }
+
+    printf( "\nUsing six numbers:"
+            "\n\t%%lf \t%%lf \t%%lf \n\t%%lf \t%%lf \t%%lf\n",
+            d1, d2, d3, d4, d5, d6 );
+    for ( int i = 0; operation[i] != NULL; i++ )
+    {
+        printf( "The %%s of these %%d numbers is %%lf\n",
+                operation[i], 6, 
+                vop( operation[i], 6, d1, d2, d3, d4, d5, d6 ) );
+    }
+}
+
+double vop( const char * op, int argcount, ... )
+{
+    va_list argptr;
+    double result;
+
+    va_start( argptr, argcount );
+    if ( strcmp( op, "sum" ) == 0 )
+       result = vsum( argcount, argptr );
+    else if ( strcmp( op, "product" ) == 0 )
+       result = vproduct( argcount, argptr );
+    else if ( strcmp( op, "product minus the sum" ) == 0 )
+    {
+       va_list duplicate_argptr;       // Clone the va_list in its present
+                                       // state.
+       va_copy( duplicate_argptr, argptr );
+       result = vproduct( argcount, argptr )
+                - vsum( argcount, duplicate_argptr );
+       va_end( duplicate_argptr );     // Clean up the clone.
+    }
+
+    else result = NAN;
+
+    va_end( argptr ); // Clean up the original.
+    return result;
+}
+
+double vproduct( int n, va_list argptr )
+{
+    double product = 1.0;
+
+    for ( int i = 0; i < n; i ++ )
+        product *= va_arg( argptr, double );
+
+    return product;
+}
+
+double vsum( int n, va_list argptr )
+{
+    double sum = 0.0;
+
+    for ( int i = 0; i < n; i ++ )
+        sum += va_arg( argptr, double );
+
+    return sum;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_vfprintf_ex">
+			<text>
+				<![CDATA[// vfprintf_ex.c : vfprintf() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   
+#include <stdarg.h>
+// int vfprintf( FILE * restrict fp, const char * restrict format, va_list argptr );
+// int vprintf( const char * restrict format, va_list argptr );
+// int vsprintf( char * restrict buffer, const char * restrict format,
+//               va_list argptr );
+// int vsnprintf( char * restrict buffer, size_t n, const char * restrict format, //                va_list argptr );
+
+#include <time.h>
+
+// write_log appends a line to the log file associated with the
+// FILE pointer fp_log.
+// The format string and optional arguments are the same as for printf().
+
+FILE *fp_log;
+ 
+void write_log(const char *function_name, unsigned int line_num,
+               const char *format_str, ...)
+{
+    if ( fp_log == NULL)
+       return;
+    time_t timestamp = time(NULL);
+    va_list argptr;
+
+    // Set argptr to the first optional argument:
+    va_start( argptr, format_str);
+
+    // First print the timestamp, function name, and line number:
+    fprintf( fp_log, "%%.8s %%s (line %%u): ",
+                     ctime(&timestamp)+11, function_name, line_num);
+    // Then print the rest of the message:
+    vfprintf( fp_log, format_str, argptr);
+}
+
+void myFunc( int param)
+{
+    write_log( __func__, __LINE__, "param = %%d\n", param);
+    /* ... */
+}
+
+int main()
+{
+    fp_log = stderr;
+    myFunc( 777);    
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_vfscanf_ex">
+			<text>
+				<![CDATA[// vfscanf_ex.c : vscanf() example
+// -------------------------------------------------------------
+
+#include <stdio.h>   
+#include <stdarg.h>
+// int vfscanf( FILE * restrict fp, const char * restrict format,
+//              va_list argptr );
+// int vscanf( const char * restrict format, va_list argptr );
+// int vsscanf( const char * restrict src, const char * restrict format,
+//              va_list argptr );
+
+
+typedef struct {
+    char lastname[20];
+    char firstname[20];
+    int dob_month;
+    int dob_day;
+    int dob_year;
+} person;
+
+person employee;
+
+int read_person( char *lname, char *fname, ... )
+// As variable arguments (...) use NULL
+// or three int pointers (month, day, year).
+{
+    va_list args;
+    int count;
+
+    puts( "Enter the last name and first name (Example: Smith, Sally)");
+    count = scanf( "%%[^,], %%[^\n]", lname, fname );      // Read the name.
+
+    va_start(args, fname);    // Initialize args to start with the argument
+                              // that follows fname in the function call.
+    if ( count == 2 && va_arg(args, int*) != NULL )
+    {
+        va_end( args);
+        va_start( args, fname);     // Initialize args again.
+
+        printf( "Enter the date of birth. (Example: 9/21/1962)\n");
+        count += vscanf( "%%d/%%d/%%d", args ); // Read date of birth.
+    }
+#ifdef DEBUG
+    fprintf( stderr, "Read %%d fields.\n", count);
+#endif // def DEBUG
+
+    va_end( args );
+    return count;
+}
+
+int main()
+{
+   person *pEmployee = &employee;
+   int result;
+
+   result = read_person( pEmployee->lastname,
+                         pEmployee->firstname,
+                         &pEmployee->dob_month,
+                         &pEmployee->dob_day,
+                         &pEmployee->dob_year );
+#ifdef DEBUG
+    fprintf( stderr, "Fields read: %%s, %%s; born %%d-%%d-%%d\n",
+             pEmployee->lastname,
+             pEmployee->firstname,
+             pEmployee->dob_month,
+             pEmployee->dob_day,
+             pEmployee->dob_year );
+#endif // def DEBUG
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcrtomb_s_ex">
+			<text>
+				<![CDATA[// wcrtomb_s_ex.c : wcrtomb_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <wchar.h>   // errno_t wcrtomb_s( size_t * restrict retval,
+                     //                    char * restrict dest, rsize_t destmax,
+                     //                    wchar_t wc, mbstate_t * restrict ps);
+#include <stdlib.h>
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    if( setlocale(LC_ALL, "") == NULL)
+       fputs("Unable to set the locale.\n", stderr);
+    printf( "\nThe current locale is '%%s'.\n", setlocale( LC_CTYPE, NULL ) );
+
+    wchar_t wc = L'\u00b1';     //'±'
+    char mbStr[MB_CUR_MAX];
+    size_t nBytes = 0;
+    mbstate_t state = {0};
+
+    if( wcrtomb_s( &nBytes, mbStr, sizeof(mbStr), wc, &state ) != 0)
+    { /* Handle the error ... */
+        fputs("Error ...", stderr);  return -1;
+    }
+
+    printf("Character: '%%lc'; multibyte code:", wc);     // '±'
+    for( unsigned i = 0; i < nBytes; ++i)
+        printf(" %%#04x", (unsigned char)mbStr[i]);       // 0xc2 0xb1
+    putchar('\n');
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcscat_ex">
+			<text>
+				<![CDATA[// wcscat_ex.c : wcscat(), wcscat_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1   // for wcscat_s()
+
+#include <wchar.h>
+   // wchar_t *wcscat( wchar_t * restrict s1, const wchar_t * restrict s2 );
+   // errno_t wcscat_s( wchar_t * restrict s1, rsize_t s1max,
+   //                   const wchar_t * restrict s2);
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    wchar_t  lastname[32];
+    wchar_t  firstname[32];
+    _Bool    ismale;
+} Name;
+
+int main()
+{
+    Name *newName = calloc( 1, sizeof(Name) );
+
+    /* ... check for calloc failure; read in the name parts ... */
+    if( newName == NULL)
+    {  fprintf( stderr, "Out of memory\n" ); return -1; }
+    *newName = (Name) { L"Lincoln", L"Abraham", 1 };
+
+    // Then display the new name
+    wchar_t displayname[80];
+    wcscpy( displayname, ( newName->ismale ? L"Mr. " : L"Ms. " ) );
+    wcscat( displayname, newName->firstname );
+    wcscat( displayname, L" " );
+    wcscat( displayname, newName->lastname );
+    wcscat( displayname, L"\n" );
+
+    // Better to use wcscat_s() in case the fields in the Name
+    // structure are ever enlarged:
+    // wcscat_s( displayname, sizeof(displayname), newName->firstname );
+    // wcscat_s( displayname, sizeof(displayname), L" " );
+    // wcscat_s( displayname, sizeof(displayname), newName->lastname );
+    // wcscat_s( displayname, sizeof(displayname), L"\n" );
+
+    fputws( displayname, stdout );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcschr_ex">
+			<text>
+				<![CDATA[// wcschr_ex.c : wcschr() example
+// -------------------------------------------------------------
+
+#include <wchar.h>   // wchar_t *wcschr( const wchar_t *s, wchar_t c );
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct { wchar_t street[32];
+                 wchar_t city[32];
+                 wchar_t stateprovince[32];
+                 wchar_t zip[16];
+               } Address;
+
+wchar_t printaddr[128] = L"720 S. Michigan Ave.\nChicago, IL 60605\n";
+
+int main()
+{
+    int sublength;
+    Address *newAddr = calloc( 1, sizeof(Address) );
+
+    if ( newAddr != NULL )
+    {
+        sublength = wcschr( printaddr, L'\n' ) - printaddr;
+        wcsncpy( newAddr->street, printaddr,
+                 (sublength < 31 ? sublength : 31) );
+        /* ... */
+        fputws( newAddr->street, stdout );
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcscmp_ex">
+			<text>
+				<![CDATA[// wcscmp_ex.c : wcscmp() example
+// -------------------------------------------------------------
+
+#include <wchar.h>   // int wcscmp( const wchar_t *s1, const wchar_t *s2 );
+#include <stdio.h>
+
+int main()
+{
+    int result = 0;
+    wchar_t word1[255]=L"X1", word2[256] = L"X2", *greaterlessequal;
+
+    while ( result < 2 )
+    {
+        fputws( L"Type two words, please: ", stdout );
+        result = wscanf( L"%%255ls %%255ls", word1, word2 );
+        if ( result == EOF )
+           return EOF;
+    }
+    result = wcscmp( word1, word2 );
+
+    if ( result < 0 )
+       greaterlessequal = L"less than";
+    else if ( result > 0 )
+       greaterlessequal = L"greater than";
+    else
+       greaterlessequal = L"the same as";
+
+    wprintf( L"The word \"%%ls\" is %%ls the word \"%%ls\".\n", 
+             word1, greaterlessequal, word2 );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcscoll_ex">
+			<text>
+				<![CDATA[// wcscoll_ex.c : wcscoll() example
+// -------------------------------------------------------------
+
+#include <wchar.h>  // int wcscoll( const wchar_t *s1, const wchar_t *s2 );
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    wchar_t *samples[ ] = { L"anejo", L"añeja",};
+
+    setlocale( LC_COLLATE, "es_US.UTF-8" );
+    
+    int result = wcscoll( samples[0], samples[1] );
+
+    wprintf( L"In the locale %%s, ", setlocale( LC_COLLATE, NULL ));
+
+    if ( result == 0 )
+        wprintf( L"the wide strings \"%%ls\" and \"%%ls\" are alphabetically "
+                 "equivalent.\n", samples[0], samples[1] );
+    else if ( result < 0 )
+        wprintf( L"the wide string \"%%ls\" precedes \"%%ls\" "
+                 "alphabetically.\n", samples[0], samples[1] );
+    else if ( result > 0 )
+        wprintf( L"the wide string \"%%ls\" comes after \"%%ls\" "
+                 "alphabetically.\n", samples[0], samples[1] );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcscpy_ex">
+			<text>
+				<![CDATA[// wcscpy_ex.c : wcscpy(), wcscpy_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1   // for wcscpy_s()
+
+#include <wchar.h>  // wchar_t *wcscpy(wchar_t * restrict dest,
+                    //                 const wchar_t * restrict src);
+                    // errno_t wcscpy_s(wchar_t * restrict dest,
+                    //                  rsize_t destmax,
+                    //                  const wchar_t * restrict src);
+#include <stdio.h>
+
+int main()
+{
+    struct record {
+      wchar_t name[64];
+      int age;
+      _Bool male, smoking, discount;
+    } this;
+    int results;
+
+    wprintf( L"Last name: " );
+    results = wscanf( L"%%63l[^\n]", this.name );
+
+    if ( results < 1 )
+        wcscpy( this.name, L"[Name not available]" );
+    // or:
+    // wcscpy_s( this.name, sizeof(this.name)/sizeof(wchar_t),
+    //           L"[Name not available]" );
+
+    wprintf( L"%%ls\n", this.name );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcscspn_ex">
+			<text>
+				<![CDATA[// wcscspn_ex.c : wcscspn() example
+// -------------------------------------------------------------
+
+#include <wchar.h>  // size_t wcscspn( const wchar_t *s1, const wchar_t *s2 );
+#include <stdio.h>
+
+int main()
+{
+    wchar_t *path = L"/usr/local/bin:/usr/bin:/bin:/usr/bin/X11:/usr/games";
+    int separator;
+
+    wchar_t *basename = L"aprogram";
+    wchar_t fullname[1024] = L"";
+
+    separator = wcscspn( path, L":" );  // Obtain the index of the first colon.
+
+    wcsncpy( fullname, path, separator );
+    fullname[separator] = '\0';
+
+    wcsncat( fullname, L"/", sizeof(fullname) - wcslen(fullname) -1 );
+    wcsncat( fullname, basename, sizeof(fullname) - wcslen(fullname) -1 );
+
+    fputws( fullname, stdout );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="ex_wcsftime_ex">
+			<text>
+				<![CDATA[// wcsftime_ex.c : wcsftime() example
+// -------------------------------------------------------------
+
+#include <time.h>   // size_t wcsftime( wchar_t * restrict s, size_t n,
+#include <wchar.h>  //                  const wchar_t * restrict format,
+                    //                  const struct tm * restrict timeptr );
+#include <stdio.h>
+
+#define MAX_HDR 1024
+
+int main()
+{
+    time_t now;
+    struct tm *localnow;
+    wchar_t hdr_date[MAX_HDR] = L"";
+
+    time( &now );
+    localnow = localtime( &now );
+
+    if( wcsftime( hdr_date, MAX_HDR, L"Date: %%a, %%d %%b %%Y %%T %%z", localnow))
+       fputws( hdr_date, stdout );
+    else
+       return -1;
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcslen_ex">
+			<text>
+				<![CDATA[// wcslen_ex.c : wcslen() example
+// -------------------------------------------------------------
+
+#include <wchar.h>   // size_t wcslen( const wchar_t *s );
+
+int main()
+{
+    wchar_t line[1024] =
+            L"This string could easily be 400 or 500 characters long. "
+            L"This string could easily be 400 or 500 characters long. "
+            L"\n";
+    wchar_t *readptr = line;
+
+    int columns = 80;
+    while( wcslen( readptr ) > columns)  // While remaining text is too long,
+    {                                    // print a chunk with a final
+       wprintf(L"%%.*ls\\\n", columns-1, readptr);  // backslash and newline.
+       readptr += columns -1;
+    }
+    wprintf( L"%%ls\n", readptr);     // Print the rest, ending with a newline.
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcsncmp_ex">
+			<text>
+				<![CDATA[// wcsncmp_ex.c : wcsncmp() example
+// -------------------------------------------------------------
+
+#include <wchar.h>   // int wcsncmp( const wchar_t *s1,
+                     //              const wchar_t *s2, size_t n );
+
+int main()
+{
+    wchar_t *months[] = { L"January", L"February", L"March", L"April",
+                          L"May", L"June", L"July", L"August",
+                          L"September", L"October", L"November", L"December"};
+
+    wchar_t date[ ] = L"Thu, 10 Mar 2005 13:44:18 +0100";
+    int mo = 0;
+    while (( mo < 12 ) && ( wcsncmp( date + 8, months[mo], 3 ) != 0 ))
+        mo++;
+
+    if( mo < 12)
+       wprintf( L"Month: %%ls\n", months[mo] ); 
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcspbrk_ex">
+			<text>
+				<![CDATA[// wcspbrk_ex.c : wcspbrk() example
+// -------------------------------------------------------------
+
+#include <wchar.h>     // wchar_t *wcspbrk( const wchar_t *s1,
+                       //                   const wchar_t *s2 );
+#include <stdio.h>
+
+int main()
+{
+    wchar_t *story = L"He shouted: \"What? I can't hear you!\"\n";
+    wchar_t separators[ ] = L" \t\n.:?!\"";
+    wchar_t *start = story, *end = NULL;
+    wchar_t words[16][16];   // An array of wchar_t arrays to collect words in. 
+    int i = 0;
+
+    while ( i < 16 && ( end = wcspbrk( start, separators ) ) != NULL )
+    {
+      if ( end != start )             // If the separator wasn't the first
+      {                               // character in the substring,
+         wcsncpy( words[i], start, end - start );  // then save a word.
+         words[i][end - start] = L'\0';            // And terminate it.
+         i++;
+      }
+      start = end + 1;                // Next wcspbrk call starts with the
+    }                                 // character after this separator.
+
+    fputws( story, stdout );
+
+    for ( int j = 0 ; j < i ; j++ )
+    {
+       fputws( words[j], stdout );
+       fputwc( L'\n', stdout );
+    }
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcsrchr_ex">
+			<text>
+				<![CDATA[// wcsrchr_ex.c : wcsrchr() example
+// -------------------------------------------------------------
+
+#include <wchar.h>  // wchar_t *wcsrchr( const wchar_t *s, wchar_t wc );
+#include <stdlib.h>
+
+int main( int argc, char ** argv )
+{
+    wchar_t wmyname[256];
+
+    size_t result = mbstowcs( wmyname, argv[0], 256 );
+    if ( result == -1 )
+       return -1;
+
+    wchar_t *mybasename = wcsrchr( wmyname, L'/' ); // End of path
+    if ( mybasename != NULL )
+      mybasename++;
+    else
+      mybasename = wmyname;
+
+    wprintf( L"This program was invoked as %%ls.\n", mybasename );
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcsrtombs_ex">
+			<text>
+				<![CDATA[// wcsrtombs_ex.c : wcsrtombs() example
+// -------------------------------------------------------------
+
+#include <wchar.h>   // size_t wcsrtombs( char * restrict dest,
+                     //                   const wchar_t **restrict src,
+                     //                   size_t n, 
+                     //                   mbstate_t * restrict state );
+#include <string.h>
+#include <locale.h>
+#include <stdio.h>
+
+int main()
+{
+    int i = 0, n = 0;
+    size_t result;
+    wchar_t wc;
+    char mbstring[256] = { '\0' };
+
+    wchar_t widestring[]
+            = L"This is originally a string of wide characters.";
+    const wchar_t *wcsptr = widestring;
+    mbstate_t state;
+
+    printf( "The current locale is %%s.\n", setlocale(LC_CTYPE, "") );
+
+    memset( &state, '\0', sizeof state );
+    result = wcsrtombs( mbstring, &wcsptr, 256, &state );
+
+    printf("The return value: %%d\n", (int)result );
+    if( result > 0 && wcsptr == NULL )
+       printf("The multibyte string: \"%%s\"\n", mbstring);
+
+   return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcsrtombs_s_ex">
+			<text>
+				<![CDATA[// wcsrtombs_s_ex.c : wcsrtombs_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <wchar.h>   // errno_t wcsrtombs_s(size_t * restrict retval,
+                     //                     char * restrict dest, 
+                     //                     rsize_t destmax,
+                     //                     const wchar_t ** restrict src,
+                     //                     rsize_t n,
+                     //                     mbstate_t * restrict state);
+#include <locale.h>
+#include <stdio.h>
+
+int main()
+{
+    if( setlocale(LC_ALL, "") == NULL)
+       fputs("Unable to set the locale.\n", stderr);
+
+    wchar_t widestr[] = L"A wide-character string ...";
+    const wchar_t *wcptr = widestr;     // A pointer to a wide character.
+    char mbstr[100] = "";               // For the multibyte string.
+    size_t mblen = 0;
+    mbstate_t mbstate = {0};            // Conversion state.
+
+    if( wcsrtombs_s( &mblen, mbstr, sizeof(mbstr),
+                     &wcptr, 3, &mbstate) == 0)
+    {
+        printf("Multibyte length: %%zu; character codes: [", mblen);
+        for( size_t i = 0; i < mblen; ++i)
+            printf(" %%X", (unsigned char)mbstr[i]);
+        puts(" ]");
+
+        if( wcptr != NULL)
+            printf("Wide characters remaining: \"%%ls\"\n", wcptr);
+    }
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcsspn_ex">
+			<text>
+				<![CDATA[// wcsspn_ex.c : wcsspn() example
+// -------------------------------------------------------------
+
+#include <wchar.h>     // size_t wcsspn( const wchar_t *s1,
+                       //                const wchar_t *s2 );
+#include <stdio.h>
+
+int main()
+{
+    wchar_t wordin[256];
+    double val;
+
+    fputws( L"Enter a floating-point number, please: ", stdout );
+    wscanf( L"%%ls", wordin );
+
+    int index = wcsspn( wordin, L"+-0123456789eE." );
+    if ( index < wcslen( wordin ) )
+       wprintf ( L"Sorry, but the character %%lc is not permitted.\n",
+                 wordin[index] );
+    else
+    {
+       swscanf( wordin, L"%%lg", &val );
+       wprintf( L"You entered the value %%g\n", val );
+    }
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcsstr_ex">
+			<text>
+				<![CDATA[// wcsstr_ex.c : wcsstr() example
+// -------------------------------------------------------------
+
+#include <wchar.h>     // size_t wcsstr( const wchar_t *s1,
+                       //                const wchar_t *s2 );
+#include <stdlib.h>
+#include <stdio.h>
+
+#define MAX_LINE 1024
+
+int main( int argc, char **argv )
+{
+    FILE *fpIn = NULL;
+    wchar_t keyword[MAX_LINE] = { L'\0' };
+    wchar_t line[MAX_LINE] = { L'\0' };
+
+    if ( argc != 3 )
+    {
+        wprintf( L"Syntax: %%s <keyword> <filename>\n", argv[0] );
+        return -1;
+    }
+
+    if (( fpIn = fopen( argv[2], "r" )) == NULL )
+       return -2;
+    else
+       fwide( fpIn, 1 );
+
+    if ( mbstowcs( keyword, argv[1], MAX_LINE ) == -1 )
+       return -3;
+
+    int count = 0;
+    while ( fgetws( line, MAX_LINE, fpIn ) != NULL )
+       if ( wcsstr( line, keyword ) != NULL )
+       {
+           ++count;
+           fputws( line, stdout );
+       }
+
+    if ( !feof( fpIn ))
+       return -4;
+    else
+       return count;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcstod_ex">
+			<text>
+				<![CDATA[// wcstod_ex.c : wcstod() example
+// -------------------------------------------------------------
+
+#include <wchar.h>     // double wcstod( const wchar_t * restrict wcs,
+                       //                wchar_t ** restrict endptr );
+                       // float wcstof( const wchar_t * restrict wcs,
+                       //               wchar_t ** restrict endptr ); 
+                       // long double wcstold( const wchar_t * restrict wcs,
+                       //                      wchar_t ** restrict endptr );
+#include <stdio.h>
+
+int main()
+{
+    wchar_t in[1024], *this = in, *next = in;
+    double val;
+
+    fputws( L"Enter some floating-point numbers, please:\n", stdout );
+    wscanf( L"%%l[^\n]", in );
+
+    fputws( L"Here are the values you entered:\n", stdout );
+    while ( 1 )
+    {
+        val = wcstod( this, &next );
+        if ( next == this )           // Means no conversion possible.
+            break ;
+        this = next;
+        wprintf( L"\t%%g\n", val );
+    }
+    fputws( L"Done.\n", stdout );
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcstok_ex">
+			<text>
+				<![CDATA[// wcstok_ex.c : wcstok() example
+// -------------------------------------------------------------
+
+#include <wchar.h>     // wchar_t *wcstok( wchar_t * restrict s1, 
+                       //                  const wchar_t * restrict s2,
+                       //                  wchar_t ** restrict ptr );
+
+int main()
+{
+    wchar_t *mnemonic, *arg1, *arg2, *comment, *ptr;
+    wchar_t line[ ] = L" mul eax,[ebp+4] ; Multiply by y\n";
+
+    // First word between spaces or tabs
+    mnemonic = wcstok( line, L" \t", &ptr );
+    arg1 = wcstok( NULL, L",", &ptr );    // From there to the comma is arg1.
+                                          // Trim off any spaces later.
+    arg2 = wcstok( NULL, L";\n", &ptr );  // From there to the semicolon is
+                                          // arg2.
+    // To line or page end is comment:
+    comment = wcstok( NULL, L"\n\r\v\f", &ptr );
+
+    wprintf( L"Mnemonic:     %%ls\n"
+             L"1st argument: %%ls\n"
+             L"2nd argument: %%ls\n"
+             L"Comment:      %%ls\n\n",
+             mnemonic, arg1, arg2, comment );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcstol_ex">
+			<text>
+				<![CDATA[// wcstol_ex.c : wcstol(), wcstoll() example
+// -------------------------------------------------------------
+
+#include <wchar.h>     // long int wcstol( const wchar_t * restrict wcs,
+                       //                  wchar_t ** restrict endptr, int base );
+                       // long long int wcstoll( const wchar_t * restrict wcs,
+                       //                        wchar_t ** restrict endptr, 
+                       //                        int base );
+
+int main()
+{
+    wchar_t date[ ] = L"10/3/2005, 13:44:18 +0100", *more = date;
+    long day, mo, yr, hr, min, sec, tzone;
+
+    day = wcstol( more, &more, 10 ); // &more is the address of a
+    mo  = wcstol( more+1, &more, 10 ); // pointer
+    yr  = wcstol( more+1, &more, 10 );
+    hr  = wcstol( more+1, &more, 10 );
+    min = wcstol( more+1, &more, 10 );
+    sec = wcstol( more+1, &more, 10 );
+    tzone = wcstol( more+1, &more, 10 );
+
+    wprintf( L"It's now %%02ld:%%02ld o'clock on %%02ld-%%02ld-%%02ld.\n",
+             hr, min, mo, day, yr %% 100 );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcstombs_ex">
+			<text>
+				<![CDATA[// wcstombs_ex.c : wcstombs() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>   // size_t wcstombs( char * restrict dest, 
+                      //                  const wchar_t * restrict src,
+                      //                  size_t n );
+#include <wchar.h>
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    if( setlocale(LC_ALL, "") == NULL)
+       fputs("Unable to set the locale.\n", stderr);
+
+    wchar_t fmt_amount[128] = { L'\0' };
+    wchar_t prefix[32]  = L"-";
+    wchar_t suffix[32]  = L"€";
+    wchar_t number[128] = L"123.456,78";
+    char output_amount[256];
+
+    wcscpy( fmt_amount, prefix );
+    wcscat( fmt_amount, number );
+    wcscat( fmt_amount, suffix );
+
+    if ( -1 != wcstombs( output_amount, fmt_amount, 256 ))
+        printf( "Full amount: %%s\n", output_amount );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcstoumax_ex">
+			<text>
+				<![CDATA[// wcstoumax_ex.c : wcstoumax() example
+// -------------------------------------------------------------
+
+#include <stddef.h>
+#include <inttypes.h>  // uintmax_t wcstoumax( const wchar_t * restrict wcs,
+                       //                      wchar_t ** restrict endptr, int base );
+#include <wchar.h>
+
+typedef struct {
+    uintmax_t packets, bytes;
+    wchar_t policy[16];
+    wchar_t protocol[6];
+    /* ... */
+} stats_t ;
+
+int main()
+{
+    stats_t iface_in = {0};
+    wchar_t wcsstat[] =
+            L"25183 1633438 ACCEPT tcp -- eth2 * 0.0.0.0/0 tcp dpts:80";
+    wchar_t *wcsptr = wcsstat;
+
+    iface_in.packets = wcstoumax( wcsptr, &wcsptr, 10 );
+    iface_in.bytes = wcstoumax( ++wcsptr, &wcsptr, 10 );
+    /* ... */
+
+    wprintf( L"Packets: %%" PRIuMAX "; bytes: %%" PRIuMAX "; policy: ...\n",
+             iface_in.packets, iface_in.bytes );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wcsxfrm_ex">
+			<text>
+				<![CDATA[// wcsxfrm_ex.c : wcsxfrm() example
+// -------------------------------------------------------------
+
+#include <wchar.h>   // size_t wcsxfrm( wchar_t * restrict dest, 
+                     //                 const wchar_t * restrict src,
+                     //                 size_t n );
+#include <stdio.h>
+#include <stdlib.h>
+#include <locale.h>
+
+typedef struct stringpair { wchar_t * original;
+                            wchar_t * xformed;
+                          } Stringpair_t ;
+
+int stringpaircmp( const void *p1, const void *p2 );
+
+int main()
+{
+    wchar_t *originals[] = { L"Chávez", L"Carron", L"Canoso",
+                             L"Cañoso", L"Carteño", L"Corriando",
+                             L"Carilo", L"Carillón", };
+    wchar_t xformbuffer[1024];
+
+    /* Make an array of structures out of the strings and their
+       xformations */
+
+    const int elementcount = sizeof(originals) / sizeof(wchar_t *);
+    Stringpair_t stringpairs[elementcount];
+
+    setlocale( LC_ALL, "es_US.UTF-8" );   // Set the locale to US Spanish
+    wprintf( L"Sorting order in the locale %%s:\n",
+             setlocale( LC_COLLATE, NULL ));
+
+    for ( int i = 0; i < elementcount ; i++ )
+    {
+        stringpairs[i].original = originals[i];
+        stringpairs[i].xformed
+                    = malloc( wcsxfrm( xformbuffer, originals[i], 1024 ));
+        if ( stringpairs[i].xformed != NULL )
+           wcscpy( stringpairs[i].xformed, xformbuffer );
+    }
+
+    qsort( stringpairs, elementcount,
+           sizeof(Stringpair_t), stringpaircmp );
+
+    for ( int i = 0; i < elementcount ; i++ )
+    {
+        fputws( stringpairs[i].original, stdout );
+        fputwc( L'\n', stdout );
+    }
+} // end of main()
+
+/* A comparison function for use by qsort. Uses wcscmp() rather
+ * that wcscoll(), assuming strings are paired with their wcsxfrm()
+ * results in a Stringpair_t structure.
+*/
+int stringpaircmp( const void *p1, const void *p2 )
+{
+    const Stringpair_t * sp1 = (Stringpair_t *)p1;
+    const Stringpair_t * sp2 = (Stringpair_t *)p2;
+
+    return wcscmp( sp1->xformed, sp2->xformed );
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wctomb_ex">
+			<text>
+				<![CDATA[// wctomb_ex.c : wctomb() example
+// -------------------------------------------------------------
+
+#include <stdlib.h>   // int wctomb( char *s, wchar_t wc );
+#include <wchar.h>
+#include <stdio.h>
+#include <limits.h>
+#include <locale.h>
+
+int main()
+{
+    char mbbuffer[MB_LEN_MAX] = { '\0' };
+    wchar_t wcs[] = L"Wir stehen auf den Füßen von Riesen";
+    int n = 0, i = 0;
+
+    printf( "The current locale is %%s.\n", setlocale( LC_CTYPE, "" ));
+    printf( "The locale's multibyte encoding is %%s.\n",
+             (wctomb( NULL, L'\0' ) ? "stateful" : "stateless" ));
+
+    do {
+        n += wctomb( mbbuffer, wcs[i] );
+    } while ( wcs[i++] != L'\0' );
+
+    printf( "The wide string \"%%ls\" \nis %%u wide characters long.\n"
+            "Its multibyte representation requires a buffer of %%u bytes.\n",
+            wcs, wcslen( wcs ), n );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wctomb_s_ex">
+			<text>
+				<![CDATA[// wctomb_s_ex.c : wctomb_s() example
+// -------------------------------------------------------------
+
+#define __STDC_WANT_LIB_EXT1__ 1         // For wctomb_s()
+
+#include <stdlib.h>   // errno_t wctomb_s( int * restrict status,
+                      //                   char * restrict s,
+                      //                   rsize_t smax, 
+                      //                   wchar_t wc);
+#include <wchar.h>
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    setlocale(LC_ALL, "en_US.utf8");
+
+    wchar_t wc = L'\u03B1';       // Greek lowercase alpha α
+    char mbStr[MB_CUR_MAX];
+    int nBytes = 0;
+
+    // if( (nBytes = wctomb( mbStr, wc )) < 0)
+    // is equivalent to
+    if( wctomb_s( &nBytes, mbStr, sizeof(mbStr), wc ) != 0)
+    { /* error: */ return -1; }
+
+    printf("Wide-character code: %%#06x; character: '%%lc'; "
+           "multibyte code:", wc, wc);
+    for( int i = 0; i < nBytes; ++i)
+        printf(" %%#04x", (unsigned char)mbStr[i]);
+    putchar('\n');
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wctype_ex">
+			<text>
+				<![CDATA[// wctype_ex.c : wctype() example
+// -------------------------------------------------------------
+
+#include <wctype.h>   // wctype_t wctype( const char *property );
+#include <wchar.h>
+#include <stdio.h>
+#include <locale.h>
+
+int main()
+{
+    wctype_t wct_kanji, wct_kata, wct_hira  /* , ... */ ;
+
+    if ( setlocale( LC_CTYPE, "ja_JP.UTF-8" ) == NULL)
+        fputws(L"Unable to set the locale.\n", stderr);
+
+    if (( wct_kata = wctype( "jkata" ) ) == 0 )
+    {   wprintf( L"The locale doesn't support the wide-character type "
+                  "string \"jkata\".\n" ); 
+        return -1;
+    }
+    /* ... */
+    wchar_t wc = fgetwc( stdin );
+    if ( iswctype( wc, wct_kata ) )          // Mainly 0xFF66 − 0xFF9F.
+        wprintf( L"%%lc is a katakana character.\n", wc );
+    else
+        wprintf( L"%%lc is a not katakana character.\n", wc );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wmemcpy_ex">
+			<text>
+				<![CDATA[// wmemcpy_ex.c : wmemcpy(), wmemcpy_s() example
+// -------------------------------------------------------------
+
+#include <wchar.h>     // wchar_t *wmemcpy( wchar_t * restrict dest, 
+                       //                   const wchar_t * restrict src,
+                       //                   size_t n );
+                       // errno_t wmemcpy_s( wchar_t * restrict dest, rsize_t destmax,
+                       //                    const wchar_t * restrict src, 
+                       //                    rsize_t n);
+#include <stdio.h>
+#include <stdlib.h>
+
+#define BUFFERSIZE 2048     // Size as a number of wchar_t elements.
+
+wchar_t inputbuffer[BUFFERSIZE] = { L'\0' },
+        *writeptr = inputbuffer;
+
+struct block { wchar_t *text;
+               struct block *next;
+               struct block *prev;
+             } firstblock = { NULL },  // The first block is the list head.
+               *tmp = NULL;
+
+struct block *newblock( struct block *lastblock );
+                                           // Creates a linked-list member.
+wchar_t *storetext( struct block *listhead,
+                    wchar_t *buffer,
+                    size_t bufsize );
+                         // Copies input buffer to a new linked-list member.
+
+int main()
+{
+    while( fgetws( writeptr, BUFFERSIZE - (writeptr - inputbuffer), stdin)
+           != NULL )
+    {
+       // Set writeptr to end of the input string:
+       writeptr = wmemchr( inputbuffer, L'\0',
+                           sizeof(inputbuffer) / sizeof(wchar_t) );
+
+       if ( BUFFERSIZE - (writeptr - inputbuffer) < 80 )
+                                            // If block full, or nearly so:
+       {                                    // copy buffer to a data block.
+           writeptr = storetext( &firstblock, inputbuffer, BUFFERSIZE );
+           if ( writeptr == NULL )          // Out of memory!
+              abort();
+       }
+    }    // Here if fgetws() returns NULL.
+
+    writeptr = storetext( &firstblock, inputbuffer, BUFFERSIZE );
+    if ( writeptr == NULL )                 // Out of memory!
+       abort();
+}
+
+// ----------------------------
+wchar_t *storetext(struct block *listhead,
+                   wchar_t *buffer, size_t bufsize)
+    // Copies input buffer to a new chained-list member;
+    // returns pointer to input buffer, or NULL on failure.
+{
+    struct block *tmp = listhead;     // create new block on end of list ...
+    while ( tmp->next != NULL )
+       tmp = tmp->next;
+    if (( tmp = newblock( tmp )) != NULL )
+       wmemcpy( tmp->text, buffer, bufsize );     // ... and copy the text.
+    // Or:
+    // wmemcpy_s( tmp->text, BUFFERSIZE, buffer, bufsize );
+    else            // Out of memory!
+       return NULL;
+
+#ifdef DEBUG
+    fwprintf( stderr, L"\nStored a block with this text:\n%%ls\n",
+              tmp->text );
+#endif
+
+    return buffer;     // Return pointer to buffer, now ready for re-use.
+}
+
+// ----------------------------
+struct block *newblock( struct block *lastblock )
+   // Allocates a new block and appends it to the chained list;
+   // returns pointer to new block, or NULL on failure.
+{
+   if (( lastblock->next = malloc( sizeof(struct block) )) != NULL
+         && ( lastblock->next->text
+                 = malloc( BUFFERSIZE * sizeof(wchar_t) )) != NULL)
+   {
+      lastblock->next->prev = lastblock;
+      lastblock->next->next = NULL;
+      return lastblock->next;
+   }
+   else            // Out of memory!
+      return NULL;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_wscanf_ex">
+			<text>
+				<![CDATA[// wscanf_ex.c : wscanf() example
+// -------------------------------------------------------------
+
+#include <stdio.h>
+#include <wchar.h>
+    // int wscanf( const wchar_t * restrict format, ... );
+    // int wscanf_s( const wchar_t * restrict format, ... );
+
+int main()
+{
+    wchar_t perms[12];
+    wchar_t name[256];
+    unsigned int ownerid, groupid, links;
+    unsigned long size;
+    int count;
+
+    count = wscanf( L"%%11l[rwxsStTld-+]%%u%%u%%u%%lu%%*10s%%*5s%%256ls",
+                    perms, &links, &ownerid, &groupid, &size, name );
+
+wprintf(L"%%ls %%u %%u %%u %%lu %%ls\n", 
+         perms, links, ownerid, groupid, size, name );
+    wprintf( L"\nThe file %%ls has a length of %%lu bytes.\n", name, size );
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xc_circle">
+			<text>
+				<![CDATA[// circle.c: Calculate the areas of circles and
+// print them in ncurses mode
+// $ gcc -o circle  circle.c -lncurses
+
+#include <curses.h>               // Console control functions
+double circularArea( double r );  // Function for the math
+void circle();                    // Function for output
+
+int main()        // Starts and stops curses display mode
+{
+
+/* Set up the console behavior: */
+    (void) initscr();      // Initialize the curses system
+    keypad(stdscr, TRUE);  // Enable keyboard mapping
+    (void) nonl();         // Disable line-end translation
+    (void) cbreak();       // Take single input characters
+
+/* Run the circle routine: */
+    circle(); 
+    printw( "Press any key to exit." );
+    refresh();             // Put the output on the screen
+
+/* Finish: */
+    getch();               // Wait for user to press a key
+    endwin();              // Shut down curses console
+    return 0;
+}
+
+// The circle.c program from Example 1.1, but replacing the
+// standard library function printf() with printw() from the
+// ncurses library.
+void circle()
+{
+  double radius = 1.0, area = 0.0;
+  printw("    Areas of Circles\n\n" );
+  printw("     Radius          Area\n"
+          "-------------------------\n" );
+  area = circularArea( radius );
+  printw( "%%10.1f     %%10.2f\n", radius, area ); 
+  radius = 5.0;
+  area = circularArea( radius );
+  printw( "%%10.1f     %%10.2f\n", radius, area ); 
+}
+
+// Return the area of a circle with radius r
+double circularArea( double r )
+{
+  const double pi = 3.1415926536; // Pi is a constant 
+  return  pi * r * r;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_epoll">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : epoll.c
+
+* Creation Date : 14-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License : https://suchprogramming.com/epoll-in-3-easy-steps/
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#define MAX_EVENTS 5
+#define READ_SIZE 10
+#include <stdio.h>     // for fprintf()
+#include <unistd.h>    // for close(), read()
+#include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
+#include <string.h>    // for strncmp
+
+int main()
+{
+  int running = 1, event_count, i;
+  size_t bytes_read;
+  char read_buffer[READ_SIZE + 1];
+  struct epoll_event event;
+  struct epoll_event events[MAX_EVENTS];
+  int epoll_fd = epoll_create1(0);
+
+  if(epoll_fd == -1)
+  {
+    fprintf(stderr, "Failed to create epoll file descriptor\n");
+    return 1;
+  }
+
+  event.events = EPOLLIN;
+  event.data.fd = 0;
+
+  if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, 0, &event))
+  {
+    fprintf(stderr, "Failed to add file descriptor to epoll\n");
+    close(epoll_fd);
+    return 1;
+  }
+
+  while(running)
+  {
+    printf("\nPolling for input...\n");
+    event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, 30000);
+    printf("%%d ready events\n", event_count);
+    for(i = 0; i < event_count; i++)
+    {
+      printf("Reading file descriptor '%%d' -- ", events[i].data.fd);
+      bytes_read = read(events[i].data.fd, read_buffer, READ_SIZE);
+      printf("%%zd bytes read.\n", bytes_read);
+      read_buffer[bytes_read] = '\0';
+      printf("Read '%%s'\n", read_buffer);
+
+      if(!strncmp(read_buffer, "stop\n", 5))
+        running = 0;
+    }
+  }
+
+
+  if(close(epoll_fd))
+  {
+    fprintf(stderr, "Failed to close epoll file descriptor\n");
+    return 1;
+  }
+  return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_mmap">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : mmap.c
+
+* Creation Date : 14-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+
+/**
+ * ******************************************************
+ * 
+void * realloc (void *addr, size_t len)
+{
+        size_t old_size = look_up_mapping_size (addr);
+        void *p;
+
+        p = mremap (addr, old_size, len, MREMAP_MAYMOVE);
+        if (p == MAP_FAILED)
+                return NULL;
+        return p;
+}
+ * ******************************************************
+**/
+
+
+/**
+ * ******************************************************
+ * #include <sys/mman.h>
+
+int mprotect (const void *addr,
+              size_t len,
+              int prot);
+ * ******************************************************
+**/
+
+/**
+ * ******************************************************
+ * #include <sys/mman.h>
+
+int msync (void *addr, size_t len, int flags);
+ * ******************************************************
+**/
+
+
+/**
+ * ******************************************************
+ * The only unfamiliar system call in this example should be 
+ * fstat(), which we will cover in Chapter 8. All you need to
+ * know at this point is that fstat() returns information 
+ * about a given file. 
+ *
+ * The S_ISREG() macro can check some 
+ * of this information so that we can ensure that the given
+ * file is a regular file (as opposed to a device file or a 
+ * directory) before we map it. 
+ *
+ * The behavior of nonregular
+ * files when mapped depends on the backing device.
+ * Some device files are mmap-able; other nonregular files 
+ * are not mmap-able and will set errno to EACCES.
+ *
+ * The rest of the example should be straightforward. The program is
+ * passed a filename as an argument. It opens the file, ensures 
+ * it is a regular file, maps it, closes it, prints the file 
+ * byte-by-byte to standard out, and then unmaps the file from memory.
+ * ******************************************************
+**/
+int main (int argc, char *argv[])
+{
+        struct stat sb;
+        off_t len;
+        char *p;
+        int fd;
+
+        if (argc < 2) {
+                fprintf (stderr, "usage: %%s <file>\n", argv[0]);
+                return 1;
+        }
+
+        fd = open (argv[1], O_RDONLY);
+        if (fd == -1) {
+                perror ("open");
+                return 1;
+        }
+
+        if (fstat (fd, &sb) == -1) {
+                perror ("fstat");
+                return 1;
+        }
+
+        if (!S_ISREG (sb.st_mode)) {
+                fprintf (stderr, "%%s is not a file\n", argv[1]);
+                return 1;
+        }
+
+        p = mmap (0, sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
+        if (p == MAP_FAILED) {
+                perror ("mmap");
+                return 1;
+        }
+
+        if (close (fd) == -1) {
+                perror ("close");
+                return 1;
+        }
+
+        for (len = 0; len < sb.st_size; len++)
+                putchar (p[len]);
+
+        if (munmap (p, sb.st_size) == -1) {
+                perror ("munmap");
+                return 1;
+        }
+
+        return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_readv">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : readv.c
+
+* Creation Date : 14-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/uio.h>
+
+int main ()
+{
+        char foo[48], bar[51], baz[49];
+        struct iovec iov[3];
+        ssize_t nr;
+        int fd, i;
+
+        fd = open ("buccaneer.txt", O_RDONLY);
+        if (fd == -1) {
+                perror ("open");
+                return 1;
+        }
+
+        /* set up our iovec structures */
+        iov[0].iov_base = foo;
+        iov[0].iov_len = sizeof (foo);
+        iov[1].iov_base = bar;
+        iov[1].iov_len = sizeof (bar);
+        iov[2].iov_base = baz;
+        iov[2].iov_len = sizeof (baz);
+
+        /* read into the structures with a single call */
+        nr = readv (fd, iov, 3);
+        if (nr == -1) {
+                perror ("readv");
+                return 1;
+        }
+
+        for (i = 0; i < 3; i++)
+                printf ("%%d: %%s", i, (char *) iov[i].iov_base);
+
+        if (close (fd)) {
+                perror ("close");
+                return 1;
+        }
+
+        return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_writev">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : writev.c
+
+* Creation Date : 14-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/uio.h>
+
+int main ()
+{
+        struct iovec iov[3];
+        ssize_t nr;
+        int fd, i;
+
+        char *buf[] = {
+                "The term buccaneer comes from the word boucan.\n",
+                "A boucan is a wooden frame used for cooking meat.\n",
+                "Buccaneer is the West Indies name for a pirate.\n" };
+
+        fd = open ("buccaneer.txt", O_WRONLY | O_CREAT | O_TRUNC);
+        if (fd == -1) {
+                perror ("open");
+                return 1;
+        }
+
+        /* fill out three iovec structures */
+        for (i = 0; i < 3; i++) {
+                iov[i].iov_base = buf[i];
+                iov[i].iov_len = strlen(buf[i]) + 1;
+        }
+        /* with a single call, write them all out */
+        nr = writev (fd, iov, 3);
+        if (nr == -1) {
+                perror ("writev");
+                return 1;
+        }
+        printf ("wrote %%d bytes\n", (int)nr);
+
+        if (close (fd)) {
+                perror ("close");
+                return 1;
+        }
+
+        return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_processor_affinity">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : processor_affinity.c
+
+* Creation Date : 18-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+
+#define _GNU_SOURCE
+
+#include <sched.h>
+#include <error.h>
+#include <stdio.h>
+
+#if 0
+typedef struct cpu_set_t;
+
+size_t CPU_SETSIZE;
+
+void CPU_SET (unsigned long cpu, cpu_set_t *set);
+void CPU_CLR (unsigned long cpu, cpu_set_t *set);
+int CPU_ISSET (unsigned long cpu, cpu_set_t *set);
+void CPU_ZERO (cpu_set_t *set);
+
+int sched_setaffinity (pid_t pid, size_t setsize,
+                       const cpu_set_t *set);
+
+int sched_getaffinity (pid_t pid, size_t setsize,
+                       cpu_set_t *set);
+#endif
+
+
+/**
+ * ******************************************************
+ *  Checks if the cpu is set
+ * ******************************************************
+**/
+void check_set_processors() {
+    cpu_set_t set;
+    int ret, i;
+
+    CPU_ZERO (&set);
+    ret = sched_getaffinity (0, sizeof (cpu_set_t), &set);
+    if (ret == -1)
+            perror ("sched_getaffinity");
+
+    for (i = 0; i < 8 /*nr of cores*/; i++) {
+            int cpu;
+
+            cpu = CPU_ISSET (i, &set);
+            printf ("cpu=%%i is %%s\n", i,
+                    cpu ? "set" : "unset");
+    }
+}
+
+/**
+ * ******************************************************
+ *  Set the hard affinity for the process
+ * ******************************************************
+**/
+void set_hard_affinity() {
+    cpu_set_t set;
+    int ret, i;
+
+    CPU_ZERO (&set);        /* clear all CPUs */
+    CPU_SET (0, &set);      /* allow CPU #0 */
+    //CPU_CLR (1, &set);      /* disallow CPU #1 */
+                              /* clearing is not necessary */
+    ret = sched_setaffinity (0, sizeof (cpu_set_t), &set);
+    if (ret == -1)
+            perror ("sched_setaffinity");
+
+    for (i = 0; i < 8 /*nr of cores*/; i++) {
+            int cpu;
+
+            cpu = CPU_ISSET (i, &set);
+            printf ("cpu=%%i is %%s\n", i,
+                    cpu ? "set" : "unset");
+    }
+}
+
+int main(int argc, char ** argv) {
+    check_set_processors();
+    set_hard_affinity();
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_scheduling">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : scheduling.c
+
+* Creation Date : 18-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#include <sched.h>
+#include <errno.h>
+#include <stdio.h>
+#include <unistd.h>
+
+
+
+void wrapper_sched_yield() {
+    while(1) {
+        sched_yield();
+    }
+}
+
+/**
+ * ******************************************************
+ *  Sets the processor niceness:
+ *  -20 to 19
+ * ******************************************************
+**/
+void wrapper_nice() {
+    int ret, val;
+
+    /* get current nice value */
+    val = nice (0);
+
+    /* we want a nice value of 10 */
+    val = 10 - val;
+    errno = 0;
+    ret = nice (val);
+    if (ret == -1 && errno != 0)
+            perror ("nice");
+    else
+            printf ("nice value is now %%d\n", ret);
+}
+
+/**
+ * ******************************************************
+ *  which: PRIO_PROCESS
+ *         PRIO_PGRP
+ *         PRIO_USER
+ *
+ *  who: PID
+ *       0 means current process, group or user
+ * ******************************************************
+**/
+void wrapper_getpriority(int which, int who) {
+    int ret = getpriority(which, who);
+    printf("nice value is %%d\n", ret);
+}
+
+void wrapper_setpriority(int which, int who, int prio) {
+    int ret = setpriority(which, who, prio);
+    if (ret == -1) perror ("setpriority");
+}
+
+
+int main(int argc, char ** argv) {
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_buffered_io">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : main.c
+
+* Creation Date : 14-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+/* fcloseall() */
+#define _GNU_SOURCE
+
+/* open(), creat(), lseek(), ftruncate */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <stdio.h>
+
+/**
+ * ******************************************************
+ *  Fopen wrapper
+ * ******************************************************
+**/
+void wrapper_fopen() {
+    FILE *stream = NULL;
+
+    stream = fopen("/etc/manifest", "r");
+    if (!stream) perror("fopen");
+
+    int close = fclose(stream);
+    (void)close;
+}
+
+void wrapper_fdopen() {
+    FILE *stream = NULL;
+    int fd, close;
+
+    fd = open("/tmp/test.txt", O_RDONLY);
+    if (fd == -1) perror ("open:");
+
+    stream = fdopen(fd, "r");
+    if (!stream) perror("fopen");
+
+    close = fclose(stream);
+    (void)close;
+}
+
+/**
+ * ******************************************************
+ *  fgetc wrapper
+ * ******************************************************
+**/
+void wrapper_getc() {
+    FILE *stream = NULL;
+    int c;
+
+    c = fgetc(stream);
+
+    if (c == EOF) perror("getc:");
+    else printf("c=%%c'n", (char) c);
+
+    int ret = ungetc(c, stream);
+    (void)ret;
+}
+
+
+/**
+ * ******************************************************
+ *  fgets() wrapper
+ * ******************************************************
+**/
+void wrapper_fgets() {
+    int line_max = 100;
+    char buf[line_max];
+    FILE *stream = NULL;
+
+    if (!fgets (buf, line_max, stream)) {
+        perror("fgets:");
+    }
+}
+
+/**
+ * ******************************************************
+ *  Reads a line of data. Also stops reading at delimiter 
+ *  'd'
+ * ******************************************************
+**/
+void fgets_substitute(int n, char d, char* str, FILE *stream) {
+    char *s;
+    int c;
+
+    s = str;
+
+    while (--n > 0 && (c = fgetc(stream)) != EOF && (*s++ = c) != d)
+        ;
+
+    if (c == d)
+        *--s = '\0';
+    else
+        *s ='\0' ;
+}
+
+
+/**
+ * ******************************************************
+ *  Fread() wrapper
+ * ******************************************************
+**/
+void wrapper_fread() {
+    FILE *stream = NULL;
+    size_t size = 100;
+    char buf[(int)size];
+    size_t  nr = 1;
+
+    stream = fopen("/etc/manifest", "r");
+    if (!stream) perror("fopen");
+
+    size_t ret = fread(buf, size, nr, stream);
+
+    if (ret == 0) perror("fread:");
+
+    int close = fclose(stream);
+    (void)close;
+}
+
+
+/**
+ * ******************************************************
+ *  Wrappers for writing
+ * ******************************************************
+**/
+void wrapper_fputc(FILE *stream) {
+    if (fputc('p', stream) == EOF) {
+    }
+}
+
+void wrapper_fputs() {
+    FILE *stream;
+
+    stream = fopen("/tmp/test.txt", "a");
+    if (!stream) {
+        perror("fopen:");
+    }
+
+    if (fputs("The ship is made of wood.\n", stream) == EOF) perror("fputs");
+
+    if (fclose(stream) == EOF) perror("fclose:");
+}
+
+void wrapper_fwrite(void *buf, size_t size, size_t nr, FILE *stream) {
+    size_t ret = fwrite(buf, size, nr, stream);
+    (void) ret;
+}
+
+
+#if 0
+#include <stdio.h>
+int fseek (FILE *stream, long offset, int whence);
+#endif
+
+#if 0
+#include <stdio.h>
+int fsetpos (FILE *stream, fpos_t *pos);
+#endif
+
+#if 0
+#include <stdio.h>
+void rewind (FILE *stream);o
+
+errno = 0;
+rewind (stream);
+if (errno)
+        /* error */
+#endif
+
+
+#if 0
+#include <stdio.h>
+long ftell (FILE *stream);
+#endif
+
+#if 0
+#include <stdioh.h>
+int fgetpos (FILE *stream, fpos_t *pos);
+#endif
+
+
+#if 0
+#include <stdio.h>
+int fflush (FILE *stream);
+#endif
+
+
+#if 0
+#include <stdio.h>
+int ferror (FILE *stream);
+#endif
+
+#if 0
+#include <stdio.h>
+
+int feof (FILE *stream);
+#endif
+
+#if 0
+#include <stdio.h>
+
+void clearerr (FILE *stream);
+#endif
+
+
+#if 0
+#include <stdio.h>
+
+int fileno (FILE *stream);
+#endif
+
+#if 0
+#include <stdio.h>
+
+int setvbuf (FILE *stream, char *buf, int mode, size_t size);
+#endif
+
+
+int main (void)
+{
+        FILE *in, *out;
+        struct pirate {
+                char            name[100]; /* real name */
+                unsigned long   booty;     /* in pounds sterling */
+                unsigned int    beard_len; /* in inches */
+        } p, blackbeard = { "Edward Teach", 950, 48 };
+
+        out = fopen ("data", "w");
+        if (!out) {
+                perror ("fopen");
+                return 1;
+        }
+
+        if (!fwrite (&blackbeard, sizeof (struct pirate), 1, out)) {
+                perror ("fwrite");
+                return 1;
+        }
+
+        if (fclose (out)) {
+                perror ("fclose");
+                return 1;
+        }
+
+        in = fopen ("data", "r");
+        if (!in) {
+                perror ("fopen");
+                return 1;
+        }
+
+        if (!fread (&p, sizeof (struct pirate), 1, in)) {
+                perror ("fread");
+                return 1;
+        }
+
+        if (fclose (in)) {
+                perror ("fclose");
+                return 1;
+        }
+
+        printf ("name=\"%%s\" booty=%%lu beard_len=%%u\n",
+                p.name, p.booty, p.beard_len);
+
+        return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_file_stat">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : file_stat.c
+
+* Creation Date : 22-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#include <sys/statvfs.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <grp.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/sysmacros.h>
+#include <time.h>
+#include <math.h>
+#include <mntent.h>
+
+
+/*
+ * is_on_physical_device - returns a positive
+ * integer if 'fd' resides on a physical device,
+ * 0 if the file resides on a nonphysical or
+ * virtual device (e.g., on an NFS mount), and
+ * −1 on error.
+ */
+int is_on_physical_device (int fd)
+{
+        struct stat sb;
+        int ret;
+
+        ret = fstat (fd, &sb);
+        if (ret) {
+                perror ("fstat");
+                return -1;
+        }
+
+        //return gnu_dev_major (sb.st_dev);
+        return 0;
+}
+
+void wrapper_change_mod() {
+    int ret;
+    ret = chmod ("./map.png", S_IRUSR | S_IWUSR);
+
+    if (ret) {
+        perror("chmod");
+    }
+}
+
+void wrapper_fchange_mod(int fd) {
+    int ret;
+    ret = fchmod (fd, S_IRUSR | S_IWUSR);
+
+    if (ret) {
+        perror("fchmod");
+    }
+}
+
+void wrapper_owner() {
+    struct group *gr;
+    int ret;
+    /*
+     * getgrnam() returns information on a group
+     * given its name.
+     */
+    gr = getgrnam ("officers");
+    if (!gr) {
+            /* likely an invalid group */
+            perror ("getgrnam");
+            return;
+    }
+
+    /* set manifest.txt's group to 'officers' */
+    ret = chown("manifest.txt", -1, gr->gr_gid);
+    if (ret)
+            perror ("chown");
+}
+
+
+/*
+ * make_root_owner - changes the owner and group of the file
+ * given by 'fd' to root. Returns 0 on success and −1 on
+ * failure.
+ */
+int make_root_owner (int fd)
+{
+        int ret;
+
+        /* 0 is both the gid and the uid for root */
+        ret = fchown (fd, 0, 0);
+        if (ret)
+                perror ("fchown");
+
+        return ret;
+}
+
+/*
+ * find_file_in_dir - searches the directory 'path' for a
+ * file named 'file'.
+ *
+ * Returns 0 if 'file' exists in 'path' and a nonzero
+ * value otherwise.
+ */
+int find_file_in_dir (const char *path, const char *file)
+{
+        struct dirent *entry;
+        int ret = 1;
+        DIR *dir;
+
+        dir = opendir (path);
+
+        errno = 0;
+        while ((entry = readdir (dir)) != NULL) {
+                if (strcmp(entry->d_name, file) == 0) {
+                        ret = 0;
+                        break;
+                }
+        }
+
+        if (errno && !entry)
+                perror ("readdir");
+
+        closedir (dir);
+        return ret;
+}
+
+void process(const char *filename)
+{
+	FILE *fp;
+	struct mntent *fs;
+
+	fp = setmntent(filename, "r");	/* read only */
+	if (fp == NULL) {
+		fprintf(stderr, "%%s: could not open: %%s\n",
+			filename, strerror(errno));
+		exit(1);
+	}
+
+	while ((fs = getmntent(fp)) != NULL) {
+		//do_statvfs(fs);
+        printf("MNT_DIR %%s", fs->mnt_dir);
+        printf("fsname %%s", fs->mnt_fsname);
+    }
+
+	endmntent(fp);
+}
+
+int main (int argc, char *argv[])
+{
+#if 0
+        struct stat sb;
+        int ret;
+
+        if (argc < 2) {
+                fprintf (stderr,
+                         "usage: %%s <file>\n", argv[0]);
+                return 1;
+        }
+
+        ret = stat (argv[1], &sb);
+        if (ret) {
+                perror ("stat");
+                return 1;
+        }
+
+        printf ("%%s is %%ld bytes\n",
+                argv[1], sb.st_size);
+
+
+        printf ("File type: ");
+        switch (sb.st_mode & S_IFMT) {
+        case S_IFBLK:
+                printf("block device node\n");
+                break;
+        case S_IFCHR:
+                printf("character device node\n");
+                break;
+        case S_IFDIR:
+                printf("directory\n");
+                break;
+        case S_IFIFO:
+                printf("FIFO\n");
+                break;
+        case S_IFLNK:
+                printf("symbolic link\n");
+                break;
+        case S_IFREG:
+                printf("regular file\n");
+                break;
+        case S_IFSOCK:
+                printf("socket\n");
+                break;
+        default:
+                printf("unknown\n");
+                break;
+        }
+
+        return 0;
+#endif
+        struct stat sb;
+
+        if (argc != 2) {
+            fprintf(stderr, "Usage: %%s <pathname>\n", argv[0]);
+            exit(1);
+        }
+
+        if (lstat(argv[1], &sb) == -1) {
+            perror("lstat");
+            exit(1);
+        }
+
+        printf("ID of containing device:  [%%lx,%%lx]\n",
+               (long) major(sb.st_dev), (long) minor(sb.st_dev));
+
+        printf("File type:		     ");
+
+        switch (sb.st_mode & S_IFMT) {
+            case S_IFBLK:  printf("block device\n");	       break;
+            case S_IFCHR:  printf("character device\n");        break;
+            case S_IFDIR:  printf("directory\n");	       break;
+            case S_IFIFO:  printf("FIFO/pipe\n");	       break;
+            case S_IFLNK:  printf("symlink\n");		       break;
+            case S_IFREG:  printf("regular file\n");	       break;
+            case S_IFSOCK: printf("socket\n");		       break;
+            default:	  printf("unknown?\n"); 	       break;
+        }
+
+        printf("I-node number:	     %%ld\n", (long) sb.st_ino);
+
+        printf("Mode:		     %%lo (octal)\n",
+               (unsigned long) sb.st_mode);
+
+        printf("Link count:		     %%ld\n", (long) sb.st_nlink);
+        printf("Ownership:		     UID=%%ld   GID=%%ld\n",
+               (long) sb.st_uid, (long) sb.st_gid);
+
+        printf("Preferred I/O block size: %%ld bytes\n",
+               (long) sb.st_blksize);
+        printf("File size:		     %%lld bytes\n",
+               (long long) sb.st_size);
+        printf("Blocks allocated:	     %%lld\n",
+               (long long) sb.st_blocks);
+
+        printf("Last status change:	     %%s", ctime(&sb.st_ctime));
+        printf("Last file access:	     %%s", ctime(&sb.st_atime));
+        printf("Last file modification:   %%s", ctime(&sb.st_mtime));
+
+        struct statvfs stat;
+
+        if (statvfs(argv[1], &stat) != 0) {
+            // error happens, just quits here
+            return -1;
+        }
+
+        printf("Total space: %%.3f GB\n",  (stat.f_bsize * stat.f_blocks) / pow(1024, 3));
+        printf("Available space: %%.3f GB\n", (stat.f_bsize * stat.f_bavail) / pow(1024, 3));
+
+        process(argv[1]);
+
+        exit(0);
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_file_io_main">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : main.c
+
+* Creation Date : 13-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#include <stdbool.h>
+
+/* open(), creat(), lseek(), ftruncate */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+/* getcwd(), read(), write(), fsync(), close() */
+/* lseek(), pread(), pwrite(), ftruncate() */
+#include <unistd.h>
+
+/* printf() */
+#include <stdio.h>
+
+/* PATH_MAX */
+#include <limits.h>
+
+/* str* calls */
+#include <string.h>
+
+/* errno */
+#include <errno.h>
+
+/* */
+#include "multiplexed_io.h"
+
+
+/**
+ * ******************************************************
+ * Opens a file. `man open` for all the flags.
+ * ******************************************************
+**/
+int wrapper_open(const char* str, int flags) {
+    int fd = 0;
+
+    fd = open (str, flags);
+    if (fd == -1) {
+        perror("Error opening file:");
+        return 1;
+    } else {
+        printf("Opened: %%s\n", str);
+    }
+
+    return fd;
+}
+
+
+/**
+ * ******************************************************
+ * The combination of O_WRONLY | O_CREAT | O_TRUNC is so 
+ * common that a system call exists to provide just that 
+ * behavior:
+ * ******************************************************
+**/
+int wrapper_creat() {
+    int fd;
+    fd = creat ("some_file", 0644);
+    if (fd == -1) {      /* error */
+    }
+
+    return 0;
+}
+
+/**
+ * ******************************************************
+ * Wrapper for read.
+ * read() can have a plethora of results.
+ * `man read` for  possible return values.
+ * * also check pread()
+ * ******************************************************
+**/
+ssize_t wrapper_blocking_read(int fd, void *buf, size_t len) {
+
+    ssize_t ret, total_ret = 0;
+
+    if (len > SSIZE_MAX) len = SSIZE_MAX;
+
+    while (len != 0 && (ret = read(fd, buf, len)) != 0) {
+        if (ret == -1) {
+            if (errno == EINTR) continue;
+            /* else */
+            perror("blocking read");
+            break;
+        }
+        len -= ret;
+        buf += ret;
+        total_ret += ret;
+    }
+
+    return total_ret;
+}
+
+ssize_t wrapper_nonblocking_read(int fd, void *buf, size_t len) {
+    ssize_t ret = 0;
+
+    if (len > SSIZE_MAX) len = SSIZE_MAX;
+
+start:
+    ret = read(fd, buf, len);
+    if (ret == -1) {
+        if (errno == EINTR) goto start;
+        if (errno == EAGAIN) {
+            /* Do some usefull stuff */
+            /* Resubmit read again later */
+        } else {
+            /* else error */
+            perror("non-blocking read");
+        }
+    }
+
+    return ret;
+}
+
+/**
+ * ******************************************************
+ * Write wrapper
+ * * also check pwrite()
+ * ******************************************************
+**/
+ssize_t wrapper_write(int fd, const void *buf, size_t count) {
+    ssize_t nr;
+    int ret;
+    bool essential_data_only = true;
+
+    nr = write(fd, buf, strlen(buf));
+    if (nr == -1) {
+        perror("write error");
+    } else if (nr != count) {
+        /* possible error, but errno is not set*/
+    }
+
+    // Alternativley, open with O_SYNC, O_DSYNC, O_RSYNC
+    if (essential_data_only ) {
+        ret = fdatasync(fd);
+        if (ret == -1) perror("fdatasync error:");
+    } else {
+        ret = fsync(fd);
+        if (ret == -1) perror("fsync error:");
+    }
+
+    return nr;
+}
+
+
+ssize_t wrapper_socket_write(int fd, const void *buf, size_t len) {
+    ssize_t ret, total_ret;
+
+    /* Trying to write more than SSIZE_MAX results in 
+     * undefined behaviour */
+    if (len > SSIZE_MAX) len = SSIZE_MAX;
+
+    while (len != 0 && (ret = write (fd, buf, len)) != 0) {
+        if (ret == -1) {
+            if (errno == EINTR) continue; 
+            /*else */
+            perror ("write");
+            break;
+        }
+#if 0
+        // Uncomment this if you want to flush the data to the hdd
+        // Alternativley, open with O_SYNC, O_DSYNC, O_RSYNC
+        if (essential_data_only ) {
+            ret = fdatasync(fd);
+            if (ret == -1) perror("fdatasync error:");
+        } else {
+            ret = fsync(fd);
+            if (ret == -1) perror("fsync error:");
+        }
+#endif
+
+        len -= ret;
+        buf += ret;
+        total_ret += ret;
+    }
+
+    return total_ret;
+}
+
+/**
+ * ******************************************************
+ *  Close wrapper
+ * ******************************************************
+**/
+int wrapper_close(int fd) {
+    int ret = 0;
+    if ( (ret = close(fd)) == -1) {
+        perror ("close");
+    }
+
+    return ret;
+}
+
+/**
+ * ******************************************************
+ *  Lseek wrapper. curr + pos
+ *
+ *   - SEEK_CUR: if pos = 0, sets cursor to curr pos
+ *   - SEEK_END: if pos = 0, sets cursor to end
+ *   - SEEK_SET: if pos = 0, sets cursor to beginning
+ *
+ *   * also check pread() and pwrite()
+ *
+ * ******************************************************
+**/
+off_t wrapper_lseek(int fd, off_t pos, int origin) {
+    off_t ret;
+
+    /* Set the cursor to poistion pos */
+    ret = lseek(fd, pos, SEEK_SET);
+    if (ret == (off_t) -1) {
+        perror("lseek:");
+    }
+
+    return ret;
+}
+
+/**
+ * ******************************************************
+ *  Truncate wrapper
+ * ******************************************************
+**/
+int wrapper_truncate(const char* path, off_t len) {
+    int ret;
+    ret = truncate ("./pirate.txt", 45);
+    if (ret == -1) {
+        perror ("truncate");
+        return -1;
+    } 
+    return 0;
+}
+
+/**
+ * ******************************************************
+ *  Sscanf wrapper.
+ * ******************************************************
+**/
+void wrapper_sscanf() {
+    int nr = 10;
+    const char * line = "10 ten(";
+    char str[128];
+    if (sscanf (line, "%%d %%64[^(]", &nr, str) < 2) {
+        fprintf(stderr, "Bad command in wrapper scanf\n");
+        printf("%%s\n", str);
+    }
+    else {
+        printf("%%s\n", str);
+    }
+}
+
+/**
+ * ******************************************************
+ *  Main
+ * ******************************************************
+**/
+int main(int argc, char ** argv) {
+    int fd;
+    char cwd[PATH_MAX];
+    char abs_path[PATH_MAX + 30];
+
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        printf("Current working dir: %%s\n", cwd);
+    } else {
+        perror("getcwd() error");
+        return 1;
+    }
+
+    wrapper_sscanf();
+
+    fd = wrapper_open("/home/teach/pearl", O_WRONLY | O_TRUNC);
+    
+    strcat(abs_path, cwd);
+    strcat(abs_path, "/perl");
+
+    fd = wrapper_open((const char*)abs_path, O_WRONLY | O_TRUNC);
+    (void)fd;
+
+    wrapper_select();
+    wrapper_poll();
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_file_io_multiplexed">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : multiplexed_io.c
+
+* Creation Date : 14-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+
+#include "multiplexed_io.h"
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <poll.h>
+
+#define TIMEOUT 5
+#define BUF_LEN 1024
+
+/**
+ * ******************************************************
+ * @brief 
+ * 1. Tell me when any of these fds become ready for i/o
+ * 2. Sleep until one or more fds are ready
+ * 3. Woken up! What is ready?
+ * 4. Handle all fds ready for i/o without blocking
+ * 5. go back to 1.
+ * ******************************************************
+**/
+int wrapper_select() {
+    int ret;
+    struct timeval tv;
+    fd_set readfds;
+
+    /* Wait on stdin for input. */
+    FD_ZERO(&readfds);
+    FD_SET(STDIN_FILENO, &readfds);
+
+    /* Wait up to five seconds */
+    /* !!!! 
+     * This needs to be reinitialized on subsequent calls.
+     * pselect() leaves the structure alone. 
+     * !!!! */
+    tv.tv_sec = TIMEOUT;
+    tv.tv_usec = 0;
+
+    /* Now block */
+    ret = select(STDIN_FILENO + 1,
+                &readfds,
+                0,
+                0,
+                &tv);
+
+    if (ret == -1) {
+        perror("select:");
+        return 1;
+    } else if (!ret) {
+        printf("%%d seconds elapsed.\n", TIMEOUT);
+        /* The time structure is modified by the select() */
+        printf("tv_sec %%d.\n", (int)tv.tv_sec);
+        printf("tv_usec %%d.\n", (int)tv.tv_usec);
+        return 0;
+    }
+
+    /* 
+     * Is our fd ready to read?
+     * Only one provided, so yes.
+     * */
+    if (FD_ISSET(STDIN_FILENO, &readfds)) {
+        char buf[BUF_LEN + 1];
+        int len;
+
+        /* guaranteed to not block */
+        len = read (STDIN_FILENO, buf, BUF_LEN);
+        if (len == -1) {
+            perror("read:");
+            return 1;
+        }
+
+        if (len) {
+            buf[len] = '\0';
+            printf("read: %%s.\n", buf);
+            /* The time structure is modified by the select() */
+            printf("tv_sec %%d.\n", (int)tv.tv_sec);
+            printf("tv_usec %%d.\n", (int)tv.tv_usec);
+        }
+
+        return 0;
+    }
+
+    fprintf(stderr, "This should not happen!\n");
+    return 1;
+}
+
+/*
+ * There are three differences between pselect() and select():
+ *  - pselect() uses the timespec structure, not the timeval structure, for its 
+ *    timeout parameter. The timespec structure uses seconds and nanoseconds,
+ *    not seconds and microseconds, providing theoretically superior timeout 
+ *    resolution. In practice, however, neither call reliably provides even
+ *    microsecond resolution.
+ *  - A call to pselect() does not modify the timeout parameter.
+ *    Consequently, this parameter does not need to be
+ *    reinitialized on subsequent invocations.
+ *  - The select() system call does not have the sigmask parameter.
+ *    With respect to signals, when this parameter is set to NULL, pselect()
+ *    behaves like select().
+ *
+ *    The motivation for pselect() are the signals. The app can block indefinetly
+ *    if the signall arives between the check for the global signal flag
+ *    and the call to select().
+ *    sigmask in pselect() blocks signals. Blocked signals are not handled
+ *    until they are unblocked. Once pselec() returns, the kernel restors the
+ *    old signal mask.
+ */
+
+
+
+int wrapper_poll() {
+    int ret;
+
+    struct pollfd fds[2];
+    /* watch stdin for input */
+    fds[0].fd = STDIN_FILENO;
+    fds[0].events = POLLIN;
+    /* watch stdout for ability to write (almost always true) */
+    //fds[1].fd = STDOUT_FILENO;
+    //fds[1].events = POLLOUT;
+    /* All set, block! */
+    ret = poll (fds, 1, TIMEOUT * 1000);
+    if (ret == -1) {
+        perror ("poll");
+        return 1;
+    }
+    if (!ret) {
+        printf ("%%d seconds elapsed.\n", TIMEOUT);
+        return 0;
+    }
+    if (fds[0].revents & POLLIN) {
+        char buf[BUF_LEN + 1];
+        int len;
+
+        /* guaranteed to not block */
+        len = read (STDIN_FILENO, buf, BUF_LEN);
+        if (len == -1) {
+            perror("read:");
+            return 1;
+        }
+
+        if (len) {
+            buf[len] = '\0';
+            printf("read: %%s.\n", buf);
+        }
+        printf ("stdin is readable\n");
+    }
+    if (fds[1].revents & POLLOUT)
+        printf ("stdout is writable\n");
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_mmap2">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : mmap.c
+
+* Creation Date : 22-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+/**
+ * ******************************************************
+ * As an alternative to standard file I/O, the kernel
+ * provides an interface that allows an application to
+ * map a file into memory, meaning that there is a 
+ * one-to-one correspondence between a memory address 
+ * and a word in the file. The programmer can then access
+ * the file directly through memory, identically to any
+ * other chunk of memory-resident data—it is even possible 
+ * to allow writes to the memory region to transparently 
+ * map back to the file on disk.
+ *
+ *  - or -
+ *
+ *  Perhaps because you want to force the use of a memory 
+ *  mapping over the heap for a specific allocation, or 
+ *  perhaps because you are writing your own memory allocation 
+ *  system, you may want to manually create your own 
+ *  anonymous memory mapping—either way, Linux makes it easy. 
+ *  Recall from Chapter 4 that the system call mmap()
+ *  creates a memory mapping and the system call munmap() 
+ *  destroys a mapping:
+ * ******************************************************
+**/
+int main(int argc, char ** argv) {
+    void *p;
+    int fd;
+
+    /* open /dev/zero for reading and writing */
+    fd = open ("/dev/zero", O_RDWR);
+    if (fd < 0) {
+            perror ("open");
+            return −1;
+    }
+
+    /* map [0,page size) of /dev/zero */
+    p = mmap (NULL,                   /* do not care where */
+              getpagesize (),         /* map one page */
+              PROT_READ | PROT_WRITE, /* map read/write */
+              MAP_PRIVATE,            /* private mapping */
+              fd,                     /* map /dev/zero */
+              0);                     /* no offset */
+
+    if (p == MAP_FAILED) {
+            perror ("mmap");
+            if (close (fd))
+                    perror ("close");
+            return −1;
+    }
+
+    /* close /dev/zero, no longer needed */
+    if (close (fd))
+            perror ("close");
+
+    /* 'p' points at one page of memory, use it... */  
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_daemon">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : daemon.c
+
+* Creation Date : 17-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <linux/fs.h>
+
+/**
+ * ******************************************************
+ *  This main() actually is synonymous for:
+ *  #include <unistd.h>
+ *  int daemon (int nochdir, int noclose)
+ * ******************************************************
+**/
+int main (void)
+{
+        pid_t pid;
+//        int i;
+
+        /* create new process */
+        pid = fork ();
+        if (pid == -1)
+                return -1;
+        else if (pid != 0)
+                exit (EXIT_SUCCESS);
+
+        /* create new session and process group */
+        if (setsid () == -1)
+                return -1;
+
+        /* set the working directory to the root directory */
+        if (chdir ("/") == -1)
+                return -1;
+
+        /* close all open files--NR_OPEN is overkill, but works */
+//        for (i = 0; i < NR_OPEN; i++)
+//                close (i);
+
+        /* redirect fd's 0,1,2 to /dev/null */
+        open ("/dev/null", O_RDWR);     /* stdin */
+        dup (0);                        /* stdout */
+        dup (0);                        /* stderror */
+
+        /* do its daemon thing... */
+
+        /* Just so you can see it with `ps | grep daemon` */
+        while (1) {
+            sleep(1);
+        }
+
+        return 0;
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_exec_prog">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : exec_prog.c
+
+* Creation Date : 16-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
+
+
+int main(int argc, char ** argv) {
+
+    char * const args[] = { "program_name_here", "/hooks.txt", NULL };
+    int ret;
+
+    ret = execv ("/usr/bin/vi", args);
+    if (ret == -1) perror ("execvp");
+
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_fork_call">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : fork_call.c
+
+* Creation Date : 16-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+void parent_out() {
+    printf("parent atexit() succeeded!\n");
+}
+
+void child_out() {
+    printf("child atexit() succeeded!\n");
+}
+
+
+int main(int argc, char ** argv) {
+
+    pid_t pid;
+
+    pid = fork ();
+    if (pid == -1) perror ("fork");
+    else if (pid > 0) {
+        printf("I am the parent of pid=%%d.\n", pid);
+        printf("My pid is =%%d.\n", getpid());
+
+        /* Will call the parent_out function when falling of the 
+         * edge. */
+        if (atexit(parent_out)) {
+            fprintf(stderr, "atexit() failed!\n");
+        }
+
+        return 0;
+    }
+    else if (!pid) {
+        /* the child ... */
+        printf(" -- I am the the child of pid=%%d.\n", getppid());
+        printf(" -- My pid is =%%d.\n", getpid());
+        printf(" -- I list files:\n");
+        char *const args[] = { "list_child", NULL };
+        int ret;
+
+        if (atexit(child_out)) {
+            fprintf(stderr, "atexit() failed!\n");
+        }
+        /* If I uncomment the line below then , the program ends with
+         * "atexit() succeeded." Otherwise the execv() flushes all 
+         * registered functions with atexit(). */
+        //exit(0);
+
+        ret = execv ("/bin/ls", args);
+        if (ret == -1) {
+                perror ("execv");
+                exit (EXIT_FAILURE);
+        }
+
+        /* Other things which are lost on exec() family commands:
+         *  - Any pending signals are lost.
+         *  - Any signals that the process is catching (see Chapter 10)
+         *    are returned to their default behavior, as the signal handlers
+         *    no longer exist in the process’s address space. 
+         *  - Any memory locks (see Chapter 9) are dropped. 
+         *  - Most thread attributes are returned to the default values. 
+         *  - Most process statistics are reset.  
+         *  - Anything related to the process’s memory address space, including any mapped files, 
+         *    is cleared. 
+         *  - Anything that exists solely in user space, including features of the C library,
+         *    such as atexit() behavior, is cleared.  
+         *
+         * Some properties of the process, 
+         * however, do not change. For example, the pid, parent pid, priority, and owning 
+         * user and group all remain the same.  Normally, open files are inherited across an exec.
+         * This means the newly executed program has full access to all of the files open in the 
+         * original process, assuming it knows the file descriptor values. However, this is
+         * often not the desired behavior. 
+         *
+         * The usual practice is to close files before the exec, 
+         * although it is also possible to instruct the kernel to 
+         * do so automatically via fcntl().  
+         */
+
+        return 0;
+    }
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_wait_call">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : wait_call.c
+
+* Creation Date : 16-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#include <stdlib.h>
+#include <signal.h>
+
+
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+/**
+ * ******************************************************
+ *  system(): A short hand function for fork() -> exec()
+ * ******************************************************
+**/
+void wrapper_system() {
+    /*
+     * During execution of the command, SIGCHLD is blocked, 
+     * and SIGINT and SIGQUIT are ignored. Ignoring SIGINT 
+     * and SIGQUIT has several implications,
+     * particularly if system() is invoked inside a loop. 
+     * If calling system() from within a loop, you should 
+     * ensure that the program properly checks the exit status of the child.
+     * For example:
+     */
+    do {
+        int ret;
+
+        ret = system ("pidof rudderd");
+        if (WIFSIGNALED (ret) &&
+            (WTERMSIG (ret) == SIGINT ||
+             WTERMSIG (ret) == SIGQUIT))
+                break; /* or otherwise handle */
+    } while (1);
+}
+
+/**
+ * ******************************************************
+ *  The waitid(), more options than waitpid().
+ * ******************************************************
+**/
+void wrapper_waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options) {
+    int ret = waitid (idtype, id, infop, options);
+
+    (void)ret;
+}
+
+int main(int argc, char ** argv) {
+    int status;
+    pid_t pid;
+
+    if (!fork ())
+            return 1;
+
+    //pid = wait (&status); // Weaksauce
+
+    pid = waitpid(-1, &status, 0); // Better
+    /*
+     * < −1
+     * Wait for any child process whose process group ID 
+     * is equal to the absolute value of this value. 
+     * For example, passing −500 waits for any process in process group 500.
+     *
+     * −1
+     * Wait for any child process. This is the same behavior as wait().
+     *
+     * 0
+     * Wait for any child process that belongs to the same process 
+     * group as the calling process.
+     *
+     * > 0
+     * Wait for any child process whose pid is exactly the value provided.
+     * For example, passing 500 waits for the child process with pid 500.
+     */
+
+    /*
+     * The options parameter is a binary OR of zero or more of the following 
+     * options:
+     * 
+     *  - WNOHANG
+     * Do not block, but return immediately if no matching child process has 
+     * already terminated (or stopped or continued).
+     *  
+     *  - WUNTRACED
+     * If set, the WIFSTOPPED bit in the returned status parameter is set,
+     * even if the calling process is not tracing the child process. 
+     * This flag allows for the implementation of more general job control,
+     * as in a shell.
+     *
+     *  - WCONTINUED
+     * If set, the WIFCONTINUED bit in the returned status parameter is
+     * set even if the calling process is not tracing the child process.
+     * As with WUNTRACED, this flag is useful for implementing a shell.
+     */
+    if (pid == -1)
+            perror ("wait");
+
+    printf ("pid=%%d\n", pid);
+
+    if (WIFEXITED (status))
+            printf ("Normal termination with exit status=%%d\n",
+                    WEXITSTATUS (status));
+
+    if (WIFSIGNALED (status))
+            printf ("Killed by signal=%%d%%s\n",
+                    WTERMSIG (status),
+                    WCOREDUMP (status) ? " (dumped core)" : "");
+
+    if (WIFSTOPPED (status))
+            printf ("Stopped by signal=%%d\n",
+                    WSTOPSIG (status));
+
+    if (WIFCONTINUED (status))
+            printf ("Continued\n");
+
+   return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_signal_handling">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : signal_handling.c
+
+* Creation Date : 22-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ * https://en.wikipedia.org/wiki/Reentrancy_(computing)
+ */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+
+/* handler for SIGINT and SIGTERM */
+static void signal_handler (int signo)
+{
+        if (signo == SIGINT)
+                printf ("Caught SIGINT!\n");
+        else if (signo == SIGTERM)
+                printf ("Caught SIGTERM!\n");
+        else {
+                /* this should never happen */
+                fprintf (stderr, "Unexpected signal!\n");
+                exit (EXIT_FAILURE);
+        }
+        exit (EXIT_SUCCESS);
+}
+
+int main (void)
+{
+        /*
+         * Register signal_handler as our signal handler
+         * for SIGINT.
+         */
+        if (signal (SIGINT, signal_handler) == SIG_ERR) {
+                fprintf (stderr, "Cannot handle SIGINT!\n");
+                exit (EXIT_FAILURE);
+        }
+
+        /*
+         * Register signal_handler as our signal handler
+         * for SIGTERM.
+         */
+        if (signal (SIGTERM, signal_handler) == SIG_ERR) {
+                fprintf (stderr, "Cannot handle SIGTERM!\n");
+                exit (EXIT_FAILURE);
+        }
+
+        /* Reset SIGPROF's behavior to the default. */
+        if (signal (SIGPROF, SIG_DFL) == SIG_ERR) {
+                fprintf (stderr, "Cannot reset SIGPROF!\n");
+                exit (EXIT_FAILURE);
+        }
+
+        /* Ignore SIGHUP. */
+        if (signal (SIGHUP, SIG_IGN) == SIG_ERR) {
+                fprintf (stderr, "Cannot ignore SIGHUP!\n");
+                exit (EXIT_FAILURE);
+        }
+
+        int i = 0;
+        while (1) {
+            i++;
+            printf("Sleeping %%d\n", i);
+            sleep(1);
+        }
+
+        return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_threading">
+			<text>
+				<![CDATA[/***************************************** 
+
+* File Name : threading.c
+
+* Creation Date : 22-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License :
+
+******************************************/
+
+/**
+ *  Purpose:
+ *
+ */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
+
+void * start_thread (void *message)
+{
+        printf ("%%s\n", (const char *) message);
+        return message;
+}
+
+int main (void)
+{
+        pthread_t thing1, thing2;
+        const char *message1 = "Thing 1";
+        const char *message2 = "Thing 2";
+
+        /* Create two threads, each with a different message. */
+        pthread_create (&thing1, NULL, start_thread, (void *) message1);
+        pthread_create (&thing2, NULL, start_thread, (void *) message2);
+
+        /*
+         * Wait for the threads to exit. If we didn't join here,
+         * we'd risk terminating this main thread before the
+         * other two threads finished.
+         */
+        pthread_join (thing1, NULL);
+        pthread_join (thing2, NULL);
+
+        return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_thread_safety_H">
+			<text>
+				<![CDATA[/****************************************** 
+
+* File Name : thread_saftey.h
+
+* Creation Date : 14-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License : 
+
+******************************************/
+
+/**
+ * Purpose
+ */
+
+#ifndef _THREAD_SAFTEY_H_
+#define _THREAD_SAFTEY_H_
+
+/**
+ * ******************************************************
+ * #include <stdio.h>
+
+void flockfile (FILE *stream);
+ * ******************************************************
+**/
+
+/**
+ * ******************************************************
+ * #include <stdio.h>
+
+void funlockfile (FILE *stream);
+ * ******************************************************
+**/
+
+
+/**
+ * ******************************************************
+ *  #include <stdio.h>
+
+int ftrylockfile (FILE *stream);
+ * ******************************************************
+**/
+
+
+/**
+ * ******************************************************
+ * 
+flockfile (stream);
+
+fputs ("List of treasure:\n", stream);
+fputs ("    (1) 500 gold coins\n", stream);
+fputs ("    (2) Wonderfully ornate dishware\n", stream);
+
+funlockfile (stream);
+ * ******************************************************
+**/
+
+
+/**
+ * ******************************************************
+ * 
+ * #define _GNU_SOURCE
+
+#include <stdio.h>
+
+int fgetc_unlocked (FILE *stream);
+char *fgets_unlocked (char *str, int size, FILE *stream);
+size_t fread_unlocked (void *buf, size_t size, size_t nr,
+                       FILE *stream);
+int fputc_unlocked (int c, FILE *stream);
+int fputs_unlocked (const char *str, FILE *stream);
+size_t fwrite_unlocked (void *buf, size_t size, size_t nr,
+                        FILE *stream);
+int fflush_unlocked (FILE *stream);
+int feof_unlocked (FILE *stream);
+int ferror_unlocked (FILE *stream);
+int fileno_unlocked (FILE *stream);
+void clearerr_unlocked (FILE *stream);
+ * ******************************************************
+**/
+
+
+#endif
+]]>
+			</text>
+		</p>
+		<p n="xlnx_multiplexed_H">
+			<text>
+				<![CDATA[/****************************************** 
+
+* File Name : multiplexed_io.h
+
+* Creation Date : 14-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License : 
+
+******************************************/
+
+/**
+ * Purpose
+ */
+
+#ifndef __MULTIPLEXED_IO_H_
+#define __MULTIPLEXED_IO_H_
+
+#include <sys/select.h>
+#include <sys/time.h>
+
+/**
+ * ******************************************************
+ * @brief 
+ * 1. Tell me when any of these fds become ready for i/o
+ * 2. Sleep until one or more fds are ready
+ * 3. Woken up! What is ready?
+ * 4. Handle all fds ready for i/o without blocking
+ * 5. go back to 1.
+ * ******************************************************
+**/
+int wrapper_select();
+
+int wrapper_poll();
+
+#endif
+]]>
+			</text>
+		</p>
 	</language.aliases>
 </options>
