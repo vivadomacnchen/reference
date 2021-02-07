@@ -10609,5 +10609,5730 @@ int wrapper_poll();
 ]]>
 			</text>
 		</p>
+		<p n="xlnx_drv_lddbus">
+			<text>
+				<![CDATA[/*
+ * A virtual bus for LDD sample code devices to plug into.  This
+ * code is heavily borrowed from drivers/base/sys.c
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ */
+/* $Id: lddbus.c,v 1.9 2004/09/26 08:12:27 gregkh Exp $ */
+
+#include <linux/device.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/string.h>
+#include "lddbus.h"
+
+MODULE_AUTHOR("Jonathan Corbet");
+MODULE_LICENSE("Dual BSD/GPL");
+static char *Version = "$Revision: 1.9 $";
+
+/*
+ * Respond to hotplug events.
+ */
+static int ldd_hotplug(struct device *dev, char **envp, int num_envp,
+		char *buffer, int buffer_size)
+{
+	envp[0] = buffer;
+	if (snprintf(buffer, buffer_size, "LDDBUS_VERSION=%%s",
+			    Version) >= buffer_size)
+		return -ENOMEM;
+	envp[1] = NULL;
+	return 0;
+}
+
+/*
+ * Match LDD devices to drivers.  Just do a simple name test.
+ */
+static int ldd_match(struct device *dev, struct device_driver *driver)
+{
+	return !strncmp(dev->bus_id, driver->name, strlen(driver->name));
+}
+
+
+/*
+ * The LDD bus device.
+ */
+static void ldd_bus_release(struct device *dev)
+{
+	printk(KERN_DEBUG "lddbus release\n");
+}
+	
+struct device ldd_bus = {
+	.bus_id   = "ldd0",
+	.release  = ldd_bus_release
+};
+
+
+/*
+ * And the bus type.
+ */
+struct bus_type ldd_bus_type = {
+	.name = "ldd",
+	.match = ldd_match,
+	.hotplug  = ldd_hotplug,
+};
+
+/*
+ * Export a simple attribute.
+ */
+static ssize_t show_bus_version(struct bus_type *bus, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%%s\n", Version);
+}
+
+static BUS_ATTR(version, S_IRUGO, show_bus_version, NULL);
+
+
+
+/*
+ * LDD devices.
+ */
+
+/*
+ * For now, no references to LDDbus devices go out which are not
+ * tracked via the module reference count, so we use a no-op
+ * release function.
+ */
+static void ldd_dev_release(struct device *dev)
+{ }
+
+int register_ldd_device(struct ldd_device *ldddev)
+{
+	ldddev->dev.bus = &ldd_bus_type;
+	ldddev->dev.parent = &ldd_bus;
+	ldddev->dev.release = ldd_dev_release;
+	strncpy(ldddev->dev.bus_id, ldddev->name, BUS_ID_SIZE);
+	return device_register(&ldddev->dev);
+}
+EXPORT_SYMBOL(register_ldd_device);
+
+void unregister_ldd_device(struct ldd_device *ldddev)
+{
+	device_unregister(&ldddev->dev);
+}
+EXPORT_SYMBOL(unregister_ldd_device);
+
+/*
+ * Crude driver interface.
+ */
+
+
+static ssize_t show_version(struct device_driver *driver, char *buf)
+{
+	struct ldd_driver *ldriver = to_ldd_driver(driver);
+
+	sprintf(buf, "%%s\n", ldriver->version);
+	return strlen(buf);
+}
+		
+
+int register_ldd_driver(struct ldd_driver *driver)
+{
+	int ret;
+	
+	driver->driver.bus = &ldd_bus_type;
+	ret = driver_register(&driver->driver);
+	if (ret)
+		return ret;
+	driver->version_attr.attr.name = "version";
+	driver->version_attr.attr.owner = driver->module;
+	driver->version_attr.attr.mode = S_IRUGO;
+	driver->version_attr.show = show_version;
+	driver->version_attr.store = NULL;
+	return driver_create_file(&driver->driver, &driver->version_attr);
+}
+
+void unregister_ldd_driver(struct ldd_driver *driver)
+{
+	driver_unregister(&driver->driver);
+}
+EXPORT_SYMBOL(register_ldd_driver);
+EXPORT_SYMBOL(unregister_ldd_driver);
+
+
+
+static int __init ldd_bus_init(void)
+{
+	int ret;
+
+	ret = bus_register(&ldd_bus_type);
+	if (ret)
+		return ret;
+	if (bus_create_file(&ldd_bus_type, &bus_attr_version))
+		printk(KERN_NOTICE "Unable to create version attribute\n");
+	ret = device_register(&ldd_bus);
+	if (ret)
+		printk(KERN_NOTICE "Unable to register ldd0\n");
+	return ret;
+}
+
+static void ldd_bus_exit(void)
+{
+	device_unregister(&ldd_bus);
+	bus_unregister(&ldd_bus_type);
+}
+
+module_init(ldd_bus_init);
+module_exit(ldd_bus_exit);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_faulty">
+			<text>
+				<![CDATA[/*
+ * complete.c -- the writers awake the readers
+ *
+ * Copyright (C) 2003 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2003 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: complete.c,v 1.2 2004/09/26 07:02:43 gregkh Exp $
+ */
+
+#include <linux/module.h>
+#include <linux/init.h>
+
+#include <linux/sched.h>  /* current and everything */
+#include <linux/kernel.h> /* printk() */
+#include <linux/fs.h>     /* everything... */
+#include <linux/types.h>  /* size_t */
+#include <linux/completion.h>
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+static int complete_major = 0;
+
+DECLARE_COMPLETION(comp);
+
+ssize_t complete_read (struct file *filp, char __user *buf, size_t count, loff_t *pos)
+{
+	printk(KERN_DEBUG "process %%i (%%s) going to sleep\n",
+			current->pid, current->comm);
+	wait_for_completion(&comp);
+	printk(KERN_DEBUG "awoken %%i (%%s)\n", current->pid, current->comm);
+	return 0; /* EOF */
+}
+
+ssize_t complete_write (struct file *filp, const char __user *buf, size_t count,
+		loff_t *pos)
+{
+	printk(KERN_DEBUG "process %%i (%%s) awakening the readers...\n",
+			current->pid, current->comm);
+	complete(&comp);
+	return count; /* succeed, to avoid retrial */
+}
+
+
+struct file_operations complete_fops = {
+	.owner = THIS_MODULE,
+	.read =  complete_read,
+	.write = complete_write,
+};
+
+
+int complete_init(void)
+{
+	int result;
+
+	/*
+	 * Register your major, and accept a dynamic number
+	 */
+	result = register_chrdev(complete_major, "complete", &complete_fops);
+	if (result < 0)
+		return result;
+	if (complete_major == 0)
+		complete_major = result; /* dynamic */
+	return 0;
+}
+
+void complete_cleanup(void)
+{
+	unregister_chrdev(complete_major, "complete");
+}
+
+module_init(complete_init);
+module_exit(complete_cleanup);
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_complete">
+			<text>
+				<![CDATA[/*
+ * complete.c -- the writers awake the readers
+ *
+ * Copyright (C) 2003 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2003 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: complete.c,v 1.2 2004/09/26 07:02:43 gregkh Exp $
+ */
+
+#include <linux/module.h>
+#include <linux/init.h>
+
+#include <linux/sched.h>  /* current and everything */
+#include <linux/kernel.h> /* printk() */
+#include <linux/fs.h>     /* everything... */
+#include <linux/types.h>  /* size_t */
+#include <linux/completion.h>
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+static int complete_major = 0;
+
+DECLARE_COMPLETION(comp);
+
+ssize_t complete_read (struct file *filp, char __user *buf, size_t count, loff_t *pos)
+{
+	printk(KERN_DEBUG "process %%i (%%s) going to sleep\n",
+			current->pid, current->comm);
+	wait_for_completion(&comp);
+	printk(KERN_DEBUG "awoken %%i (%%s)\n", current->pid, current->comm);
+	return 0; /* EOF */
+}
+
+ssize_t complete_write (struct file *filp, const char __user *buf, size_t count,
+		loff_t *pos)
+{
+	printk(KERN_DEBUG "process %%i (%%s) awakening the readers...\n",
+			current->pid, current->comm);
+	complete(&comp);
+	return count; /* succeed, to avoid retrial */
+}
+
+
+struct file_operations complete_fops = {
+	.owner = THIS_MODULE,
+	.read =  complete_read,
+	.write = complete_write,
+};
+
+
+int complete_init(void)
+{
+	int result;
+
+	/*
+	 * Register your major, and accept a dynamic number
+	 */
+	result = register_chrdev(complete_major, "complete", &complete_fops);
+	if (result < 0)
+		return result;
+	if (complete_major == 0)
+		complete_major = result; /* dynamic */
+	return 0;
+}
+
+void complete_cleanup(void)
+{
+	unregister_chrdev(complete_major, "complete");
+}
+
+module_init(complete_init);
+module_exit(complete_cleanup);
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_hello">
+			<text>
+				<![CDATA[/*                                                     
+ * $Id: hello.c,v 1.5 2004/10/26 03:32:21 corbet Exp $ 
+ */                                                    
+#include <linux/init.h>
+#include <linux/module.h>
+MODULE_LICENSE("Dual BSD/GPL");
+
+static int hello_init(void)
+{
+	printk(KERN_ALERT "Hello, world\n");
+	return 0;
+}
+
+static void hello_exit(void)
+{
+	printk(KERN_ALERT "Goodbye, cruel world\n");
+}
+
+module_init(hello_init);
+module_exit(hello_exit);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_hellop">
+			<text>
+				<![CDATA[/*                                                     
+ * $Id: hellop.c,v 1.4 2004/09/26 07:02:43 gregkh Exp $ 
+ */                                                    
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+/*                                                        
+ * These lines, although not shown in the book,           
+ * are needed to make hello.c run properly even when      
+ * your kernel has version support enabled                
+ */                                                       
+                                                          
+
+/*
+ * A couple of parameters that can be passed in: how many times we say
+ * hello, and to whom.
+ */
+static char *whom = "world";
+static int howmany = 1;
+module_param(howmany, int, S_IRUGO);
+module_param(whom, charp, S_IRUGO);
+
+static int hello_init(void)
+{
+	int i;
+	for (i = 0; i < howmany; i++)
+		printk(KERN_ALERT "(%%d) Hello, %%s\n", i, whom);
+	return 0;
+}
+
+static void hello_exit(void)
+{
+	printk(KERN_ALERT "Goodbye, cruel world\n");
+}
+
+module_init(hello_init);
+module_exit(hello_exit);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_jiq">
+			<text>
+				<![CDATA[/*
+ * jiq.c -- the just-in-queue module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: jiq.c,v 1.7 2004/09/26 07:02:43 gregkh Exp $
+ */
+ 
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+
+#include <linux/sched.h>
+#include <linux/kernel.h>
+#include <linux/fs.h>     /* everything... */
+#include <linux/proc_fs.h>
+#include <linux/errno.h>  /* error codes */
+#include <linux/workqueue.h>
+#include <linux/preempt.h>
+#include <linux/interrupt.h> /* tasklets */
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+/*
+ * The delay for the delayed workqueue timer file.
+ */
+static long delay = 1;
+module_param(delay, long, 0);
+
+
+/*
+ * This module is a silly one: it only embeds short code fragments
+ * that show how enqueued tasks `feel' the environment
+ */
+
+#define LIMIT	(PAGE_SIZE-128)	/* don't print any more after this size */
+
+/*
+ * Print information about the current environment. This is called from
+ * within the task queues. If the limit is reched, awake the reading
+ * process.
+ */
+static DECLARE_WAIT_QUEUE_HEAD (jiq_wait);
+
+
+static struct work_struct jiq_work;
+
+
+
+/*
+ * Keep track of info we need between task queue runs.
+ */
+static struct clientdata {
+	int len;
+	char *buf;
+	unsigned long jiffies;
+	long delay;
+} jiq_data;
+
+#define SCHEDULER_QUEUE ((task_queue *) 1)
+
+
+
+static void jiq_print_tasklet(unsigned long);
+static DECLARE_TASKLET(jiq_tasklet, jiq_print_tasklet, (unsigned long)&jiq_data);
+
+
+/*
+ * Do the printing; return non-zero if the task should be rescheduled.
+ */
+static int jiq_print(void *ptr)
+{
+	struct clientdata *data = ptr;
+	int len = data->len;
+	char *buf = data->buf;
+	unsigned long j = jiffies;
+
+	if (len > LIMIT) { 
+		wake_up_interruptible(&jiq_wait);
+		return 0;
+	}
+
+	if (len == 0)
+		len = sprintf(buf,"    time  delta preempt   pid cpu command\n");
+	else
+		len =0;
+
+  	/* intr_count is only exported since 1.3.5, but 1.99.4 is needed anyways */
+	len += sprintf(buf+len, "%%9li  %%4li     %%3i %%5i %%3i %%s\n",
+			j, j - data->jiffies,
+			preempt_count(), current->pid, smp_processor_id(),
+			current->comm);
+
+	data->len += len;
+	data->buf += len;
+	data->jiffies = j;
+	return 1;
+}
+
+
+/*
+ * Call jiq_print from a work queue
+ */
+static void jiq_print_wq(void *ptr)
+{
+	struct clientdata *data = (struct clientdata *) ptr;
+    
+	if (! jiq_print (ptr))
+		return;
+    
+	if (data->delay)
+		schedule_delayed_work(&jiq_work, data->delay);
+	else
+		schedule_work(&jiq_work);
+}
+
+
+
+static int jiq_read_wq(char *buf, char **start, off_t offset,
+                   int len, int *eof, void *data)
+{
+	DEFINE_WAIT(wait);
+	
+	jiq_data.len = 0;                /* nothing printed, yet */
+	jiq_data.buf = buf;              /* print in this place */
+	jiq_data.jiffies = jiffies;      /* initial time */
+	jiq_data.delay = 0;
+    
+	prepare_to_wait(&jiq_wait, &wait, TASK_INTERRUPTIBLE);
+	schedule_work(&jiq_work);
+	schedule();
+	finish_wait(&jiq_wait, &wait);
+
+	*eof = 1;
+	return jiq_data.len;
+}
+
+
+static int jiq_read_wq_delayed(char *buf, char **start, off_t offset,
+                   int len, int *eof, void *data)
+{
+	DEFINE_WAIT(wait);
+	
+	jiq_data.len = 0;                /* nothing printed, yet */
+	jiq_data.buf = buf;              /* print in this place */
+	jiq_data.jiffies = jiffies;      /* initial time */
+	jiq_data.delay = delay;
+    
+	prepare_to_wait(&jiq_wait, &wait, TASK_INTERRUPTIBLE);
+	schedule_delayed_work(&jiq_work, delay);
+	schedule();
+	finish_wait(&jiq_wait, &wait);
+
+	*eof = 1;
+	return jiq_data.len;
+}
+
+
+
+
+/*
+ * Call jiq_print from a tasklet
+ */
+static void jiq_print_tasklet(unsigned long ptr)
+{
+	if (jiq_print ((void *) ptr))
+		tasklet_schedule (&jiq_tasklet);
+}
+
+
+
+static int jiq_read_tasklet(char *buf, char **start, off_t offset, int len,
+                int *eof, void *data)
+{
+	jiq_data.len = 0;                /* nothing printed, yet */
+	jiq_data.buf = buf;              /* print in this place */
+	jiq_data.jiffies = jiffies;      /* initial time */
+
+	tasklet_schedule(&jiq_tasklet);
+	interruptible_sleep_on(&jiq_wait);    /* sleep till completion */
+
+	*eof = 1;
+	return jiq_data.len;
+}
+
+
+
+
+/*
+ * This one, instead, tests out the timers.
+ */
+
+static struct timer_list jiq_timer;
+
+static void jiq_timedout(unsigned long ptr)
+{
+	jiq_print((void *)ptr);            /* print a line */
+	wake_up_interruptible(&jiq_wait);  /* awake the process */
+}
+
+
+static int jiq_read_run_timer(char *buf, char **start, off_t offset,
+                   int len, int *eof, void *data)
+{
+
+	jiq_data.len = 0;           /* prepare the argument for jiq_print() */
+	jiq_data.buf = buf;
+	jiq_data.jiffies = jiffies;
+
+	init_timer(&jiq_timer);              /* init the timer structure */
+	jiq_timer.function = jiq_timedout;
+	jiq_timer.data = (unsigned long)&jiq_data;
+	jiq_timer.expires = jiffies + HZ; /* one second */
+
+	jiq_print(&jiq_data);   /* print and go to sleep */
+	add_timer(&jiq_timer);
+	interruptible_sleep_on(&jiq_wait);  /* RACE */
+	del_timer_sync(&jiq_timer);  /* in case a signal woke us up */
+    
+	*eof = 1;
+	return jiq_data.len;
+}
+
+
+
+/*
+ * the init/clean material
+ */
+
+static int jiq_init(void)
+{
+
+	/* this line is in jiq_init() */
+	INIT_WORK(&jiq_work, jiq_print_wq, &jiq_data);
+
+	create_proc_read_entry("jiqwq", 0, NULL, jiq_read_wq, NULL);
+	create_proc_read_entry("jiqwqdelay", 0, NULL, jiq_read_wq_delayed, NULL);
+	create_proc_read_entry("jitimer", 0, NULL, jiq_read_run_timer, NULL);
+	create_proc_read_entry("jiqtasklet", 0, NULL, jiq_read_tasklet, NULL);
+
+	return 0; /* succeed */
+}
+
+static void jiq_cleanup(void)
+{
+	remove_proc_entry("jiqwq", NULL);
+	remove_proc_entry("jiqwqdelay", NULL);
+	remove_proc_entry("jitimer", NULL);
+	remove_proc_entry("jiqtasklet", NULL);
+}
+
+
+module_init(jiq_init);
+module_exit(jiq_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_jit">
+			<text>
+				<![CDATA[/*
+ * jit.c -- the just-in-time module
+ *
+ * Copyright (C) 2001,2003 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001,2003 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: jit.c,v 1.16 2004/09/26 07:02:43 gregkh Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+
+#include <linux/time.h>
+#include <linux/timer.h>
+#include <linux/kernel.h>
+#include <linux/proc_fs.h>
+#include <linux/types.h>
+#include <linux/spinlock.h>
+#include <linux/interrupt.h>
+
+#include <asm/hardirq.h>
+/*
+ * This module is a silly one: it only embeds short code fragments
+ * that show how time delays can be handled in the kernel.
+ */
+
+int delay = HZ; /* the default delay, expressed in jiffies */
+
+module_param(delay, int, 0);
+
+MODULE_AUTHOR("Alessandro Rubini");
+MODULE_LICENSE("Dual BSD/GPL");
+
+/* use these as data pointers, to implement four files in one function */
+enum jit_files {
+	JIT_BUSY,
+	JIT_SCHED,
+	JIT_QUEUE,
+	JIT_SCHEDTO
+};
+
+/*
+ * This function prints one line of data, after sleeping one second.
+ * It can sleep in different ways, according to the data pointer
+ */
+int jit_fn(char *buf, char **start, off_t offset,
+	      int len, int *eof, void *data)
+{
+	unsigned long j0, j1; /* jiffies */
+	wait_queue_head_t wait;
+
+	init_waitqueue_head (&wait);
+	j0 = jiffies;
+	j1 = j0 + delay;
+
+	switch((long)data) {
+		case JIT_BUSY:
+			while (time_before(jiffies, j1))
+				cpu_relax();
+			break;
+		case JIT_SCHED:
+			while (time_before(jiffies, j1)) {
+				schedule();
+			}
+			break;
+		case JIT_QUEUE:
+			wait_event_interruptible_timeout(wait, 0, delay);
+			break;
+		case JIT_SCHEDTO:
+			set_current_state(TASK_INTERRUPTIBLE);
+			schedule_timeout (delay);
+			break;
+	}
+	j1 = jiffies; /* actual value after we delayed */
+
+	len = sprintf(buf, "%%9li %%9li\n", j0, j1);
+	*start = buf;
+	return len;
+}
+
+/*
+ * This file, on the other hand, returns the current time forever
+ */
+int jit_currentime(char *buf, char **start, off_t offset,
+                   int len, int *eof, void *data)
+{
+	struct timeval tv1;
+	struct timespec tv2;
+	unsigned long j1;
+	u64 j2;
+
+	/* get them four */
+	j1 = jiffies;
+	j2 = get_jiffies_64();
+	do_gettimeofday(&tv1);
+	tv2 = current_kernel_time();
+
+	/* print */
+	len=0;
+	len += sprintf(buf,"0x%%08lx 0x%%016Lx %%10i.%%06i\n"
+		       "%%40i.%%09i\n",
+		       j1, j2,
+		       (int) tv1.tv_sec, (int) tv1.tv_usec,
+		       (int) tv2.tv_sec, (int) tv2.tv_nsec);
+	*start = buf;
+	return len;
+}
+
+/*
+ * The timer example follows
+ */
+
+int tdelay = 10;
+module_param(tdelay, int, 0);
+
+/* This data structure used as "data" for the timer and tasklet functions */
+struct jit_data {
+	struct timer_list timer;
+	struct tasklet_struct tlet;
+	int hi; /* tasklet or tasklet_hi */
+	wait_queue_head_t wait;
+	unsigned long prevjiffies;
+	unsigned char *buf;
+	int loops;
+};
+#define JIT_ASYNC_LOOPS 5
+
+void jit_timer_fn(unsigned long arg)
+{
+	struct jit_data *data = (struct jit_data *)arg;
+	unsigned long j = jiffies;
+	data->buf += sprintf(data->buf, "%%9li  %%3li     %%i    %%6i   %%i   %%s\n",
+			     j, j - data->prevjiffies, in_interrupt() ? 1 : 0,
+			     current->pid, smp_processor_id(), current->comm);
+
+	if (--data->loops) {
+		data->timer.expires += tdelay;
+		data->prevjiffies = j;
+		add_timer(&data->timer);
+	} else {
+		wake_up_interruptible(&data->wait);
+	}
+}
+
+/* the /proc function: allocate everything to allow concurrency */
+int jit_timer(char *buf, char **start, off_t offset,
+	      int len, int *eof, void *unused_data)
+{
+	struct jit_data *data;
+	char *buf2 = buf;
+	unsigned long j = jiffies;
+
+	data = kmalloc(sizeof(*data), GFP_KERNEL);
+	if (!data)
+		return -ENOMEM;
+
+	init_timer(&data->timer);
+	init_waitqueue_head (&data->wait);
+
+	/* write the first lines in the buffer */
+	buf2 += sprintf(buf2, "   time   delta  inirq    pid   cpu command\n");
+	buf2 += sprintf(buf2, "%%9li  %%3li     %%i    %%6i   %%i   %%s\n",
+			j, 0L, in_interrupt() ? 1 : 0,
+			current->pid, smp_processor_id(), current->comm);
+
+	/* fill the data for our timer function */
+	data->prevjiffies = j;
+	data->buf = buf2;
+	data->loops = JIT_ASYNC_LOOPS;
+	
+	/* register the timer */
+	data->timer.data = (unsigned long)data;
+	data->timer.function = jit_timer_fn;
+	data->timer.expires = j + tdelay; /* parameter */
+	add_timer(&data->timer);
+
+	/* wait for the buffer to fill */
+	wait_event_interruptible(data->wait, !data->loops);
+	if (signal_pending(current))
+		return -ERESTARTSYS;
+	buf2 = data->buf;
+	kfree(data);
+	*eof = 1;
+	return buf2 - buf;
+}
+
+void jit_tasklet_fn(unsigned long arg)
+{
+	struct jit_data *data = (struct jit_data *)arg;
+	unsigned long j = jiffies;
+	data->buf += sprintf(data->buf, "%%9li  %%3li     %%i    %%6i   %%i   %%s\n",
+			     j, j - data->prevjiffies, in_interrupt() ? 1 : 0,
+			     current->pid, smp_processor_id(), current->comm);
+
+	if (--data->loops) {
+		data->prevjiffies = j;
+		if (data->hi)
+			tasklet_hi_schedule(&data->tlet);
+		else
+			tasklet_schedule(&data->tlet);
+	} else {
+		wake_up_interruptible(&data->wait);
+	}
+}
+
+/* the /proc function: allocate everything to allow concurrency */
+int jit_tasklet(char *buf, char **start, off_t offset,
+	      int len, int *eof, void *arg)
+{
+	struct jit_data *data;
+	char *buf2 = buf;
+	unsigned long j = jiffies;
+	long hi = (long)arg;
+
+	data = kmalloc(sizeof(*data), GFP_KERNEL);
+	if (!data)
+		return -ENOMEM;
+
+	init_waitqueue_head (&data->wait);
+
+	/* write the first lines in the buffer */
+	buf2 += sprintf(buf2, "   time   delta  inirq    pid   cpu command\n");
+	buf2 += sprintf(buf2, "%%9li  %%3li     %%i    %%6i   %%i   %%s\n",
+			j, 0L, in_interrupt() ? 1 : 0,
+			current->pid, smp_processor_id(), current->comm);
+
+	/* fill the data for our tasklet function */
+	data->prevjiffies = j;
+	data->buf = buf2;
+	data->loops = JIT_ASYNC_LOOPS;
+	
+	/* register the tasklet */
+	tasklet_init(&data->tlet, jit_tasklet_fn, (unsigned long)data);
+	data->hi = hi;
+	if (hi)
+		tasklet_hi_schedule(&data->tlet);
+	else
+		tasklet_schedule(&data->tlet);
+
+	/* wait for the buffer to fill */
+	wait_event_interruptible(data->wait, !data->loops);
+
+	if (signal_pending(current))
+		return -ERESTARTSYS;
+	buf2 = data->buf;
+	kfree(data);
+	*eof = 1;
+	return buf2 - buf;
+}
+
+
+
+int __init jit_init(void)
+{
+	create_proc_read_entry("currentime", 0, NULL, jit_currentime, NULL);
+	create_proc_read_entry("jitbusy", 0, NULL, jit_fn, (void *)JIT_BUSY);
+	create_proc_read_entry("jitsched",0, NULL, jit_fn, (void *)JIT_SCHED);
+	create_proc_read_entry("jitqueue",0, NULL, jit_fn, (void *)JIT_QUEUE);
+	create_proc_read_entry("jitschedto", 0, NULL, jit_fn, (void *)JIT_SCHEDTO);
+
+	create_proc_read_entry("jitimer", 0, NULL, jit_timer, NULL);
+	create_proc_read_entry("jitasklet", 0, NULL, jit_tasklet, NULL);
+	create_proc_read_entry("jitasklethi", 0, NULL, jit_tasklet, (void *)1);
+
+	return 0; /* success */
+}
+
+void __exit jit_cleanup(void)
+{
+	remove_proc_entry("currentime", NULL);
+	remove_proc_entry("jitbusy", NULL);
+	remove_proc_entry("jitsched", NULL);
+	remove_proc_entry("jitqueue", NULL);
+	remove_proc_entry("jitschedto", NULL);
+
+	remove_proc_entry("jitimer", NULL);
+	remove_proc_entry("jitasklet", NULL);
+	remove_proc_entry("jitasklethi", NULL);
+}
+
+module_init(jit_init);
+module_exit(jit_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_kdataalign">
+			<text>
+				<![CDATA[/*
+ * kdatasize.c -- print the size of common data items from kernel space
+ * This runs with any Linux kernel (not any Unix, because of <linux/types.h>)
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/types.h>
+#include <linux/utsname.h>
+#include <linux/errno.h>
+
+/*
+ * Define several data structures, all of them start with a lone char
+ * in order to present an unaligned offset for the next field
+ */
+struct c   {char c;  char      t;} c;
+struct s   {char c;  short     t;} s;
+struct i   {char c;  int       t;} i;
+struct l   {char c;  long      t;} l;
+struct ll  {char c;  long long t;} ll;
+struct p   {char c;  void *    t;} p;
+struct u1b {char c;  __u8      t;} u1b;
+struct u2b {char c;  __u16     t;} u2b;
+struct u4b {char c;  __u32     t;} u4b;
+struct u8b {char c;  __u64     t;} u8b;
+
+static void data_cleanup(void)
+{
+	/* never called */
+}
+
+static int data_init(void)
+{
+	/* print information and return an error */
+	printk("arch  Align:  char  short  int  long   ptr long-long "
+		" u8 u16 u32 u64\n");
+	printk("%%-12s  %%3i   %%3i   %%3i   %%3i   %%3i   %%3i      "
+		"%%3i %%3i %%3i %%3i\n",
+		system_utsname.machine,
+		/* note that gcc can subtract void * values, but it's not ansi */
+		(int)((void *)(&c.t)   - (void *)&c),
+		(int)((void *)(&s.t)   - (void *)&s),
+		(int)((void *)(&i.t)   - (void *)&i),
+		(int)((void *)(&l.t)   - (void *)&l),
+		(int)((void *)(&p.t)   - (void *)&p),
+		(int)((void *)(&ll.t)  - (void *)&ll),
+		(int)((void *)(&u1b.t) - (void *)&u1b),
+		(int)((void *)(&u2b.t) - (void *)&u2b),
+		(int)((void *)(&u4b.t) - (void *)&u4b),
+		(int)((void *)(&u8b.t) - (void *)&u8b));
+	return -ENODEV;
+}
+
+module_init(data_init);
+module_exit(data_cleanup);
+
+MODULE_LICENSE("Dual BSD/GPL");
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_kdatasize">
+			<text>
+				<![CDATA[/*
+ * kdatasize.c -- print the size of common data items from kernel space
+ * This runs with any Linux kernel (not any Unix, because of <linux/types.h>)
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+
+#include <linux/kernel.h>
+#include <linux/types.h>
+#include <linux/utsname.h>
+#include <linux/errno.h>
+
+static void data_cleanup(void)
+{
+	/* never called */
+}
+
+int data_init(void)
+{
+	/* print information and return an error */
+	printk("arch   Size:  char  short  int  long   ptr long-long "
+		" u8 u16 u32 u64\n");
+	printk("%%-12s  %%3i   %%3i   %%3i   %%3i   %%3i   %%3i      "
+		"%%3i %%3i %%3i %%3i\n",
+		system_utsname.machine,
+		(int)sizeof(char), (int)sizeof(short), (int)sizeof(int),
+		(int)sizeof(long),
+		(int)sizeof(void *), (int)sizeof(long long), (int)sizeof(__u8),
+		(int)sizeof(__u16), (int)sizeof(__u32), (int)sizeof(__u64));
+	return -ENODEV;
+}
+
+module_init(data_init);
+module_exit(data_cleanup);
+
+MODULE_LICENSE("Dual BSD/GPL");
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_seq">
+			<text>
+				<![CDATA[/*
+ * Simple demonstration of the seq_file interface.
+ *
+ * $Id: seq.c,v 1.3 2004/09/26 07:02:43 gregkh Exp $
+ */
+
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/proc_fs.h>
+#include <linux/fs.h>
+#include <linux/seq_file.h>
+#include <linux/slab.h>
+
+
+MODULE_AUTHOR("Jonathan Corbet");
+MODULE_LICENSE("Dual BSD/GPL");
+
+
+
+/*
+ * The sequence iterator functions.  The position as seen by the
+ * filesystem is just the count that we return.
+ */
+static void *ct_seq_start(struct seq_file *s, loff_t *pos)
+{
+	loff_t *spos = kmalloc(sizeof(loff_t), GFP_KERNEL);
+	if (!spos)
+		return NULL;
+	*spos = *pos;
+	return spos;
+}
+
+static void *ct_seq_next(struct seq_file *s, void *v, loff_t *pos)
+{
+	loff_t *spos = (loff_t *) v;
+	*pos = ++(*spos);
+	return spos;
+}
+
+static void ct_seq_stop(struct seq_file *s, void *v)
+{
+	kfree (v);
+}
+
+/*
+ * The show function.
+ */
+static int ct_seq_show(struct seq_file *s, void *v)
+{
+	loff_t *spos = (loff_t *) v;
+	seq_printf(s, "%%Ld\n", *spos);
+	return 0;
+}
+
+/*
+ * Tie them all together into a set of seq_operations.
+ */
+static struct seq_operations ct_seq_ops = {
+	.start = ct_seq_start,
+	.next  = ct_seq_next,
+	.stop  = ct_seq_stop,
+	.show  = ct_seq_show
+};
+
+
+/*
+ * Time to set up the file operations for our /proc file.  In this case,
+ * all we need is an open function which sets up the sequence ops.
+ */
+
+static int ct_open(struct inode *inode, struct file *file)
+{
+	return seq_open(file, &ct_seq_ops);
+};
+
+/*
+ * The file operations structure contains our open function along with
+ * set of the canned seq_ ops.
+ */
+static struct file_operations ct_file_ops = {
+	.owner   = THIS_MODULE,
+	.open    = ct_open,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
+	.release = seq_release
+};
+	
+	
+/*
+ * Module setup and teardown.
+ */
+
+static int ct_init(void)
+{
+	struct proc_dir_entry *entry;
+
+	entry = create_proc_entry("sequence", 0, NULL);
+	if (entry)
+		entry->proc_fops = &ct_file_ops;
+	return 0;
+}
+
+static void ct_exit(void)
+{
+	remove_proc_entry("sequence", NULL);
+}
+
+module_init(ct_init);
+module_exit(ct_exit);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_silly">
+			<text>
+				<![CDATA[/*
+ * silly.c -- Simple Tool for Unloading and Printing ISA Data
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: silly.c,v 1.3 2004/09/26 07:02:43 gregkh Exp $
+ */
+
+/* =========================> BIG FAT WARNING:
+ * This will only work on architectures with an ISA memory range.
+ * It won't work on other computers.
+ */
+
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/moduleparam.h>
+#include <linux/version.h>
+
+#include <linux/sched.h>
+#include <linux/kernel.h> /* printk() */
+#include <linux/fs.h>	  /* everything... */
+#include <linux/errno.h>  /* error codes */
+#include <linux/slab.h>
+#include <linux/mm.h>
+#include <linux/ioport.h>
+#include <linux/poll.h>
+
+#include <asm/io.h>
+#include <asm/uaccess.h>
+
+int silly_major = 0;
+module_param(silly_major, int, 0);
+MODULE_AUTHOR("Alessandro Rubini");
+MODULE_LICENSE("Dual BSD/GPL");
+
+/*
+ * The devices access the 640k-1M memory.
+ * minor 0 uses ioread8/iowrite8
+ * minor 1 uses ioread16/iowrite16
+ * minor 2 uses ioread32/iowrite32
+ * minor 3 uses memcpy_fromio()/memcpy_toio()
+ */
+
+/*
+ * Here's our address range, and a place to store the ioremap'd base.
+ */
+#define ISA_BASE	0xA0000
+#define ISA_MAX		0x100000  /* for general memory access */
+
+#define VIDEO_MAX	0xC0000  /* for vga access */
+#define VGA_BASE	0xb8000
+static void __iomem *io_base;
+
+
+
+int silly_open(struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+int silly_release(struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+enum silly_modes {M_8=0, M_16, M_32, M_memcpy};
+
+ssize_t silly_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	int retval;
+	int mode = iminor(filp->f_dentry->d_inode);
+	void __iomem *add;
+	unsigned long isa_addr = ISA_BASE + *f_pos;
+	unsigned char *kbuf, *ptr;
+
+	if (isa_addr + count > ISA_MAX) /* range: 0xA0000-0x100000 */
+		count = ISA_MAX - isa_addr;
+
+	/*
+	 * too big an f_pos (caused by a malicious lseek())
+	 * would result in a negative count
+	 */
+	if (count < 0)
+		return 0;
+
+	kbuf = kmalloc(count, GFP_KERNEL);
+	if (!kbuf)
+		return -ENOMEM;
+	ptr = kbuf;
+	retval = count;
+	/*
+	 * Convert our address into our remapped area.
+	 */
+	add = (void __iomem *)(io_base + (isa_addr - ISA_BASE));
+	/*
+	 * kbuf is aligned, but the reads might not. In order not to
+	 * drive me mad with unaligned leading and trailing bytes,
+	 * I downgrade the `mode' if unaligned xfers are requested.
+	 */
+
+	if (mode == M_32 && ((isa_addr | count) & 3))
+		mode = M_16;
+	if (mode == M_16 && ((isa_addr | count) & 1))
+		mode = M_8;
+
+	switch(mode) {
+	  case M_32: 
+		while (count >= 4) {
+			*(u32 *)ptr = ioread32(add);
+			add += 4;
+			count -= 4;
+			ptr += 4;
+		}
+		break;
+	    
+	  case M_16: 
+		while (count >= 2) {
+			*(u16 *)ptr = ioread16(add);
+			add+=2;
+			count-=2;
+			ptr+=2;
+		}
+		break;
+	    
+	  case M_8: 
+		while (count) {
+			*ptr = ioread8(add);
+			add++;
+			count--;
+			ptr++;
+		}
+		break;
+
+	  case M_memcpy:
+		memcpy_fromio(ptr, add, count);
+		break;
+
+	    default:
+		return -EINVAL;
+	}
+	if ((retval > 0) && copy_to_user(buf, kbuf, retval))
+		retval = -EFAULT;
+	kfree(kbuf);
+	*f_pos += retval;
+	return retval;
+}
+
+
+ssize_t silly_write(struct file *filp, const char __user *buf, size_t count,
+		    loff_t *f_pos)
+{
+	int retval;
+	int mode = iminor(filp->f_dentry->d_inode);
+	unsigned long isa_addr = ISA_BASE + *f_pos;
+	unsigned char *kbuf, *ptr;
+	void __iomem *add;
+
+	/*
+	 * Writing is dangerous.
+	 * Allow root-only, independently of device permissions
+	 */
+	if (!capable(CAP_SYS_RAWIO))
+		return -EPERM;
+
+	if (isa_addr + count > ISA_MAX) /* range: 0xA0000-0x100000 */
+		count = ISA_MAX - isa_addr;
+
+	/*
+	 * too big an f_pos (caused by a malicious lseek())
+	 * results in a negative count
+	 */
+	if (count < 0)
+		return 0;
+
+	kbuf = kmalloc(count, GFP_KERNEL);
+	if (!kbuf)
+		return -ENOMEM;
+	ptr = kbuf;
+	retval=count;
+
+	/*
+	 * kbuf is aligned, but the writes might not. In order not to
+	 * drive me mad with unaligned leading and trailing bytes,
+	 * I downgrade the `mode' if unaligned xfers are requested.
+	 */
+
+	if (mode == M_32 && ((isa_addr | count) & 3))
+		mode = M_16;
+	if (mode == M_16 && ((isa_addr | count) & 1))
+		mode = M_8;
+
+	if (copy_from_user(kbuf, buf, count)) {
+		kfree(kbuf);
+		return -EFAULT;
+	}
+	ptr = kbuf;
+
+	/*
+	 * Switch over to our remapped address space.
+	 */
+	add = (void __iomem *)(io_base + (isa_addr - ISA_BASE));
+
+	switch(mode) {
+	  case M_32: 
+		while (count >= 4) {
+			iowrite8(*(u32 *)ptr, add);
+			add += 4;
+			count -= 4;
+			ptr += 4;
+		}
+		break;
+	    
+	  case M_16: 
+		while (count >= 2) {
+			iowrite8(*(u16 *)ptr, add);
+			add += 2;
+			count -= 2;
+			ptr += 2;
+		}
+		break;
+	    
+	  case M_8: 
+		while (count) {
+			iowrite8(*ptr, add);
+			add++;
+			count--;
+			ptr++;
+		}
+		break;
+
+	  case M_memcpy:
+		memcpy_toio(add, ptr, count);
+		break;
+
+	  default:
+		return -EINVAL;
+	}
+	*f_pos += retval;
+	kfree(kbuf);
+	return retval;
+}
+
+
+unsigned int silly_poll(struct file *filp, poll_table *wait)
+{
+    return POLLIN | POLLRDNORM | POLLOUT | POLLWRNORM;
+}
+
+
+struct file_operations silly_fops = {
+	.read =	    silly_read,
+	.write =    silly_write,
+	.poll =	    silly_poll,
+	.open =	    silly_open,
+	.release =  silly_release,
+	.owner =    THIS_MODULE
+};
+
+int silly_init(void)
+{
+	int result = register_chrdev(silly_major, "silly", &silly_fops);
+	if (result < 0) {
+		printk(KERN_INFO "silly: can't get major number\n");
+		return result;
+	}
+	if (silly_major == 0)
+		silly_major = result; /* dynamic */
+	/*
+	 * Set up our I/O range.
+	 */
+
+	/* this line appears in silly_init */
+	io_base = ioremap(ISA_BASE, ISA_MAX - ISA_BASE);
+	return 0;
+}
+
+void silly_cleanup(void)
+{
+	iounmap(io_base);
+	unregister_chrdev(silly_major, "silly");
+}
+
+
+module_init(silly_init);
+module_exit(silly_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_sleepy">
+			<text>
+				<![CDATA[/*
+ * sleepy.c -- the writers awake the readers
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: sleepy.c,v 1.7 2004/09/26 07:02:43 gregkh Exp $
+ */
+
+#include <linux/module.h>
+#include <linux/init.h>
+
+#include <linux/sched.h>  /* current and everything */
+#include <linux/kernel.h> /* printk() */
+#include <linux/fs.h>     /* everything... */
+#include <linux/types.h>  /* size_t */
+#include <linux/wait.h>
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+static int sleepy_major = 0;
+
+static DECLARE_WAIT_QUEUE_HEAD(wq);
+static int flag = 0;
+
+ssize_t sleepy_read (struct file *filp, char __user *buf, size_t count, loff_t *pos)
+{
+	printk(KERN_DEBUG "process %%i (%%s) going to sleep\n",
+			current->pid, current->comm);
+	wait_event_interruptible(wq, flag != 0);
+	flag = 0;
+	printk(KERN_DEBUG "awoken %%i (%%s)\n", current->pid, current->comm);
+	return 0; /* EOF */
+}
+
+ssize_t sleepy_write (struct file *filp, const char __user *buf, size_t count,
+		loff_t *pos)
+{
+	printk(KERN_DEBUG "process %%i (%%s) awakening the readers...\n",
+			current->pid, current->comm);
+	flag = 1;
+	wake_up_interruptible(&wq);
+	return count; /* succeed, to avoid retrial */
+}
+
+
+struct file_operations sleepy_fops = {
+	.owner = THIS_MODULE,
+	.read =  sleepy_read,
+	.write = sleepy_write,
+};
+
+
+int sleepy_init(void)
+{
+	int result;
+
+	/*
+	 * Register your major, and accept a dynamic number
+	 */
+	result = register_chrdev(sleepy_major, "sleepy", &sleepy_fops);
+	if (result < 0)
+		return result;
+	if (sleepy_major == 0)
+		sleepy_major = result; /* dynamic */
+	return 0;
+}
+
+void sleepy_cleanup(void)
+{
+	unregister_chrdev(sleepy_major, "sleepy");
+}
+
+module_init(sleepy_init);
+module_exit(sleepy_cleanup);
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_asynctest">
+			<text>
+				<![CDATA[/*
+ * asynctest.c: use async notification to read stdin
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <fcntl.h>
+
+int gotdata=0;
+void sighandler(int signo)
+{
+    if (signo==SIGIO)
+        gotdata++;
+    return;
+}
+
+char buffer[4096];
+
+int main(int argc, char **argv)
+{
+    int count;
+    struct sigaction action;
+
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = sighandler;
+    action.sa_flags = 0;
+
+    sigaction(SIGIO, &action, NULL);
+
+    fcntl(STDIN_FILENO, F_SETOWN, getpid());
+    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | FASYNC);
+
+    while(1) {
+        /* this only returns if a signal arrives */
+        sleep(86400); /* one day */
+        if (!gotdata)
+            continue;
+        count=read(0, buffer, 4096);
+        /* buggy: if avail data is more than 4kbytes... */
+        write(1,buffer,count);
+        gotdata=0;
+    }
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_dataalign">
+			<text>
+				<![CDATA[/*
+ * dataalign.c -- show alignment needs
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * This runs with any Linux kernel (not any Unix, because of <linux/types.h>)
+ */
+#include <stdio.h>
+#include <sys/utsname.h>
+#include <linux/types.h>
+
+/*
+ * Define several data structures, all of them start with a lone char
+ * in order to present an unaligned offset for the next field
+ */
+struct c   {char c;  char      t;} c;
+struct s   {char c;  short     t;} s;
+struct i   {char c;  int       t;} i;
+struct l   {char c;  long      t;} l;
+struct ll  {char c;  long long t;} ll;
+struct p   {char c;  void *    t;} p;
+struct u1b {char c;  __u8      t;} u1b;
+struct u2b {char c;  __u16     t;} u2b;
+struct u4b {char c;  __u32     t;} u4b;
+struct u8b {char c;  __u64     t;} u8b;
+
+int main(int argc, char **argv)
+{
+    struct utsname name;
+
+    uname(&name); /* never fails :) */
+    printf("arch  Align:  char  short  int  long   ptr long-long "
+	   " u8 u16 u32 u64\n");
+    printf(       "%%-12s  %%3i   %%3i   %%3i   %%3i   %%3i   %%3i      "
+	   "%%3i %%3i %%3i %%3i\n",
+	   name.machine,
+	   /* note that gcc can subtract void * values, but it's not ansi */
+	   (int)((void *)(&c.t)   - (void *)&c),
+	   (int)((void *)(&s.t)   - (void *)&s),
+	   (int)((void *)(&i.t)   - (void *)&i),
+	   (int)((void *)(&l.t)   - (void *)&l),
+	   (int)((void *)(&p.t)   - (void *)&p),
+	   (int)((void *)(&ll.t)  - (void *)&ll),
+	   (int)((void *)(&u1b.t) - (void *)&u1b),
+	   (int)((void *)(&u2b.t) - (void *)&u2b),
+	   (int)((void *)(&u4b.t) - (void *)&u4b),
+	   (int)((void *)(&u8b.t) - (void *)&u8b));
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_datasize">
+			<text>
+				<![CDATA[/*
+ * datasize.c -- print the size of common data items
+ * This runs with any Linux kernel (not any Unix, because of <linux/types.h>)
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+#include <stdio.h>
+#include <sys/utsname.h>
+#include <linux/types.h>
+
+int main(int argc, char **argv)
+{
+    struct utsname name;
+
+    uname(&name); /* never fails :) */
+    printf("arch   Size:  char  short  int  long   ptr long-long "
+	   " u8 u16 u32 u64\n");
+    printf(       "%%-12s  %%3i   %%3i   %%3i   %%3i   %%3i   %%3i      "
+	   "%%3i %%3i %%3i %%3i\n",
+	   name.machine,
+	   (int)sizeof(char), (int)sizeof(short), (int)sizeof(int),
+	   (int)sizeof(long),
+	   (int)sizeof(void *), (int)sizeof(long long), (int)sizeof(__u8),
+	   (int)sizeof(__u16), (int)sizeof(__u32), (int)sizeof(__u64));
+    return 0;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_inp">
+			<text>
+				<![CDATA[/* 
+ * inp.c -- read all the ports specified in hex on the command line.
+ *     The program uses the faster ioperm/iopl calls on x86, /dev/port
+ *     on other platforms. The program acts as inb/inw/inl according
+ *     to its own name
+ *
+ * Copyright (C) 1998,2000,2001 Alessandro Rubini
+ * 
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <asm/io.h> /* linux-specific */
+
+#ifdef __GLIBC__
+#  include <sys/perm.h>
+#endif
+
+#define PORT_FILE "/dev/port"
+
+char *prgname;
+
+#ifdef __i386__
+static int read_and_print_one(unsigned int port,int size)
+{
+    static int iopldone = 0;
+
+    if (port > 1024) {
+	if (!iopldone && iopl(3)) {
+	    fprintf(stderr, "%%s: iopl(): %%s\n", prgname, strerror(errno));
+	    return 1;
+	}
+	iopldone++;
+    } else if (ioperm(port,size,1)) {
+	fprintf(stderr, "%%s: ioperm(%%x): %%s\n", prgname,
+		port, strerror(errno));
+	return 1;
+    }
+
+    if (size == 4)
+	printf("%%04x: %%08x\n", port, inl(port));
+    else if (size == 2)
+	printf("%%04x: %%04x\n", port, inw(port));
+    else
+	printf("%%04x: %%02x\n", port, inb(port));
+    return 0;
+}
+#else /* not i386 */
+
+static int read_and_print_one(unsigned int port,int size)
+{
+    static int fd = -1;
+    unsigned char b; unsigned short w; unsigned int l;
+
+    if (fd < 0)
+	fd = open(PORT_FILE, O_RDONLY);
+    if (fd < 0) {
+	fprintf(stderr, "%%s: %%s: %%s\n", prgname, PORT_FILE, strerror(errno));
+	return 1;
+    }
+    lseek(fd, port, SEEK_SET);
+    
+    if (size == 4) {
+	read(fd, &l, 4);
+	printf("%%04x: 0x%%08x\n", port, l);
+    } else if (size == 2) {
+	read(fd, &w, 2);
+	printf("%%04x: 0x%%04x\n", port, w & 0xffff);
+    } else {
+	read(fd, &b, 1);
+	printf("%%04x: 0x%%02x\n", port, b & 0xff);
+    }
+    return 0;
+}
+
+#endif /* i386 */
+
+
+int main(int argc, char **argv)
+{
+    unsigned int i, n, port, size, error = 0;
+    
+    prgname = argv[0];
+    /* find the data size */
+    switch (prgname[strlen(prgname)-1]) {
+        case 'w': size = 2; break;
+        case 'l': size = 4; break;
+        case 'b': case 'p': default:
+	    size = 1;
+    }
+
+    setuid(0); /* if we're setuid, force it on */
+    for (i = 1; i < argc; i++) {
+        if ( sscanf(argv[i], "%%x%%n", &port, &n) < 1
+	      || n != strlen(argv[i]) ) {
+	    fprintf(stderr, "%%s: argument \"%%s\" is not a hex number\n",
+		    argv[0], argv[i]);
+	    error++; continue;
+	}
+	if (port & (size-1)) {
+	    fprintf(stderr, "%%s: argument \"%%s\" is not properly aligned\n",
+		    argv[0], argv[i]);
+	    error++; continue;
+	}
+	error += read_and_print_one(port, size);
+    }
+    exit (error ? 1 : 0);
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_load50">
+			<text>
+				<![CDATA[/*
+ * load50.c -- a simple busy-looping tool. 
+ * Obviously, this runs with any kernel and any Unix
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */ 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main(int argc, char **argv)
+{
+	int i, load=50;
+
+	if (argc==2) {
+		load=atoi(argv[1]);
+	}
+	printf("Bringing load to %%i\n",load);
+  
+	for (i=0; i<load; i++)
+		if (fork()==0)
+			break;
+
+	while(1)
+		;
+	return 0;
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_mapcmp">
+			<text>
+				<![CDATA[/*
+ * Simple program to compare two mmap'd areas.
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: mapcmp.c,v 1.2 2004/03/05 17:35:41 corbet Exp $
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/errno.h>
+#include <fcntl.h>
+
+static char *mapdev (const char *, unsigned long, unsigned long);
+#define PAGE_SIZE 4096
+
+/*
+ * memcmp dev1 dev2 offset pages
+ */
+int main (int argc, char **argv)
+{
+	unsigned long offset, size, i;
+	char *addr1, *addr2;
+/*
+ * Sanity check.
+ */
+	if (argc != 5)
+	{
+		fprintf (stderr, "Usage: mapcmp dev1 dev2 offset pages\n");
+		exit (1);
+	}
+/*
+ * Map the two devices.
+ */
+	offset = strtoul (argv[3], NULL, 16);
+	size = atoi (argv[4])*PAGE_SIZE;
+	printf ("Offset is 0x%%lx\n", offset);
+	addr1 = mapdev (argv[1], offset, size);
+	addr2 = mapdev (argv[2], offset, size);
+/*
+ * Do the comparison.
+ */
+	printf ("Comparing...");
+	fflush (stdout);
+	for (i = 0; i < size; i++)
+		if (*addr1++ != *addr2++)
+		{
+			printf ("areas differ at byte %%ld\n", i);
+			exit (0);
+		}
+	printf ("areas are identical.\n");
+	exit (0);
+}
+
+
+
+static char *mapdev (const char *dev, unsigned long offset,
+		unsigned long size)
+{
+	char *addr;
+	int fd = open (dev, O_RDONLY);
+
+	if (fd < 0)
+	{
+		perror (dev);
+		exit (1);
+	}
+	addr = mmap (0, size, PROT_READ, MAP_PRIVATE, fd, offset);
+	if (addr == MAP_FAILED)
+	{
+		perror (dev);
+		exit (1);
+	}
+	printf ("Mapped %%s (%%lu @ %%lx) at %%p\n", dev, size, offset, addr);
+	return (addr);
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_mapper">
+			<text>
+				<![CDATA[/*
+ * mapper.c -- simple file that mmap()s a file region and prints it
+ *
+ * Copyright (C) 1998,2000,2001 Alessandro Rubini
+ * 
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <errno.h>
+#include <limits.h>
+
+int main(int argc, char **argv)
+{
+    char *fname;
+    FILE *f;
+    unsigned long offset, len;
+    void *address;
+
+    if (argc !=4
+       || sscanf(argv[2],"%%li", &offset) != 1
+       || sscanf(argv[3],"%%li", &len) != 1) {
+        fprintf(stderr, "%%s: Usage \"%%s <file> <offset> <len>\"\n", argv[0],
+                argv[0]);
+        exit(1);
+    }
+    /* the offset might be big (e.g., PCI devices), but conversion trims it */
+    if (offset == INT_MAX) {
+	if (argv[2][1]=='x')
+            sscanf(argv[2]+2, "%%lx", &offset);
+        else
+            sscanf(argv[2], "%%lu", &offset);
+    }
+
+    fname=argv[1];
+
+    if (!(f=fopen(fname,"r"))) {
+        fprintf(stderr, "%%s: %%s: %%s\n", argv[0], fname, strerror(errno));
+        exit(1);
+    }
+
+    address=mmap(0, len, PROT_READ, MAP_FILE | MAP_PRIVATE, fileno(f), offset);
+
+    if (address == (void *)-1) {
+        fprintf(stderr,"%%s: mmap(): %%s\n",argv[0],strerror(errno));
+        exit(1);
+    }
+    fclose(f);
+    fprintf(stderr, "mapped \"%%s\" from %%lu (0x%%08lx) to %%lu (0x%%08lx)\n",
+            fname, offset, offset, offset+len, offset+len);
+
+    fwrite(address, 1, len, stdout);
+    return 0;
+}
+        
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_nbtest">
+			<text>
+				<![CDATA[/*
+ * nbtest.c: read and write in non-blocking mode
+ * This should run with any Unix
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <errno.h>
+
+char buffer[4096];
+
+int main(int argc, char **argv)
+{
+	int delay = 1, n, m = 0;
+
+	if (argc > 1)
+		delay=atoi(argv[1]);
+	fcntl(0, F_SETFL, fcntl(0,F_GETFL) | O_NONBLOCK); /* stdin */
+	fcntl(1, F_SETFL, fcntl(1,F_GETFL) | O_NONBLOCK); /* stdout */
+
+	while (1) {
+		n = read(0, buffer, 4096);
+		if (n >= 0)
+			m = write(1, buffer, n);
+		if ((n < 0 || m < 0) && (errno != EAGAIN))
+			break;
+		sleep(delay);
+	}
+	perror(n < 0 ? "stdin" : "stdout");
+	exit(1);
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_netifdebug">
+			<text>
+				<![CDATA[/*
+ * netifdebug.c -- change the IFF_DEBUG flag of an interface
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <netinet/in.h>
+
+int main(int argc, char **argv)
+{
+    int action = -1, sock;
+    struct ifreq req;
+    char *actname;
+
+    if (argc < 2) {
+        fprintf(stderr,"%%s: usage is \"%%s <ifname> [<on|off|tell>]\"\n",
+                argv[0],argv[0]);
+        exit(1);
+    }
+    if (argc==2)
+        actname="tell";
+    else
+        actname=argv[2];
+
+    /* a silly raw socket just for ioctl()ling it */
+    sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    if (sock < 0) {
+        fprintf(stderr, "%%s: socket(): %%s\n", argv[0],strerror(errno));
+        exit(1);
+    }
+
+    /* retrieve flags */
+    strcpy(req.ifr_name, argv[1]);
+    if ( ioctl(sock, SIOCGIFFLAGS, &req) < 0) {
+        fprintf(stderr, " %%s: ioctl(SIOCGIFFLAGS): %%s\n",
+                argv[0],strerror(errno));
+        exit(1);
+    }
+
+    if (!strcmp(actname,"on")
+        || !strcmp(actname,"+")
+        || !strcmp(actname,"1"))
+        action = IFF_DEBUG;
+
+    if (!strcmp(actname,"off")
+        || !strcmp(actname,"-")
+        || !strcmp(actname,"0"))
+        action = 0;
+
+    if (!strcmp(actname,"tell")
+        || actname[0]=='t') {
+        printf("%%s: debug is %%s\n", argv[1],
+               req.ifr_flags & IFF_DEBUG ? "on" : "off");
+        exit(0);
+    }
+
+    req.ifr_flags &= ~IFF_DEBUG;
+    req.ifr_flags |= action;
+
+    if ( ioctl(sock, SIOCSIFFLAGS, &req) < 0) {
+        fprintf(stderr, " %%s: ioctl(SIOCSIFFLAGS): %%s\n",
+                argv[0],strerror(errno));
+        exit(1);
+    }
+    exit(0);
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_outp">
+			<text>
+				<![CDATA[/* 
+ * outp.c -- write all the ports specified in hex on the command line.
+ *     The program uses the faster ioperm/iopl calls on x86, /dev/port
+ *     on other platforms. The program acts as outb/outw/outl according
+ *     to its own name
+ *
+ * Copyright (C) 1998,2000,2001 Alessandro Rubini
+ * 
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <asm/io.h> /* linux-specific */
+
+#ifdef __GLIBC__
+#  include <sys/perm.h>
+#endif
+
+#define PORT_FILE "/dev/port"
+
+char *prgname;
+
+#ifdef __i386__
+static int write_one(unsigned int port, unsigned int val, int size)
+{
+    static int iopldone = 0;
+
+    if (port > 1024) {
+	if (!iopldone && iopl(3)) {
+	    fprintf(stderr, "%%s: iopl(): %%s\n", prgname, strerror(errno));
+	    return 1;
+	}
+	iopldone++;
+    } else if (ioperm(port,size,1)) {
+	fprintf(stderr, "%%s: ioperm(%%x): %%s\n", prgname,
+		port, strerror(errno));
+	return 1;
+    }
+
+    if (size == 4)
+	outl(val, port);
+    else if (size == 2)
+	outw(val&0xffff, port);
+    else
+	outb(val&0xff, port);
+    return 0;
+}
+#else /* not i386 */
+
+static int write_one(unsigned int port, unsigned int val, int size)
+{
+    static int fd = -1;
+    unsigned char b; unsigned short w;
+
+    if (fd < 0)
+	fd = open(PORT_FILE, O_WRONLY);
+    if (fd < 0) {
+	fprintf(stderr, "%%s: %%s: %%s\n", prgname, PORT_FILE, strerror(errno));
+	return 1;
+    }
+    lseek(fd, port, SEEK_SET);
+    
+    if (size == 4) {
+	write(fd, &val, 4);
+    } else if (size == 2) {
+	w = val;
+	write(fd, &w, 2);
+    } else {
+	b = val;
+	write(fd, &b, 1);
+    }
+    return 0;
+}
+
+#endif /* i386 */
+
+int main(int argc, char **argv)
+{
+    unsigned int i, n, port, val, size, error = 0;
+    
+    prgname = argv[0];
+    /* find the data size */
+    switch (prgname[strlen(prgname)-1]) {
+        case 'w': size = 2; break;
+        case 'l': size = 4; break;
+        case 'b': case 'p': default:
+	    size = 1;
+    }
+    setuid(0); /* if we're setuid, force it on */
+    for (i=1;i<argc-1;i++) {
+        if ( sscanf(argv[i], "%%x%%n", &port, &n) < 1
+	      || n != strlen(argv[i]) ) {
+	    fprintf(stderr, "%%s: argument \"%%s\" is not a hex number\n",
+		    argv[0], argv[i]);
+	    error++; continue;
+	}
+	if (port & (size-1)) {
+	    fprintf(stderr, "%%s: argument \"%%s\" is not properly aligned\n",
+		    argv[0], argv[i]);
+	    error++; continue;
+	}
+        if ( sscanf(argv[i+1], "%%x%%n", &val, &n) < 1
+	      || n != strlen(argv[i+1]) ) {
+	    fprintf(stderr, "%%s: argument \"%%s\" is not a hex number\n",
+		    argv[0], argv[i+1]);
+	    error++; continue;
+	}
+	if (size < 4 && val > (size == 1 ? 0xff : 0xffff)) {
+	    fprintf(stderr, "%%s: argument \"%%s\" out of range\n",
+		    argv[0], argv[i+1]);
+	    error++; continue;
+	}
+	error += write_one(port, val, size);
+    }
+    exit (error ? 1 : 0);
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_polltest">
+			<text>
+				<![CDATA[/*
+ * Test out reading with poll()
+ * This should run with any Unix
+ *
+ * Copyright (C) 2003 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2003 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: polltest.c,v 1.1 2003/02/07 18:01:38 corbet Exp $
+ */
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/poll.h>
+#include <fcntl.h>
+
+char buffer[4096];
+
+int main(int argc, char **argv)
+{
+    struct pollfd pfd;
+    int n;
+
+    fcntl(0, F_SETFL, fcntl(0,F_GETFL) | O_NONBLOCK); /* stdin */
+    pfd.fd = 0;  /* stdin */
+    pfd.events = POLLIN;
+
+    while (1) {
+        n=read(0, buffer, 4096);
+        if (n >= 0)
+            write(1, buffer, n);
+	n = poll(&pfd, 1, -1);
+	if (n < 0)
+	    break;
+    }
+    perror( n<0 ? "stdin" : "stdout");
+    exit(1);
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_setconsole">
+			<text>
+				<![CDATA[/*
+ * setconsole.c -- choose a console to receive kernel messages
+ *
+ * Copyright (C) 1998,2000,2001 Alessandro Rubini
+ * 
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+
+int main(int argc, char **argv)
+{
+    char bytes[2] = {11,0}; /* 11 is the TIOCLINUX cmd number */
+
+    if (argc==2) bytes[1] = atoi(argv[1]); /* the chosen console */
+    else {
+        fprintf(stderr, "%%s: need a single arg\n",argv[0]); exit(1);
+    }
+    if (ioctl(STDIN_FILENO, TIOCLINUX, bytes)<0) {    /* use stdin */
+        fprintf(stderr,"%%s: ioctl(stdin, TIOCLINUX): %%s\n",
+                argv[0], strerror(errno));
+        exit(1);
+    }
+    exit(0);
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_setlevel">
+			<text>
+				<![CDATA[/*
+ * setlevel.c -- choose a console_loglevel for the kernel
+ *
+ * Copyright (C) 1998,2000,2001 Alessandro Rubini
+ * 
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+/* #include <unistd.h> */ /* conflicting on the alpha */
+#define __LIBRARY__ /* _syscall3 and friends are only available through this */
+#include <linux/unistd.h>
+
+/* define the system call, to override the library function */
+_syscall3(int, syslog, int, type, char *, bufp, int, len);
+
+int main(int argc, char **argv)
+{
+    int level;
+
+    if (argc==2) {
+	level = atoi(argv[1]); /* the chosen console */
+    } else {
+        fprintf(stderr, "%%s: need a single arg\n",argv[0]); exit(1);
+    }
+    if (syslog(8,NULL,level) < 0) {  
+        fprintf(stderr,"%%s: syslog(setlevel): %%s\n",
+                argv[0],strerror(errno));
+        exit(1);
+    }
+    exit(0);
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_pci_skel">
+			<text>
+				<![CDATA[#include <linux/config.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/pci.h>
+#include <linux/init.h>
+
+
+static struct pci_device_id ids[] = {
+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801AA_3), },
+	{ 0, }
+};
+MODULE_DEVICE_TABLE(pci, ids);
+
+static unsigned char skel_get_revision(struct pci_dev *dev)
+{
+	u8 revision;
+
+	pci_read_config_byte(dev, PCI_REVISION_ID, &revision);
+	return revision;
+}
+
+static int probe(struct pci_dev *dev, const struct pci_device_id *id)
+{
+	/* Do probing type stuff here.  
+	 * Like calling request_region();
+	 */
+	pci_enable_device(dev);
+	
+	if (skel_get_revision(dev) == 0x42)
+		return -ENODEV;
+
+
+	return 0;
+}
+
+static void remove(struct pci_dev *dev)
+{
+	/* clean up any allocated resources and stuff here.
+	 * like call release_region();
+	 */
+}
+
+static struct pci_driver pci_driver = {
+	.name = "pci_skel",
+	.id_table = ids,
+	.probe = probe,
+	.remove = remove,
+};
+
+static int __init pci_skel_init(void)
+{
+	return pci_register_driver(&pci_driver);
+}
+
+static void __exit pci_skel_exit(void)
+{
+	pci_unregister_driver(&pci_driver);
+}
+
+MODULE_LICENSE("GPL");
+
+module_init(pci_skel_init);
+module_exit(pci_skel_exit);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_sbull">
+			<text>
+				<![CDATA[/*
+ * Sample disk driver, from the beginning.
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+
+#include <linux/sched.h>
+#include <linux/kernel.h>	/* printk() */
+#include <linux/slab.h>		/* kmalloc() */
+#include <linux/fs.h>		/* everything... */
+#include <linux/errno.h>	/* error codes */
+#include <linux/timer.h>
+#include <linux/types.h>	/* size_t */
+#include <linux/fcntl.h>	/* O_ACCMODE */
+#include <linux/hdreg.h>	/* HDIO_GETGEO */
+#include <linux/kdev_t.h>
+#include <linux/vmalloc.h>
+#include <linux/genhd.h>
+#include <linux/blkdev.h>
+#include <linux/buffer_head.h>	/* invalidate_bdev */
+#include <linux/bio.h>
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+static int sbull_major = 0;
+module_param(sbull_major, int, 0);
+static int hardsect_size = 512;
+module_param(hardsect_size, int, 0);
+static int nsectors = 1024;	/* How big the drive is */
+module_param(nsectors, int, 0);
+static int ndevices = 4;
+module_param(ndevices, int, 0);
+
+/*
+ * The different "request modes" we can use.
+ */
+enum {
+	RM_SIMPLE  = 0,	/* The extra-simple request function */
+	RM_FULL    = 1,	/* The full-blown version */
+	RM_NOQUEUE = 2,	/* Use make_request */
+};
+static int request_mode = RM_SIMPLE;
+module_param(request_mode, int, 0);
+
+/*
+ * Minor number and partition management.
+ */
+#define SBULL_MINORS	16
+#define MINOR_SHIFT	4
+#define DEVNUM(kdevnum)	(MINOR(kdev_t_to_nr(kdevnum)) >> MINOR_SHIFT
+
+/*
+ * We can tweak our hardware sector size, but the kernel talks to us
+ * in terms of small sectors, always.
+ */
+#define KERNEL_SECTOR_SIZE	512
+
+/*
+ * After this much idle time, the driver will simulate a media change.
+ */
+#define INVALIDATE_DELAY	30*HZ
+
+/*
+ * The internal representation of our device.
+ */
+struct sbull_dev {
+        int size;                       /* Device size in sectors */
+        u8 *data;                       /* The data array */
+        short users;                    /* How many users */
+        short media_change;             /* Flag a media change? */
+        spinlock_t lock;                /* For mutual exclusion */
+        struct request_queue *queue;    /* The device request queue */
+        struct gendisk *gd;             /* The gendisk structure */
+        struct timer_list timer;        /* For simulated media changes */
+};
+
+static struct sbull_dev *Devices = NULL;
+
+/*
+ * Handle an I/O request.
+ */
+static void sbull_transfer(struct sbull_dev *dev, unsigned long sector,
+		unsigned long nsect, char *buffer, int write)
+{
+	unsigned long offset = sector*KERNEL_SECTOR_SIZE;
+	unsigned long nbytes = nsect*KERNEL_SECTOR_SIZE;
+
+	if ((offset + nbytes) > dev->size) {
+		printk (KERN_NOTICE "Beyond-end write (%%ld %%ld)\n", offset, nbytes);
+		return;
+	}
+	if (write)
+		memcpy(dev->data + offset, buffer, nbytes);
+	else
+		memcpy(buffer, dev->data + offset, nbytes);
+}
+
+/*
+ * The simple form of the request function.
+ */
+static void sbull_request(request_queue_t *q)
+{
+	struct request *req;
+
+	while ((req = elv_next_request(q)) != NULL) {
+		struct sbull_dev *dev = req->rq_disk->private_data;
+		if (! blk_fs_request(req)) {
+			printk (KERN_NOTICE "Skip non-fs request\n");
+			end_request(req, 0);
+			continue;
+		}
+    //    	printk (KERN_NOTICE "Req dev %%d dir %%ld sec %%ld, nr %%d f %%lx\n",
+    //    			dev - Devices, rq_data_dir(req),
+    //    			req->sector, req->current_nr_sectors,
+    //    			req->flags);
+		sbull_transfer(dev, req->sector, req->current_nr_sectors,
+				req->buffer, rq_data_dir(req));
+		end_request(req, 1);
+	}
+}
+
+
+/*
+ * Transfer a single BIO.
+ */
+static int sbull_xfer_bio(struct sbull_dev *dev, struct bio *bio)
+{
+	int i;
+	struct bio_vec *bvec;
+	sector_t sector = bio->bi_sector;
+
+	/* Do each segment independently. */
+	bio_for_each_segment(bvec, bio, i) {
+		char *buffer = __bio_kmap_atomic(bio, i, KM_USER0);
+		sbull_transfer(dev, sector, bio_cur_sectors(bio),
+				buffer, bio_data_dir(bio) == WRITE);
+		sector += bio_cur_sectors(bio);
+		__bio_kunmap_atomic(bio, KM_USER0);
+	}
+	return 0; /* Always "succeed" */
+}
+
+/*
+ * Transfer a full request.
+ */
+static int sbull_xfer_request(struct sbull_dev *dev, struct request *req)
+{
+	struct bio *bio;
+	int nsect = 0;
+    
+	rq_for_each_bio(bio, req) {
+		sbull_xfer_bio(dev, bio);
+		nsect += bio->bi_size/KERNEL_SECTOR_SIZE;
+	}
+	return nsect;
+}
+
+
+
+/*
+ * Smarter request function that "handles clustering".
+ */
+static void sbull_full_request(request_queue_t *q)
+{
+	struct request *req;
+	int sectors_xferred;
+	struct sbull_dev *dev = q->queuedata;
+
+	while ((req = elv_next_request(q)) != NULL) {
+		if (! blk_fs_request(req)) {
+			printk (KERN_NOTICE "Skip non-fs request\n");
+			end_request(req, 0);
+			continue;
+		}
+		sectors_xferred = sbull_xfer_request(dev, req);
+		if (! end_that_request_first(req, 1, sectors_xferred)) {
+			blkdev_dequeue_request(req);
+			end_that_request_last(req);
+		}
+	}
+}
+
+
+
+/*
+ * The direct make request version.
+ */
+static int sbull_make_request(request_queue_t *q, struct bio *bio)
+{
+	struct sbull_dev *dev = q->queuedata;
+	int status;
+
+	status = sbull_xfer_bio(dev, bio);
+	bio_endio(bio, bio->bi_size, status);
+	return 0;
+}
+
+
+/*
+ * Open and close.
+ */
+
+static int sbull_open(struct inode *inode, struct file *filp)
+{
+	struct sbull_dev *dev = inode->i_bdev->bd_disk->private_data;
+
+	del_timer_sync(&dev->timer);
+	filp->private_data = dev;
+	spin_lock(&dev->lock);
+	if (! dev->users) 
+		check_disk_change(inode->i_bdev);
+	dev->users++;
+	spin_unlock(&dev->lock);
+	return 0;
+}
+
+static int sbull_release(struct inode *inode, struct file *filp)
+{
+	struct sbull_dev *dev = inode->i_bdev->bd_disk->private_data;
+
+	spin_lock(&dev->lock);
+	dev->users--;
+
+	if (!dev->users) {
+		dev->timer.expires = jiffies + INVALIDATE_DELAY;
+		add_timer(&dev->timer);
+	}
+	spin_unlock(&dev->lock);
+
+	return 0;
+}
+
+/*
+ * Look for a (simulated) media change.
+ */
+int sbull_media_changed(struct gendisk *gd)
+{
+	struct sbull_dev *dev = gd->private_data;
+	
+	return dev->media_change;
+}
+
+/*
+ * Revalidate.  WE DO NOT TAKE THE LOCK HERE, for fear of deadlocking
+ * with open.  That needs to be reevaluated.
+ */
+int sbull_revalidate(struct gendisk *gd)
+{
+	struct sbull_dev *dev = gd->private_data;
+	
+	if (dev->media_change) {
+		dev->media_change = 0;
+		memset (dev->data, 0, dev->size);
+	}
+	return 0;
+}
+
+/*
+ * The "invalidate" function runs out of the device timer; it sets
+ * a flag to simulate the removal of the media.
+ */
+void sbull_invalidate(unsigned long ldev)
+{
+	struct sbull_dev *dev = (struct sbull_dev *) ldev;
+
+	spin_lock(&dev->lock);
+	if (dev->users || !dev->data) 
+		printk (KERN_WARNING "sbull: timer sanity check failed\n");
+	else
+		dev->media_change = 1;
+	spin_unlock(&dev->lock);
+}
+
+/*
+ * The ioctl() implementation
+ */
+
+int sbull_ioctl (struct inode *inode, struct file *filp,
+                 unsigned int cmd, unsigned long arg)
+{
+	long size;
+	struct hd_geometry geo;
+	struct sbull_dev *dev = filp->private_data;
+
+	switch(cmd) {
+	    case HDIO_GETGEO:
+        	/*
+		 * Get geometry: since we are a virtual device, we have to make
+		 * up something plausible.  So we claim 16 sectors, four heads,
+		 * and calculate the corresponding number of cylinders.  We set the
+		 * start of data at sector four.
+		 */
+		size = dev->size*(hardsect_size/KERNEL_SECTOR_SIZE);
+		geo.cylinders = (size & ~0x3f) >> 6;
+		geo.heads = 4;
+		geo.sectors = 16;
+		geo.start = 4;
+		if (copy_to_user((void __user *) arg, &geo, sizeof(geo)))
+			return -EFAULT;
+		return 0;
+	}
+
+	return -ENOTTY; /* unknown command */
+}
+
+
+
+/*
+ * The device operations structure.
+ */
+static struct block_device_operations sbull_ops = {
+	.owner           = THIS_MODULE,
+	.open 	         = sbull_open,
+	.release 	 = sbull_release,
+	.media_changed   = sbull_media_changed,
+	.revalidate_disk = sbull_revalidate,
+	.ioctl	         = sbull_ioctl
+};
+
+
+/*
+ * Set up our internal device.
+ */
+static void setup_device(struct sbull_dev *dev, int which)
+{
+	/*
+	 * Get some memory.
+	 */
+	memset (dev, 0, sizeof (struct sbull_dev));
+	dev->size = nsectors*hardsect_size;
+	dev->data = vmalloc(dev->size);
+	if (dev->data == NULL) {
+		printk (KERN_NOTICE "vmalloc failure.\n");
+		return;
+	}
+	spin_lock_init(&dev->lock);
+	
+	/*
+	 * The timer which "invalidates" the device.
+	 */
+	init_timer(&dev->timer);
+	dev->timer.data = (unsigned long) dev;
+	dev->timer.function = sbull_invalidate;
+	
+	/*
+	 * The I/O queue, depending on whether we are using our own
+	 * make_request function or not.
+	 */
+	switch (request_mode) {
+	    case RM_NOQUEUE:
+		dev->queue = blk_alloc_queue(GFP_KERNEL);
+		if (dev->queue == NULL)
+			goto out_vfree;
+		blk_queue_make_request(dev->queue, sbull_make_request);
+		break;
+
+	    case RM_FULL:
+		dev->queue = blk_init_queue(sbull_full_request, &dev->lock);
+		if (dev->queue == NULL)
+			goto out_vfree;
+		break;
+
+	    default:
+		printk(KERN_NOTICE "Bad request mode %%d, using simple\n", request_mode);
+        	/* fall into.. */
+	
+	    case RM_SIMPLE:
+		dev->queue = blk_init_queue(sbull_request, &dev->lock);
+		if (dev->queue == NULL)
+			goto out_vfree;
+		break;
+	}
+	blk_queue_hardsect_size(dev->queue, hardsect_size);
+	dev->queue->queuedata = dev;
+	/*
+	 * And the gendisk structure.
+	 */
+	dev->gd = alloc_disk(SBULL_MINORS);
+	if (! dev->gd) {
+		printk (KERN_NOTICE "alloc_disk failure\n");
+		goto out_vfree;
+	}
+	dev->gd->major = sbull_major;
+	dev->gd->first_minor = which*SBULL_MINORS;
+	dev->gd->fops = &sbull_ops;
+	dev->gd->queue = dev->queue;
+	dev->gd->private_data = dev;
+	snprintf (dev->gd->disk_name, 32, "sbull%%c", which + 'a');
+	set_capacity(dev->gd, nsectors*(hardsect_size/KERNEL_SECTOR_SIZE));
+	add_disk(dev->gd);
+	return;
+
+  out_vfree:
+	if (dev->data)
+		vfree(dev->data);
+}
+
+
+
+static int __init sbull_init(void)
+{
+	int i;
+	/*
+	 * Get registered.
+	 */
+	sbull_major = register_blkdev(sbull_major, "sbull");
+	if (sbull_major <= 0) {
+		printk(KERN_WARNING "sbull: unable to get major number\n");
+		return -EBUSY;
+	}
+	/*
+	 * Allocate the device array, and initialize each one.
+	 */
+	Devices = kmalloc(ndevices*sizeof (struct sbull_dev), GFP_KERNEL);
+	if (Devices == NULL)
+		goto out_unregister;
+	for (i = 0; i < ndevices; i++) 
+		setup_device(Devices + i, i);
+    
+	return 0;
+
+  out_unregister:
+	unregister_blkdev(sbull_major, "sbd");
+	return -ENOMEM;
+}
+
+static void sbull_exit(void)
+{
+	int i;
+
+	for (i = 0; i < ndevices; i++) {
+		struct sbull_dev *dev = Devices + i;
+
+		del_timer_sync(&dev->timer);
+		if (dev->gd) {
+			del_gendisk(dev->gd);
+			put_disk(dev->gd);
+		}
+		if (dev->queue) {
+			if (request_mode == RM_NOQUEUE)
+				blk_put_queue(dev->queue);
+			else
+				blk_cleanup_queue(dev->queue);
+		}
+		if (dev->data)
+			vfree(dev->data);
+	}
+	unregister_blkdev(sbull_major, "sbull");
+	kfree(Devices);
+}
+	
+module_init(sbull_init);
+module_exit(sbull_exit);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_access">
+			<text>
+				<![CDATA[/*
+ * access.c -- the files with access control on open
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: access.c,v 1.17 2004/09/26 07:29:56 gregkh Exp $
+ */
+
+/* FIXME: cloned devices as a use for kobjects? */
+ 
+#include <linux/kernel.h> /* printk() */
+#include <linux/module.h>
+#include <linux/slab.h>   /* kmalloc() */
+#include <linux/fs.h>     /* everything... */
+#include <linux/errno.h>  /* error codes */
+#include <linux/types.h>  /* size_t */
+#include <linux/fcntl.h>
+#include <linux/cdev.h>
+#include <linux/tty.h>
+#include <asm/atomic.h>
+#include <linux/list.h>
+
+#include "scull.h"        /* local definitions */
+
+static dev_t scull_a_firstdev;  /* Where our range begins */
+
+/*
+ * These devices fall back on the main scull operations. They only
+ * differ in the implementation of open() and close()
+ */
+
+
+
+/************************************************************************
+ *
+ * The first device is the single-open one,
+ *  it has an hw structure and an open count
+ */
+
+static struct scull_dev scull_s_device;
+static atomic_t scull_s_available = ATOMIC_INIT(1);
+
+static int scull_s_open(struct inode *inode, struct file *filp)
+{
+	struct scull_dev *dev = &scull_s_device; /* device information */
+
+	if (! atomic_dec_and_test (&scull_s_available)) {
+		atomic_inc(&scull_s_available);
+		return -EBUSY; /* already open */
+	}
+
+	/* then, everything else is copied from the bare scull device */
+	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY)
+		scull_trim(dev);
+	filp->private_data = dev;
+	return 0;          /* success */
+}
+
+static int scull_s_release(struct inode *inode, struct file *filp)
+{
+	atomic_inc(&scull_s_available); /* release the device */
+	return 0;
+}
+
+
+/*
+ * The other operations for the single-open device come from the bare device
+ */
+struct file_operations scull_sngl_fops = {
+	.owner =	THIS_MODULE,
+	.llseek =     	scull_llseek,
+	.read =       	scull_read,
+	.write =      	scull_write,
+	.ioctl =      	scull_ioctl,
+	.open =       	scull_s_open,
+	.release =    	scull_s_release,
+};
+
+
+/************************************************************************
+ *
+ * Next, the "uid" device. It can be opened multiple times by the
+ * same user, but access is denied to other users if the device is open
+ */
+
+static struct scull_dev scull_u_device;
+static int scull_u_count;	/* initialized to 0 by default */
+static uid_t scull_u_owner;	/* initialized to 0 by default */
+static spinlock_t scull_u_lock = SPIN_LOCK_UNLOCKED;
+
+static int scull_u_open(struct inode *inode, struct file *filp)
+{
+	struct scull_dev *dev = &scull_u_device; /* device information */
+
+	spin_lock(&scull_u_lock);
+	if (scull_u_count && 
+			(scull_u_owner != current->uid) &&  /* allow user */
+			(scull_u_owner != current->euid) && /* allow whoever did su */
+			!capable(CAP_DAC_OVERRIDE)) { /* still allow root */
+		spin_unlock(&scull_u_lock);
+		return -EBUSY;   /* -EPERM would confuse the user */
+	}
+
+	if (scull_u_count == 0)
+		scull_u_owner = current->uid; /* grab it */
+
+	scull_u_count++;
+	spin_unlock(&scull_u_lock);
+
+/* then, everything else is copied from the bare scull device */
+
+	if ((filp->f_flags & O_ACCMODE) == O_WRONLY)
+		scull_trim(dev);
+	filp->private_data = dev;
+	return 0;          /* success */
+}
+
+static int scull_u_release(struct inode *inode, struct file *filp)
+{
+	spin_lock(&scull_u_lock);
+	scull_u_count--; /* nothing else */
+	spin_unlock(&scull_u_lock);
+	return 0;
+}
+
+
+
+/*
+ * The other operations for the device come from the bare device
+ */
+struct file_operations scull_user_fops = {
+	.owner =      THIS_MODULE,
+	.llseek =     scull_llseek,
+	.read =       scull_read,
+	.write =      scull_write,
+	.ioctl =      scull_ioctl,
+	.open =       scull_u_open,
+	.release =    scull_u_release,
+};
+
+
+/************************************************************************
+ *
+ * Next, the device with blocking-open based on uid
+ */
+
+static struct scull_dev scull_w_device;
+static int scull_w_count;	/* initialized to 0 by default */
+static uid_t scull_w_owner;	/* initialized to 0 by default */
+static DECLARE_WAIT_QUEUE_HEAD(scull_w_wait);
+static spinlock_t scull_w_lock = SPIN_LOCK_UNLOCKED;
+
+static inline int scull_w_available(void)
+{
+	return scull_w_count == 0 ||
+		scull_w_owner == current->uid ||
+		scull_w_owner == current->euid ||
+		capable(CAP_DAC_OVERRIDE);
+}
+
+
+static int scull_w_open(struct inode *inode, struct file *filp)
+{
+	struct scull_dev *dev = &scull_w_device; /* device information */
+
+	spin_lock(&scull_w_lock);
+	while (! scull_w_available()) {
+		spin_unlock(&scull_w_lock);
+		if (filp->f_flags & O_NONBLOCK) return -EAGAIN;
+		if (wait_event_interruptible (scull_w_wait, scull_w_available()))
+			return -ERESTARTSYS; /* tell the fs layer to handle it */
+		spin_lock(&scull_w_lock);
+	}
+	if (scull_w_count == 0)
+		scull_w_owner = current->uid; /* grab it */
+	scull_w_count++;
+	spin_unlock(&scull_w_lock);
+
+	/* then, everything else is copied from the bare scull device */
+	if ((filp->f_flags & O_ACCMODE) == O_WRONLY)
+		scull_trim(dev);
+	filp->private_data = dev;
+	return 0;          /* success */
+}
+
+static int scull_w_release(struct inode *inode, struct file *filp)
+{
+	int temp;
+
+	spin_lock(&scull_w_lock);
+	scull_w_count--;
+	temp = scull_w_count;
+	spin_unlock(&scull_w_lock);
+
+	if (temp == 0)
+		wake_up_interruptible_sync(&scull_w_wait); /* awake other uid's */
+	return 0;
+}
+
+
+/*
+ * The other operations for the device come from the bare device
+ */
+struct file_operations scull_wusr_fops = {
+	.owner =      THIS_MODULE,
+	.llseek =     scull_llseek,
+	.read =       scull_read,
+	.write =      scull_write,
+	.ioctl =      scull_ioctl,
+	.open =       scull_w_open,
+	.release =    scull_w_release,
+};
+
+/************************************************************************
+ *
+ * Finally the `cloned' private device. This is trickier because it
+ * involves list management, and dynamic allocation.
+ */
+
+/* The clone-specific data structure includes a key field */
+
+struct scull_listitem {
+	struct scull_dev device;
+	dev_t key;
+	struct list_head list;
+    
+};
+
+/* The list of devices, and a lock to protect it */
+static LIST_HEAD(scull_c_list);
+static spinlock_t scull_c_lock = SPIN_LOCK_UNLOCKED;
+
+/* A placeholder scull_dev which really just holds the cdev stuff. */
+static struct scull_dev scull_c_device;   
+
+/* Look for a device or create one if missing */
+static struct scull_dev *scull_c_lookfor_device(dev_t key)
+{
+	struct scull_listitem *lptr;
+
+	list_for_each_entry(lptr, &scull_c_list, list) {
+		if (lptr->key == key)
+			return &(lptr->device);
+	}
+
+	/* not found */
+	lptr = kmalloc(sizeof(struct scull_listitem), GFP_KERNEL);
+	if (!lptr)
+		return NULL;
+
+	/* initialize the device */
+	memset(lptr, 0, sizeof(struct scull_listitem));
+	lptr->key = key;
+	scull_trim(&(lptr->device)); /* initialize it */
+	init_MUTEX(&(lptr->device.sem));
+
+	/* place it in the list */
+	list_add(&lptr->list, &scull_c_list);
+
+	return &(lptr->device);
+}
+
+static int scull_c_open(struct inode *inode, struct file *filp)
+{
+	struct scull_dev *dev;
+	dev_t key;
+ 
+	if (!current->signal->tty) { 
+		PDEBUG("Process \"%%s\" has no ctl tty\n", current->comm);
+		return -EINVAL;
+	}
+	key = tty_devnum(current->signal->tty);
+
+	/* look for a scullc device in the list */
+	spin_lock(&scull_c_lock);
+	dev = scull_c_lookfor_device(key);
+	spin_unlock(&scull_c_lock);
+
+	if (!dev)
+		return -ENOMEM;
+
+	/* then, everything else is copied from the bare scull device */
+	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY)
+		scull_trim(dev);
+	filp->private_data = dev;
+	return 0;          /* success */
+}
+
+static int scull_c_release(struct inode *inode, struct file *filp)
+{
+	/*
+	 * Nothing to do, because the device is persistent.
+	 * A `real' cloned device should be freed on last close
+	 */
+	return 0;
+}
+
+
+
+/*
+ * The other operations for the device come from the bare device
+ */
+struct file_operations scull_priv_fops = {
+	.owner =    THIS_MODULE,
+	.llseek =   scull_llseek,
+	.read =     scull_read,
+	.write =    scull_write,
+	.ioctl =    scull_ioctl,
+	.open =     scull_c_open,
+	.release =  scull_c_release,
+};
+
+/************************************************************************
+ *
+ * And the init and cleanup functions come last
+ */
+
+static struct scull_adev_info {
+	char *name;
+	struct scull_dev *sculldev;
+	struct file_operations *fops;
+} scull_access_devs[] = {
+	{ "scullsingle", &scull_s_device, &scull_sngl_fops },
+	{ "sculluid", &scull_u_device, &scull_user_fops },
+	{ "scullwuid", &scull_w_device, &scull_wusr_fops },
+	{ "sullpriv", &scull_c_device, &scull_priv_fops }
+};
+#define SCULL_N_ADEVS 4
+
+/*
+ * Set up a single device.
+ */
+static void scull_access_setup (dev_t devno, struct scull_adev_info *devinfo)
+{
+	struct scull_dev *dev = devinfo->sculldev;
+	int err;
+
+	/* Initialize the device structure */
+	dev->quantum = scull_quantum;
+	dev->qset = scull_qset;
+	init_MUTEX(&dev->sem);
+
+	/* Do the cdev stuff. */
+	cdev_init(&dev->cdev, devinfo->fops);
+	kobject_set_name(&dev->cdev.kobj, devinfo->name);
+	dev->cdev.owner = THIS_MODULE;
+	err = cdev_add (&dev->cdev, devno, 1);
+        /* Fail gracefully if need be */
+	if (err) {
+		printk(KERN_NOTICE "Error %%d adding %%s\n", err, devinfo->name);
+		kobject_put(&dev->cdev.kobj);
+	} else
+		printk(KERN_NOTICE "%%s registered at %%x\n", devinfo->name, devno);
+}
+
+
+int scull_access_init(dev_t firstdev)
+{
+	int result, i;
+
+	/* Get our number space */
+	result = register_chrdev_region (firstdev, SCULL_N_ADEVS, "sculla");
+	if (result < 0) {
+		printk(KERN_WARNING "sculla: device number registration failed\n");
+		return 0;
+	}
+	scull_a_firstdev = firstdev;
+
+	/* Set up each device. */
+	for (i = 0; i < SCULL_N_ADEVS; i++)
+		scull_access_setup (firstdev + i, scull_access_devs + i);
+	return SCULL_N_ADEVS;
+}
+
+/*
+ * This is called by cleanup_module or on failure.
+ * It is required to never fail, even if nothing was initialized first
+ */
+void scull_access_cleanup(void)
+{
+	struct scull_listitem *lptr, *next;
+	int i;
+
+	/* Clean up the static devs */
+	for (i = 0; i < SCULL_N_ADEVS; i++) {
+		struct scull_dev *dev = scull_access_devs[i].sculldev;
+		cdev_del(&dev->cdev);
+		scull_trim(scull_access_devs[i].sculldev);
+	}
+
+    	/* And all the cloned devices */
+	list_for_each_entry_safe(lptr, next, &scull_c_list, list) {
+		list_del(&lptr->list);
+		scull_trim(&(lptr->device));
+		kfree(lptr);
+	}
+
+	/* Free up our number space */
+	unregister_chrdev_region(scull_a_firstdev, SCULL_N_ADEVS);
+	return;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scull_main">
+			<text>
+				<![CDATA[/*
+ * main.c -- the bare scull char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+
+#include <linux/kernel.h>	/* printk() */
+#include <linux/slab.h>		/* kmalloc() */
+#include <linux/fs.h>		/* everything... */
+#include <linux/errno.h>	/* error codes */
+#include <linux/types.h>	/* size_t */
+#include <linux/proc_fs.h>
+#include <linux/fcntl.h>	/* O_ACCMODE */
+#include <linux/seq_file.h>
+#include <linux/cdev.h>
+
+#include <asm/system.h>		/* cli(), *_flags */
+#include <asm/uaccess.h>	/* copy_*_user */
+
+#include "scull.h"		/* local definitions */
+
+/*
+ * Our parameters which can be set at load time.
+ */
+
+int scull_major =   SCULL_MAJOR;
+int scull_minor =   0;
+int scull_nr_devs = SCULL_NR_DEVS;	/* number of bare scull devices */
+int scull_quantum = SCULL_QUANTUM;
+int scull_qset =    SCULL_QSET;
+
+module_param(scull_major, int, S_IRUGO);
+module_param(scull_minor, int, S_IRUGO);
+module_param(scull_nr_devs, int, S_IRUGO);
+module_param(scull_quantum, int, S_IRUGO);
+module_param(scull_qset, int, S_IRUGO);
+
+MODULE_AUTHOR("Alessandro Rubini, Jonathan Corbet");
+MODULE_LICENSE("Dual BSD/GPL");
+
+struct scull_dev *scull_devices;	/* allocated in scull_init_module */
+
+
+/*
+ * Empty out the scull device; must be called with the device
+ * semaphore held.
+ */
+int scull_trim(struct scull_dev *dev)
+{
+	struct scull_qset *next, *dptr;
+	int qset = dev->qset;   /* "dev" is not-null */
+	int i;
+
+	for (dptr = dev->data; dptr; dptr = next) { /* all the list items */
+		if (dptr->data) {
+			for (i = 0; i < qset; i++)
+				kfree(dptr->data[i]);
+			kfree(dptr->data);
+			dptr->data = NULL;
+		}
+		next = dptr->next;
+		kfree(dptr);
+	}
+	dev->size = 0;
+	dev->quantum = scull_quantum;
+	dev->qset = scull_qset;
+	dev->data = NULL;
+	return 0;
+}
+#ifdef SCULL_DEBUG /* use proc only if debugging */
+/*
+ * The proc filesystem: function to read and entry
+ */
+
+int scull_read_procmem(char *buf, char **start, off_t offset,
+                   int count, int *eof, void *data)
+{
+	int i, j, len = 0;
+	int limit = count - 80; /* Don't print more than this */
+
+	for (i = 0; i < scull_nr_devs && len <= limit; i++) {
+		struct scull_dev *d = &scull_devices[i];
+		struct scull_qset *qs = d->data;
+		if (down_interruptible(&d->sem))
+			return -ERESTARTSYS;
+		len += sprintf(buf+len,"\nDevice %%i: qset %%i, q %%i, sz %%li\n",
+				i, d->qset, d->quantum, d->size);
+		for (; qs && len <= limit; qs = qs->next) { /* scan the list */
+			len += sprintf(buf + len, "  item at %%p, qset at %%p\n",
+					qs, qs->data);
+			if (qs->data && !qs->next) /* dump only the last item */
+				for (j = 0; j < d->qset; j++) {
+					if (qs->data[j])
+						len += sprintf(buf + len,
+								"    %% 4i: %%8p\n",
+								j, qs->data[j]);
+				}
+		}
+		up(&scull_devices[i].sem);
+	}
+	*eof = 1;
+	return len;
+}
+
+
+/*
+ * For now, the seq_file implementation will exist in parallel.  The
+ * older read_procmem function should maybe go away, though.
+ */
+
+/*
+ * Here are our sequence iteration methods.  Our "position" is
+ * simply the device number.
+ */
+static void *scull_seq_start(struct seq_file *s, loff_t *pos)
+{
+	if (*pos >= scull_nr_devs)
+		return NULL;   /* No more to read */
+	return scull_devices + *pos;
+}
+
+static void *scull_seq_next(struct seq_file *s, void *v, loff_t *pos)
+{
+	(*pos)++;
+	if (*pos >= scull_nr_devs)
+		return NULL;
+	return scull_devices + *pos;
+}
+
+static void scull_seq_stop(struct seq_file *s, void *v)
+{
+	/* Actually, there's nothing to do here */
+}
+
+static int scull_seq_show(struct seq_file *s, void *v)
+{
+	struct scull_dev *dev = (struct scull_dev *) v;
+	struct scull_qset *d;
+	int i;
+
+	if (down_interruptible(&dev->sem))
+		return -ERESTARTSYS;
+	seq_printf(s, "\nDevice %%i: qset %%i, q %%i, sz %%li\n",
+			(int) (dev - scull_devices), dev->qset,
+			dev->quantum, dev->size);
+	for (d = dev->data; d; d = d->next) { /* scan the list */
+		seq_printf(s, "  item at %%p, qset at %%p\n", d, d->data);
+		if (d->data && !d->next) /* dump only the last item */
+			for (i = 0; i < dev->qset; i++) {
+				if (d->data[i])
+					seq_printf(s, "    %% 4i: %%8p\n",
+							i, d->data[i]);
+			}
+	}
+	up(&dev->sem);
+	return 0;
+}
+	
+/*
+ * Tie the sequence operators up.
+ */
+static struct seq_operations scull_seq_ops = {
+	.start = scull_seq_start,
+	.next  = scull_seq_next,
+	.stop  = scull_seq_stop,
+	.show  = scull_seq_show
+};
+
+/*
+ * Now to implement the /proc file we need only make an open
+ * method which sets up the sequence operators.
+ */
+static int scull_proc_open(struct inode *inode, struct file *file)
+{
+	return seq_open(file, &scull_seq_ops);
+}
+
+/*
+ * Create a set of file operations for our proc file.
+ */
+static struct file_operations scull_proc_ops = {
+	.owner   = THIS_MODULE,
+	.open    = scull_proc_open,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
+	.release = seq_release
+};
+	
+
+/*
+ * Actually create (and remove) the /proc file(s).
+ */
+
+static void scull_create_proc(void)
+{
+	struct proc_dir_entry *entry;
+	create_proc_read_entry("scullmem", 0 /* default mode */,
+			NULL /* parent dir */, scull_read_procmem,
+			NULL /* client data */);
+	entry = create_proc_entry("scullseq", 0, NULL);
+	if (entry)
+		entry->proc_fops = &scull_proc_ops;
+}
+
+static void scull_remove_proc(void)
+{
+	/* no problem if it was not registered */
+	remove_proc_entry("scullmem", NULL /* parent dir */);
+	remove_proc_entry("scullseq", NULL);
+}
+
+
+#endif /* SCULL_DEBUG */
+
+
+
+
+
+/*
+ * Open and close
+ */
+
+int scull_open(struct inode *inode, struct file *filp)
+{
+	struct scull_dev *dev; /* device information */
+
+	dev = container_of(inode->i_cdev, struct scull_dev, cdev);
+	filp->private_data = dev; /* for other methods */
+
+	/* now trim to 0 the length of the device if open was write-only */
+	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY) {
+		if (down_interruptible(&dev->sem))
+			return -ERESTARTSYS;
+		scull_trim(dev); /* ignore errors */
+		up(&dev->sem);
+	}
+	return 0;          /* success */
+}
+
+int scull_release(struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+/*
+ * Follow the list
+ */
+struct scull_qset *scull_follow(struct scull_dev *dev, int n)
+{
+	struct scull_qset *qs = dev->data;
+
+        /* Allocate first qset explicitly if need be */
+	if (! qs) {
+		qs = dev->data = kmalloc(sizeof(struct scull_qset), GFP_KERNEL);
+		if (qs == NULL)
+			return NULL;  /* Never mind */
+		memset(qs, 0, sizeof(struct scull_qset));
+	}
+
+	/* Then follow the list */
+	while (n--) {
+		if (!qs->next) {
+			qs->next = kmalloc(sizeof(struct scull_qset), GFP_KERNEL);
+			if (qs->next == NULL)
+				return NULL;  /* Never mind */
+			memset(qs->next, 0, sizeof(struct scull_qset));
+		}
+		qs = qs->next;
+		continue;
+	}
+	return qs;
+}
+
+/*
+ * Data management: read and write
+ */
+
+ssize_t scull_read(struct file *filp, char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scull_dev *dev = filp->private_data; 
+	struct scull_qset *dptr;	/* the first listitem */
+	int quantum = dev->quantum, qset = dev->qset;
+	int itemsize = quantum * qset; /* how many bytes in the listitem */
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = 0;
+
+	if (down_interruptible(&dev->sem))
+		return -ERESTARTSYS;
+	if (*f_pos >= dev->size)
+		goto out;
+	if (*f_pos + count > dev->size)
+		count = dev->size - *f_pos;
+
+	/* find listitem, qset index, and offset in the quantum */
+	item = (long)*f_pos / itemsize;
+	rest = (long)*f_pos %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+	/* follow the list up to the right position (defined elsewhere) */
+	dptr = scull_follow(dev, item);
+
+	if (dptr == NULL || !dptr->data || ! dptr->data[s_pos])
+		goto out; /* don't fill holes */
+
+	/* read only up to the end of this quantum */
+	if (count > quantum - q_pos)
+		count = quantum - q_pos;
+
+	if (copy_to_user(buf, dptr->data[s_pos] + q_pos, count)) {
+		retval = -EFAULT;
+		goto out;
+	}
+	*f_pos += count;
+	retval = count;
+
+  out:
+	up(&dev->sem);
+	return retval;
+}
+
+ssize_t scull_write(struct file *filp, const char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scull_dev *dev = filp->private_data;
+	struct scull_qset *dptr;
+	int quantum = dev->quantum, qset = dev->qset;
+	int itemsize = quantum * qset;
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = -ENOMEM; /* value used in "goto out" statements */
+
+	if (down_interruptible(&dev->sem))
+		return -ERESTARTSYS;
+
+	/* find listitem, qset index and offset in the quantum */
+	item = (long)*f_pos / itemsize;
+	rest = (long)*f_pos %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+	/* follow the list up to the right position */
+	dptr = scull_follow(dev, item);
+	if (dptr == NULL)
+		goto out;
+	if (!dptr->data) {
+		dptr->data = kmalloc(qset * sizeof(char *), GFP_KERNEL);
+		if (!dptr->data)
+			goto out;
+		memset(dptr->data, 0, qset * sizeof(char *));
+	}
+	if (!dptr->data[s_pos]) {
+		dptr->data[s_pos] = kmalloc(quantum, GFP_KERNEL);
+		if (!dptr->data[s_pos])
+			goto out;
+	}
+	/* write only up to the end of this quantum */
+	if (count > quantum - q_pos)
+		count = quantum - q_pos;
+
+	if (copy_from_user(dptr->data[s_pos]+q_pos, buf, count)) {
+		retval = -EFAULT;
+		goto out;
+	}
+	*f_pos += count;
+	retval = count;
+
+        /* update the size */
+	if (dev->size < *f_pos)
+		dev->size = *f_pos;
+
+  out:
+	up(&dev->sem);
+	return retval;
+}
+
+/*
+ * The ioctl() implementation
+ */
+
+int scull_ioctl(struct inode *inode, struct file *filp,
+                 unsigned int cmd, unsigned long arg)
+{
+
+	int err = 0, tmp;
+	int retval = 0;
+    
+	/*
+	 * extract the type and number bitfields, and don't decode
+	 * wrong cmds: return ENOTTY (inappropriate ioctl) before access_ok()
+	 */
+	if (_IOC_TYPE(cmd) != SCULL_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > SCULL_IOC_MAXNR) return -ENOTTY;
+
+	/*
+	 * the direction is a bitmask, and VERIFY_WRITE catches R/W
+	 * transfers. `Type' is user-oriented, while
+	 * access_ok is kernel-oriented, so the concept of "read" and
+	 * "write" is reversed
+	 */
+	if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+		err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	if (err) return -EFAULT;
+
+	switch(cmd) {
+
+	  case SCULL_IOCRESET:
+		scull_quantum = SCULL_QUANTUM;
+		scull_qset = SCULL_QSET;
+		break;
+        
+	  case SCULL_IOCSQUANTUM: /* Set: arg points to the value */
+		if (! capable (CAP_SYS_ADMIN))
+			return -EPERM;
+		retval = __get_user(scull_quantum, (int __user *)arg);
+		break;
+
+	  case SCULL_IOCTQUANTUM: /* Tell: arg is the value */
+		if (! capable (CAP_SYS_ADMIN))
+			return -EPERM;
+		scull_quantum = arg;
+		break;
+
+	  case SCULL_IOCGQUANTUM: /* Get: arg is pointer to result */
+		retval = __put_user(scull_quantum, (int __user *)arg);
+		break;
+
+	  case SCULL_IOCQQUANTUM: /* Query: return it (it's positive) */
+		return scull_quantum;
+
+	  case SCULL_IOCXQUANTUM: /* eXchange: use arg as pointer */
+		if (! capable (CAP_SYS_ADMIN))
+			return -EPERM;
+		tmp = scull_quantum;
+		retval = __get_user(scull_quantum, (int __user *)arg);
+		if (retval == 0)
+			retval = __put_user(tmp, (int __user *)arg);
+		break;
+
+	  case SCULL_IOCHQUANTUM: /* sHift: like Tell + Query */
+		if (! capable (CAP_SYS_ADMIN))
+			return -EPERM;
+		tmp = scull_quantum;
+		scull_quantum = arg;
+		return tmp;
+        
+	  case SCULL_IOCSQSET:
+		if (! capable (CAP_SYS_ADMIN))
+			return -EPERM;
+		retval = __get_user(scull_qset, (int __user *)arg);
+		break;
+
+	  case SCULL_IOCTQSET:
+		if (! capable (CAP_SYS_ADMIN))
+			return -EPERM;
+		scull_qset = arg;
+		break;
+
+	  case SCULL_IOCGQSET:
+		retval = __put_user(scull_qset, (int __user *)arg);
+		break;
+
+	  case SCULL_IOCQQSET:
+		return scull_qset;
+
+	  case SCULL_IOCXQSET:
+		if (! capable (CAP_SYS_ADMIN))
+			return -EPERM;
+		tmp = scull_qset;
+		retval = __get_user(scull_qset, (int __user *)arg);
+		if (retval == 0)
+			retval = put_user(tmp, (int __user *)arg);
+		break;
+
+	  case SCULL_IOCHQSET:
+		if (! capable (CAP_SYS_ADMIN))
+			return -EPERM;
+		tmp = scull_qset;
+		scull_qset = arg;
+		return tmp;
+
+        /*
+         * The following two change the buffer size for scullpipe.
+         * The scullpipe device uses this same ioctl method, just to
+         * write less code. Actually, it's the same driver, isn't it?
+         */
+
+	  case SCULL_P_IOCTSIZE:
+		scull_p_buffer = arg;
+		break;
+
+	  case SCULL_P_IOCQSIZE:
+		return scull_p_buffer;
+
+
+	  default:  /* redundant, as cmd was checked against MAXNR */
+		return -ENOTTY;
+	}
+	return retval;
+
+}
+
+
+
+/*
+ * The "extended" operations -- only seek
+ */
+
+loff_t scull_llseek(struct file *filp, loff_t off, int whence)
+{
+	struct scull_dev *dev = filp->private_data;
+	loff_t newpos;
+
+	switch(whence) {
+	  case 0: /* SEEK_SET */
+		newpos = off;
+		break;
+
+	  case 1: /* SEEK_CUR */
+		newpos = filp->f_pos + off;
+		break;
+
+	  case 2: /* SEEK_END */
+		newpos = dev->size + off;
+		break;
+
+	  default: /* can't happen */
+		return -EINVAL;
+	}
+	if (newpos < 0) return -EINVAL;
+	filp->f_pos = newpos;
+	return newpos;
+}
+
+
+
+struct file_operations scull_fops = {
+	.owner =    THIS_MODULE,
+	.llseek =   scull_llseek,
+	.read =     scull_read,
+	.write =    scull_write,
+	.ioctl =    scull_ioctl,
+	.open =     scull_open,
+	.release =  scull_release,
+};
+
+/*
+ * Finally, the module stuff
+ */
+
+/*
+ * The cleanup function is used to handle initialization failures as well.
+ * Thefore, it must be careful to work correctly even if some of the items
+ * have not been initialized
+ */
+void scull_cleanup_module(void)
+{
+	int i;
+	dev_t devno = MKDEV(scull_major, scull_minor);
+
+	/* Get rid of our char dev entries */
+	if (scull_devices) {
+		for (i = 0; i < scull_nr_devs; i++) {
+			scull_trim(scull_devices + i);
+			cdev_del(&scull_devices[i].cdev);
+		}
+		kfree(scull_devices);
+	}
+
+#ifdef SCULL_DEBUG /* use proc only if debugging */
+	scull_remove_proc();
+#endif
+
+	/* cleanup_module is never called if registering failed */
+	unregister_chrdev_region(devno, scull_nr_devs);
+
+	/* and call the cleanup functions for friend devices */
+	scull_p_cleanup();
+	scull_access_cleanup();
+
+}
+
+
+/*
+ * Set up the char_dev structure for this device.
+ */
+static void scull_setup_cdev(struct scull_dev *dev, int index)
+{
+	int err, devno = MKDEV(scull_major, scull_minor + index);
+    
+	cdev_init(&dev->cdev, &scull_fops);
+	dev->cdev.owner = THIS_MODULE;
+	dev->cdev.ops = &scull_fops;
+	err = cdev_add (&dev->cdev, devno, 1);
+	/* Fail gracefully if need be */
+	if (err)
+		printk(KERN_NOTICE "Error %%d adding scull%%d", err, index);
+}
+
+
+int scull_init_module(void)
+{
+	int result, i;
+	dev_t dev = 0;
+
+/*
+ * Get a range of minor numbers to work with, asking for a dynamic
+ * major unless directed otherwise at load time.
+ */
+	if (scull_major) {
+		dev = MKDEV(scull_major, scull_minor);
+		result = register_chrdev_region(dev, scull_nr_devs, "scull");
+	} else {
+		result = alloc_chrdev_region(&dev, scull_minor, scull_nr_devs,
+				"scull");
+		scull_major = MAJOR(dev);
+	}
+	if (result < 0) {
+		printk(KERN_WARNING "scull: can't get major %%d\n", scull_major);
+		return result;
+	}
+
+        /* 
+	 * allocate the devices -- we can't have them static, as the number
+	 * can be specified at load time
+	 */
+	scull_devices = kmalloc(scull_nr_devs * sizeof(struct scull_dev), GFP_KERNEL);
+	if (!scull_devices) {
+		result = -ENOMEM;
+		goto fail;  /* Make this more graceful */
+	}
+	memset(scull_devices, 0, scull_nr_devs * sizeof(struct scull_dev));
+
+        /* Initialize each device. */
+	for (i = 0; i < scull_nr_devs; i++) {
+		scull_devices[i].quantum = scull_quantum;
+		scull_devices[i].qset = scull_qset;
+		init_MUTEX(&scull_devices[i].sem);
+		scull_setup_cdev(&scull_devices[i], i);
+	}
+
+        /* At this point call the init function for any friend device */
+	dev = MKDEV(scull_major, scull_minor + scull_nr_devs);
+	dev += scull_p_init(dev);
+	dev += scull_access_init(dev);
+
+#ifdef SCULL_DEBUG /* only when debugging */
+	scull_create_proc();
+#endif
+
+	return 0; /* succeed */
+
+  fail:
+	scull_cleanup_module();
+	return result;
+}
+
+module_init(scull_init_module);
+module_exit(scull_cleanup_module);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scull_access">
+			<text>
+				<![CDATA[/*
+ * access.c -- the files with access control on open
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: access.c,v 1.17 2004/09/26 07:29:56 gregkh Exp $
+ */
+
+/* FIXME: cloned devices as a use for kobjects? */
+ 
+#include <linux/kernel.h> /* printk() */
+#include <linux/module.h>
+#include <linux/slab.h>   /* kmalloc() */
+#include <linux/fs.h>     /* everything... */
+#include <linux/errno.h>  /* error codes */
+#include <linux/types.h>  /* size_t */
+#include <linux/fcntl.h>
+#include <linux/cdev.h>
+#include <linux/tty.h>
+#include <asm/atomic.h>
+#include <linux/list.h>
+
+#include "scull.h"        /* local definitions */
+
+static dev_t scull_a_firstdev;  /* Where our range begins */
+
+/*
+ * These devices fall back on the main scull operations. They only
+ * differ in the implementation of open() and close()
+ */
+
+
+
+/************************************************************************
+ *
+ * The first device is the single-open one,
+ *  it has an hw structure and an open count
+ */
+
+static struct scull_dev scull_s_device;
+static atomic_t scull_s_available = ATOMIC_INIT(1);
+
+static int scull_s_open(struct inode *inode, struct file *filp)
+{
+	struct scull_dev *dev = &scull_s_device; /* device information */
+
+	if (! atomic_dec_and_test (&scull_s_available)) {
+		atomic_inc(&scull_s_available);
+		return -EBUSY; /* already open */
+	}
+
+	/* then, everything else is copied from the bare scull device */
+	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY)
+		scull_trim(dev);
+	filp->private_data = dev;
+	return 0;          /* success */
+}
+
+static int scull_s_release(struct inode *inode, struct file *filp)
+{
+	atomic_inc(&scull_s_available); /* release the device */
+	return 0;
+}
+
+
+/*
+ * The other operations for the single-open device come from the bare device
+ */
+struct file_operations scull_sngl_fops = {
+	.owner =	THIS_MODULE,
+	.llseek =     	scull_llseek,
+	.read =       	scull_read,
+	.write =      	scull_write,
+	.ioctl =      	scull_ioctl,
+	.open =       	scull_s_open,
+	.release =    	scull_s_release,
+};
+
+
+/************************************************************************
+ *
+ * Next, the "uid" device. It can be opened multiple times by the
+ * same user, but access is denied to other users if the device is open
+ */
+
+static struct scull_dev scull_u_device;
+static int scull_u_count;	/* initialized to 0 by default */
+static uid_t scull_u_owner;	/* initialized to 0 by default */
+static spinlock_t scull_u_lock = SPIN_LOCK_UNLOCKED;
+
+static int scull_u_open(struct inode *inode, struct file *filp)
+{
+	struct scull_dev *dev = &scull_u_device; /* device information */
+
+	spin_lock(&scull_u_lock);
+	if (scull_u_count && 
+			(scull_u_owner != current->uid) &&  /* allow user */
+			(scull_u_owner != current->euid) && /* allow whoever did su */
+			!capable(CAP_DAC_OVERRIDE)) { /* still allow root */
+		spin_unlock(&scull_u_lock);
+		return -EBUSY;   /* -EPERM would confuse the user */
+	}
+
+	if (scull_u_count == 0)
+		scull_u_owner = current->uid; /* grab it */
+
+	scull_u_count++;
+	spin_unlock(&scull_u_lock);
+
+/* then, everything else is copied from the bare scull device */
+
+	if ((filp->f_flags & O_ACCMODE) == O_WRONLY)
+		scull_trim(dev);
+	filp->private_data = dev;
+	return 0;          /* success */
+}
+
+static int scull_u_release(struct inode *inode, struct file *filp)
+{
+	spin_lock(&scull_u_lock);
+	scull_u_count--; /* nothing else */
+	spin_unlock(&scull_u_lock);
+	return 0;
+}
+
+
+
+/*
+ * The other operations for the device come from the bare device
+ */
+struct file_operations scull_user_fops = {
+	.owner =      THIS_MODULE,
+	.llseek =     scull_llseek,
+	.read =       scull_read,
+	.write =      scull_write,
+	.ioctl =      scull_ioctl,
+	.open =       scull_u_open,
+	.release =    scull_u_release,
+};
+
+
+/************************************************************************
+ *
+ * Next, the device with blocking-open based on uid
+ */
+
+static struct scull_dev scull_w_device;
+static int scull_w_count;	/* initialized to 0 by default */
+static uid_t scull_w_owner;	/* initialized to 0 by default */
+static DECLARE_WAIT_QUEUE_HEAD(scull_w_wait);
+static spinlock_t scull_w_lock = SPIN_LOCK_UNLOCKED;
+
+static inline int scull_w_available(void)
+{
+	return scull_w_count == 0 ||
+		scull_w_owner == current->uid ||
+		scull_w_owner == current->euid ||
+		capable(CAP_DAC_OVERRIDE);
+}
+
+
+static int scull_w_open(struct inode *inode, struct file *filp)
+{
+	struct scull_dev *dev = &scull_w_device; /* device information */
+
+	spin_lock(&scull_w_lock);
+	while (! scull_w_available()) {
+		spin_unlock(&scull_w_lock);
+		if (filp->f_flags & O_NONBLOCK) return -EAGAIN;
+		if (wait_event_interruptible (scull_w_wait, scull_w_available()))
+			return -ERESTARTSYS; /* tell the fs layer to handle it */
+		spin_lock(&scull_w_lock);
+	}
+	if (scull_w_count == 0)
+		scull_w_owner = current->uid; /* grab it */
+	scull_w_count++;
+	spin_unlock(&scull_w_lock);
+
+	/* then, everything else is copied from the bare scull device */
+	if ((filp->f_flags & O_ACCMODE) == O_WRONLY)
+		scull_trim(dev);
+	filp->private_data = dev;
+	return 0;          /* success */
+}
+
+static int scull_w_release(struct inode *inode, struct file *filp)
+{
+	int temp;
+
+	spin_lock(&scull_w_lock);
+	scull_w_count--;
+	temp = scull_w_count;
+	spin_unlock(&scull_w_lock);
+
+	if (temp == 0)
+		wake_up_interruptible_sync(&scull_w_wait); /* awake other uid's */
+	return 0;
+}
+
+
+/*
+ * The other operations for the device come from the bare device
+ */
+struct file_operations scull_wusr_fops = {
+	.owner =      THIS_MODULE,
+	.llseek =     scull_llseek,
+	.read =       scull_read,
+	.write =      scull_write,
+	.ioctl =      scull_ioctl,
+	.open =       scull_w_open,
+	.release =    scull_w_release,
+};
+
+/************************************************************************
+ *
+ * Finally the `cloned' private device. This is trickier because it
+ * involves list management, and dynamic allocation.
+ */
+
+/* The clone-specific data structure includes a key field */
+
+struct scull_listitem {
+	struct scull_dev device;
+	dev_t key;
+	struct list_head list;
+    
+};
+
+/* The list of devices, and a lock to protect it */
+static LIST_HEAD(scull_c_list);
+static spinlock_t scull_c_lock = SPIN_LOCK_UNLOCKED;
+
+/* A placeholder scull_dev which really just holds the cdev stuff. */
+static struct scull_dev scull_c_device;   
+
+/* Look for a device or create one if missing */
+static struct scull_dev *scull_c_lookfor_device(dev_t key)
+{
+	struct scull_listitem *lptr;
+
+	list_for_each_entry(lptr, &scull_c_list, list) {
+		if (lptr->key == key)
+			return &(lptr->device);
+	}
+
+	/* not found */
+	lptr = kmalloc(sizeof(struct scull_listitem), GFP_KERNEL);
+	if (!lptr)
+		return NULL;
+
+	/* initialize the device */
+	memset(lptr, 0, sizeof(struct scull_listitem));
+	lptr->key = key;
+	scull_trim(&(lptr->device)); /* initialize it */
+	init_MUTEX(&(lptr->device.sem));
+
+	/* place it in the list */
+	list_add(&lptr->list, &scull_c_list);
+
+	return &(lptr->device);
+}
+
+static int scull_c_open(struct inode *inode, struct file *filp)
+{
+	struct scull_dev *dev;
+	dev_t key;
+ 
+	if (!current->signal->tty) { 
+		PDEBUG("Process \"%%s\" has no ctl tty\n", current->comm);
+		return -EINVAL;
+	}
+	key = tty_devnum(current->signal->tty);
+
+	/* look for a scullc device in the list */
+	spin_lock(&scull_c_lock);
+	dev = scull_c_lookfor_device(key);
+	spin_unlock(&scull_c_lock);
+
+	if (!dev)
+		return -ENOMEM;
+
+	/* then, everything else is copied from the bare scull device */
+	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY)
+		scull_trim(dev);
+	filp->private_data = dev;
+	return 0;          /* success */
+}
+
+static int scull_c_release(struct inode *inode, struct file *filp)
+{
+	/*
+	 * Nothing to do, because the device is persistent.
+	 * A `real' cloned device should be freed on last close
+	 */
+	return 0;
+}
+
+
+
+/*
+ * The other operations for the device come from the bare device
+ */
+struct file_operations scull_priv_fops = {
+	.owner =    THIS_MODULE,
+	.llseek =   scull_llseek,
+	.read =     scull_read,
+	.write =    scull_write,
+	.ioctl =    scull_ioctl,
+	.open =     scull_c_open,
+	.release =  scull_c_release,
+};
+
+/************************************************************************
+ *
+ * And the init and cleanup functions come last
+ */
+
+static struct scull_adev_info {
+	char *name;
+	struct scull_dev *sculldev;
+	struct file_operations *fops;
+} scull_access_devs[] = {
+	{ "scullsingle", &scull_s_device, &scull_sngl_fops },
+	{ "sculluid", &scull_u_device, &scull_user_fops },
+	{ "scullwuid", &scull_w_device, &scull_wusr_fops },
+	{ "sullpriv", &scull_c_device, &scull_priv_fops }
+};
+#define SCULL_N_ADEVS 4
+
+/*
+ * Set up a single device.
+ */
+static void scull_access_setup (dev_t devno, struct scull_adev_info *devinfo)
+{
+	struct scull_dev *dev = devinfo->sculldev;
+	int err;
+
+	/* Initialize the device structure */
+	dev->quantum = scull_quantum;
+	dev->qset = scull_qset;
+	init_MUTEX(&dev->sem);
+
+	/* Do the cdev stuff. */
+	cdev_init(&dev->cdev, devinfo->fops);
+	kobject_set_name(&dev->cdev.kobj, devinfo->name);
+	dev->cdev.owner = THIS_MODULE;
+	err = cdev_add (&dev->cdev, devno, 1);
+        /* Fail gracefully if need be */
+	if (err) {
+		printk(KERN_NOTICE "Error %%d adding %%s\n", err, devinfo->name);
+		kobject_put(&dev->cdev.kobj);
+	} else
+		printk(KERN_NOTICE "%%s registered at %%x\n", devinfo->name, devno);
+}
+
+
+int scull_access_init(dev_t firstdev)
+{
+	int result, i;
+
+	/* Get our number space */
+	result = register_chrdev_region (firstdev, SCULL_N_ADEVS, "sculla");
+	if (result < 0) {
+		printk(KERN_WARNING "sculla: device number registration failed\n");
+		return 0;
+	}
+	scull_a_firstdev = firstdev;
+
+	/* Set up each device. */
+	for (i = 0; i < SCULL_N_ADEVS; i++)
+		scull_access_setup (firstdev + i, scull_access_devs + i);
+	return SCULL_N_ADEVS;
+}
+
+/*
+ * This is called by cleanup_module or on failure.
+ * It is required to never fail, even if nothing was initialized first
+ */
+void scull_access_cleanup(void)
+{
+	struct scull_listitem *lptr, *next;
+	int i;
+
+	/* Clean up the static devs */
+	for (i = 0; i < SCULL_N_ADEVS; i++) {
+		struct scull_dev *dev = scull_access_devs[i].sculldev;
+		cdev_del(&dev->cdev);
+		scull_trim(scull_access_devs[i].sculldev);
+	}
+
+    	/* And all the cloned devices */
+	list_for_each_entry_safe(lptr, next, &scull_c_list, list) {
+		list_del(&lptr->list);
+		scull_trim(&(lptr->device));
+		kfree(lptr);
+	}
+
+	/* Free up our number space */
+	unregister_chrdev_region(scull_a_firstdev, SCULL_N_ADEVS);
+	return;
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scull_pipe">
+			<text>
+				<![CDATA[/*
+ * pipe.c -- fifo driver for scull
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ */
+ 
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+
+#include <linux/kernel.h>	/* printk(), min() */
+#include <linux/slab.h>		/* kmalloc() */
+#include <linux/fs.h>		/* everything... */
+#include <linux/proc_fs.h>
+#include <linux/errno.h>	/* error codes */
+#include <linux/types.h>	/* size_t */
+#include <linux/fcntl.h>
+#include <linux/poll.h>
+#include <linux/cdev.h>
+#include <asm/uaccess.h>
+
+#include "scull.h"		/* local definitions */
+
+struct scull_pipe {
+        wait_queue_head_t inq, outq;       /* read and write queues */
+        char *buffer, *end;                /* begin of buf, end of buf */
+        int buffersize;                    /* used in pointer arithmetic */
+        char *rp, *wp;                     /* where to read, where to write */
+        int nreaders, nwriters;            /* number of openings for r/w */
+        struct fasync_struct *async_queue; /* asynchronous readers */
+        struct semaphore sem;              /* mutual exclusion semaphore */
+        struct cdev cdev;                  /* Char device structure */
+};
+
+/* parameters */
+static int scull_p_nr_devs = SCULL_P_NR_DEVS;	/* number of pipe devices */
+int scull_p_buffer =  SCULL_P_BUFFER;	/* buffer size */
+dev_t scull_p_devno;			/* Our first device number */
+
+module_param(scull_p_nr_devs, int, 0);	/* FIXME check perms */
+module_param(scull_p_buffer, int, 0);
+
+static struct scull_pipe *scull_p_devices;
+
+static int scull_p_fasync(int fd, struct file *filp, int mode);
+static int spacefree(struct scull_pipe *dev);
+/*
+ * Open and close
+ */
+
+
+static int scull_p_open(struct inode *inode, struct file *filp)
+{
+	struct scull_pipe *dev;
+
+	dev = container_of(inode->i_cdev, struct scull_pipe, cdev);
+	filp->private_data = dev;
+
+	if (down_interruptible(&dev->sem))
+		return -ERESTARTSYS;
+	if (!dev->buffer) {
+		/* allocate the buffer */
+		dev->buffer = kmalloc(scull_p_buffer, GFP_KERNEL);
+		if (!dev->buffer) {
+			up(&dev->sem);
+			return -ENOMEM;
+		}
+	}
+	dev->buffersize = scull_p_buffer;
+	dev->end = dev->buffer + dev->buffersize;
+	dev->rp = dev->wp = dev->buffer; /* rd and wr from the beginning */
+
+	/* use f_mode,not  f_flags: it's cleaner (fs/open.c tells why) */
+	if (filp->f_mode & FMODE_READ)
+		dev->nreaders++;
+	if (filp->f_mode & FMODE_WRITE)
+		dev->nwriters++;
+	up(&dev->sem);
+
+	return nonseekable_open(inode, filp);
+}
+
+
+
+static int scull_p_release(struct inode *inode, struct file *filp)
+{
+	struct scull_pipe *dev = filp->private_data;
+
+	/* remove this filp from the asynchronously notified filp's */
+	scull_p_fasync(-1, filp, 0);
+	down(&dev->sem);
+	if (filp->f_mode & FMODE_READ)
+		dev->nreaders--;
+	if (filp->f_mode & FMODE_WRITE)
+		dev->nwriters--;
+	if (dev->nreaders + dev->nwriters == 0) {
+		kfree(dev->buffer);
+		dev->buffer = NULL; /* the other fields are not checked on open */
+	}
+	up(&dev->sem);
+	return 0;
+}
+
+
+/*
+ * Data management: read and write
+ */
+
+static ssize_t scull_p_read (struct file *filp, char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scull_pipe *dev = filp->private_data;
+
+	if (down_interruptible(&dev->sem))
+		return -ERESTARTSYS;
+
+	while (dev->rp == dev->wp) { /* nothing to read */
+		up(&dev->sem); /* release the lock */
+		if (filp->f_flags & O_NONBLOCK)
+			return -EAGAIN;
+		PDEBUG("\"%%s\" reading: going to sleep\n", current->comm);
+		if (wait_event_interruptible(dev->inq, (dev->rp != dev->wp)))
+			return -ERESTARTSYS; /* signal: tell the fs layer to handle it */
+		/* otherwise loop, but first reacquire the lock */
+		if (down_interruptible(&dev->sem))
+			return -ERESTARTSYS;
+	}
+	/* ok, data is there, return something */
+	if (dev->wp > dev->rp)
+		count = min(count, (size_t)(dev->wp - dev->rp));
+	else /* the write pointer has wrapped, return data up to dev->end */
+		count = min(count, (size_t)(dev->end - dev->rp));
+	if (copy_to_user(buf, dev->rp, count)) {
+		up (&dev->sem);
+		return -EFAULT;
+	}
+	dev->rp += count;
+	if (dev->rp == dev->end)
+		dev->rp = dev->buffer; /* wrapped */
+	up (&dev->sem);
+
+	/* finally, awake any writers and return */
+	wake_up_interruptible(&dev->outq);
+	PDEBUG("\"%%s\" did read %%li bytes\n",current->comm, (long)count);
+	return count;
+}
+
+/* Wait for space for writing; caller must hold device semaphore.  On
+ * error the semaphore will be released before returning. */
+static int scull_getwritespace(struct scull_pipe *dev, struct file *filp)
+{
+	while (spacefree(dev) == 0) { /* full */
+		DEFINE_WAIT(wait);
+		
+		up(&dev->sem);
+		if (filp->f_flags & O_NONBLOCK)
+			return -EAGAIN;
+		PDEBUG("\"%%s\" writing: going to sleep\n",current->comm);
+		prepare_to_wait(&dev->outq, &wait, TASK_INTERRUPTIBLE);
+		if (spacefree(dev) == 0)
+			schedule();
+		finish_wait(&dev->outq, &wait);
+		if (signal_pending(current))
+			return -ERESTARTSYS; /* signal: tell the fs layer to handle it */
+		if (down_interruptible(&dev->sem))
+			return -ERESTARTSYS;
+	}
+	return 0;
+}	
+
+/* How much space is free? */
+static int spacefree(struct scull_pipe *dev)
+{
+	if (dev->rp == dev->wp)
+		return dev->buffersize - 1;
+	return ((dev->rp + dev->buffersize - dev->wp) %% dev->buffersize) - 1;
+}
+
+static ssize_t scull_p_write(struct file *filp, const char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scull_pipe *dev = filp->private_data;
+	int result;
+
+	if (down_interruptible(&dev->sem))
+		return -ERESTARTSYS;
+
+	/* Make sure there's space to write */
+	result = scull_getwritespace(dev, filp);
+	if (result)
+		return result; /* scull_getwritespace called up(&dev->sem) */
+
+	/* ok, space is there, accept something */
+	count = min(count, (size_t)spacefree(dev));
+	if (dev->wp >= dev->rp)
+		count = min(count, (size_t)(dev->end - dev->wp)); /* to end-of-buf */
+	else /* the write pointer has wrapped, fill up to rp-1 */
+		count = min(count, (size_t)(dev->rp - dev->wp - 1));
+	PDEBUG("Going to accept %%li bytes to %%p from %%p\n", (long)count, dev->wp, buf);
+	if (copy_from_user(dev->wp, buf, count)) {
+		up (&dev->sem);
+		return -EFAULT;
+	}
+	dev->wp += count;
+	if (dev->wp == dev->end)
+		dev->wp = dev->buffer; /* wrapped */
+	up(&dev->sem);
+
+	/* finally, awake any reader */
+	wake_up_interruptible(&dev->inq);  /* blocked in read() and select() */
+
+	/* and signal asynchronous readers, explained late in chapter 5 */
+	if (dev->async_queue)
+		kill_fasync(&dev->async_queue, SIGIO, POLL_IN);
+	PDEBUG("\"%%s\" did write %%li bytes\n",current->comm, (long)count);
+	return count;
+}
+
+static unsigned int scull_p_poll(struct file *filp, poll_table *wait)
+{
+	struct scull_pipe *dev = filp->private_data;
+	unsigned int mask = 0;
+
+	/*
+	 * The buffer is circular; it is considered full
+	 * if "wp" is right behind "rp" and empty if the
+	 * two are equal.
+	 */
+	down(&dev->sem);
+	poll_wait(filp, &dev->inq,  wait);
+	poll_wait(filp, &dev->outq, wait);
+	if (dev->rp != dev->wp)
+		mask |= POLLIN | POLLRDNORM;	/* readable */
+	if (spacefree(dev))
+		mask |= POLLOUT | POLLWRNORM;	/* writable */
+	up(&dev->sem);
+	return mask;
+}
+
+
+
+
+
+static int scull_p_fasync(int fd, struct file *filp, int mode)
+{
+	struct scull_pipe *dev = filp->private_data;
+
+	return fasync_helper(fd, filp, mode, &dev->async_queue);
+}
+
+
+
+/* FIXME this should use seq_file */
+#ifdef SCULL_DEBUG
+static void scullp_proc_offset(char *buf, char **start, off_t *offset, int *len)
+{
+	if (*offset == 0)
+		return;
+	if (*offset >= *len) {	/* Not there yet */
+		*offset -= *len;
+		*len = 0;
+	}
+	else {			/* We're into the interesting stuff now */
+		*start = buf + *offset;
+		*offset = 0;
+	}
+}
+
+
+static int scull_read_p_mem(char *buf, char **start, off_t offset, int count,
+		int *eof, void *data)
+{
+	int i, len;
+	struct scull_pipe *p;
+
+#define LIMIT (PAGE_SIZE-200)	/* don't print any more after this size */
+	*start = buf;
+	len = sprintf(buf, "Default buffersize is %%i\n", scull_p_buffer);
+	for(i = 0; i<scull_p_nr_devs && len <= LIMIT; i++) {
+		p = &scull_p_devices[i];
+		if (down_interruptible(&p->sem))
+			return -ERESTARTSYS;
+		len += sprintf(buf+len, "\nDevice %%i: %%p\n", i, p);
+/*		len += sprintf(buf+len, "   Queues: %%p %%p\n", p->inq, p->outq);*/
+		len += sprintf(buf+len, "   Buffer: %%p to %%p (%%i bytes)\n", p->buffer, p->end, p->buffersize);
+		len += sprintf(buf+len, "   rp %%p   wp %%p\n", p->rp, p->wp);
+		len += sprintf(buf+len, "   readers %%i   writers %%i\n", p->nreaders, p->nwriters);
+		up(&p->sem);
+		scullp_proc_offset(buf, start, &offset, &len);
+	}
+	*eof = (len <= LIMIT);
+	return len;
+}
+
+
+#endif
+
+
+
+/*
+ * The file operations for the pipe device
+ * (some are overlayed with bare scull)
+ */
+struct file_operations scull_pipe_fops = {
+	.owner =	THIS_MODULE,
+	.llseek =	no_llseek,
+	.read =		scull_p_read,
+	.write =	scull_p_write,
+	.poll =		scull_p_poll,
+	.ioctl =	scull_ioctl,
+	.open =		scull_p_open,
+	.release =	scull_p_release,
+	.fasync =	scull_p_fasync,
+};
+
+
+/*
+ * Set up a cdev entry.
+ */
+static void scull_p_setup_cdev(struct scull_pipe *dev, int index)
+{
+	int err, devno = scull_p_devno + index;
+    
+	cdev_init(&dev->cdev, &scull_pipe_fops);
+	dev->cdev.owner = THIS_MODULE;
+	err = cdev_add (&dev->cdev, devno, 1);
+	/* Fail gracefully if need be */
+	if (err)
+		printk(KERN_NOTICE "Error %%d adding scullpipe%%d", err, index);
+}
+
+ 
+
+/*
+ * Initialize the pipe devs; return how many we did.
+ */
+int scull_p_init(dev_t firstdev)
+{
+	int i, result;
+
+	result = register_chrdev_region(firstdev, scull_p_nr_devs, "scullp");
+	if (result < 0) {
+		printk(KERN_NOTICE "Unable to get scullp region, error %%d\n", result);
+		return 0;
+	}
+	scull_p_devno = firstdev;
+	scull_p_devices = kmalloc(scull_p_nr_devs * sizeof(struct scull_pipe), GFP_KERNEL);
+	if (scull_p_devices == NULL) {
+		unregister_chrdev_region(firstdev, scull_p_nr_devs);
+		return 0;
+	}
+	memset(scull_p_devices, 0, scull_p_nr_devs * sizeof(struct scull_pipe));
+	for (i = 0; i < scull_p_nr_devs; i++) {
+		init_waitqueue_head(&(scull_p_devices[i].inq));
+		init_waitqueue_head(&(scull_p_devices[i].outq));
+		init_MUTEX(&scull_p_devices[i].sem);
+		scull_p_setup_cdev(scull_p_devices + i, i);
+	}
+#ifdef SCULL_DEBUG
+	create_proc_read_entry("scullpipe", 0, NULL, scull_read_p_mem, NULL);
+#endif
+	return scull_p_nr_devs;
+}
+
+/*
+ * This is called by cleanup_module or on failure.
+ * It is required to never fail, even if nothing was initialized first
+ */
+void scull_p_cleanup(void)
+{
+	int i;
+
+#ifdef SCULL_DEBUG
+	remove_proc_entry("scullpipe", NULL);
+#endif
+
+	if (!scull_p_devices)
+		return; /* nothing else to release */
+
+	for (i = 0; i < scull_p_nr_devs; i++) {
+		cdev_del(&scull_p_devices[i].cdev);
+		kfree(scull_p_devices[i].buffer);
+	}
+	kfree(scull_p_devices);
+	unregister_chrdev_region(scull_p_devno, scull_p_nr_devs);
+	scull_p_devices = NULL; /* pedantic */
+}
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scullc_main">
+			<text>
+				<![CDATA[/* -*- C -*-
+ * main.c -- the bare scullc char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: _main.c.in,v 1.21 2004/10/14 20:11:39 corbet Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+#include <linux/kernel.h>	/* printk() */
+#include <linux/slab.h>		/* kmalloc() */
+#include <linux/fs.h>		/* everything... */
+#include <linux/errno.h>	/* error codes */
+#include <linux/types.h>	/* size_t */
+#include <linux/proc_fs.h>
+#include <linux/fcntl.h>	/* O_ACCMODE */
+#include <linux/aio.h>
+#include <asm/uaccess.h>
+#include "scullc.h"		/* local definitions */
+
+
+int scullc_major =   SCULLC_MAJOR;
+int scullc_devs =    SCULLC_DEVS;	/* number of bare scullc devices */
+int scullc_qset =    SCULLC_QSET;
+int scullc_quantum = SCULLC_QUANTUM;
+
+module_param(scullc_major, int, 0);
+module_param(scullc_devs, int, 0);
+module_param(scullc_qset, int, 0);
+module_param(scullc_quantum, int, 0);
+MODULE_AUTHOR("Alessandro Rubini");
+MODULE_LICENSE("Dual BSD/GPL");
+
+struct scullc_dev *scullc_devices; /* allocated in scullc_init */
+
+int scullc_trim(struct scullc_dev *dev);
+void scullc_cleanup(void);
+
+/* declare one cache pointer: use it for all devices */
+kmem_cache_t *scullc_cache;
+
+
+
+
+
+#ifdef SCULLC_USE_PROC /* don't waste space if unused */
+/*
+ * The proc filesystem: function to read and entry
+ */
+
+void scullc_proc_offset(char *buf, char **start, off_t *offset, int *len)
+{
+	if (*offset == 0)
+		return;
+	if (*offset >= *len) {
+		/* Not there yet */
+		*offset -= *len;
+		*len = 0;
+	} else {
+		/* We're into the interesting stuff now */
+		*start = buf + *offset;
+		*offset = 0;
+	}
+}
+
+/* FIXME: Do we need this here??  It be ugly  */
+int scullc_read_procmem(char *buf, char **start, off_t offset,
+                   int count, int *eof, void *data)
+{
+	int i, j, quantum, qset, len = 0;
+	int limit = count - 80; /* Don't print more than this */
+	struct scullc_dev *d;
+
+	*start = buf;
+	for(i = 0; i < scullc_devs; i++) {
+		d = &scullc_devices[i];
+		if (down_interruptible (&d->sem))
+			return -ERESTARTSYS;
+		qset = d->qset;  /* retrieve the features of each device */
+		quantum=d->quantum;
+		len += sprintf(buf+len,"\nDevice %%i: qset %%i, quantum %%i, sz %%li\n",
+				i, qset, quantum, (long)(d->size));
+		for (; d; d = d->next) { /* scan the list */
+			len += sprintf(buf+len,"  item at %%p, qset at %%p\n",d,d->data);
+			scullc_proc_offset (buf, start, &offset, &len);
+			if (len > limit)
+				goto out;
+			if (d->data && !d->next) /* dump only the last item - save space */
+				for (j = 0; j < qset; j++) {
+					if (d->data[j])
+						len += sprintf(buf+len,"    %% 4i:%%8p\n",j,d->data[j]);
+					scullc_proc_offset (buf, start, &offset, &len);
+					if (len > limit)
+						goto out;
+				}
+		}
+	  out:
+		up (&scullc_devices[i].sem);
+		if (len > limit)
+			break;
+	}
+	*eof = 1;
+	return len;
+}
+
+#endif /* SCULLC_USE_PROC */
+
+/*
+ * Open and close
+ */
+
+int scullc_open (struct inode *inode, struct file *filp)
+{
+	struct scullc_dev *dev; /* device information */
+
+	/*  Find the device */
+	dev = container_of(inode->i_cdev, struct scullc_dev, cdev);
+
+    	/* now trim to 0 the length of the device if open was write-only */
+	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY) {
+		if (down_interruptible (&dev->sem))
+			return -ERESTARTSYS;
+		scullc_trim(dev); /* ignore errors */
+		up (&dev->sem);
+	}
+
+	/* and use filp->private_data to point to the device data */
+	filp->private_data = dev;
+
+	return 0;          /* success */
+}
+
+int scullc_release (struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+/*
+ * Follow the list 
+ */
+struct scullc_dev *scullc_follow(struct scullc_dev *dev, int n)
+{
+	while (n--) {
+		if (!dev->next) {
+			dev->next = kmalloc(sizeof(struct scullc_dev), GFP_KERNEL);
+			memset(dev->next, 0, sizeof(struct scullc_dev));
+		}
+		dev = dev->next;
+		continue;
+	}
+	return dev;
+}
+
+/*
+ * Data management: read and write
+ */
+
+ssize_t scullc_read (struct file *filp, char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scullc_dev *dev = filp->private_data; /* the first listitem */
+	struct scullc_dev *dptr;
+	int quantum = dev->quantum;
+	int qset = dev->qset;
+	int itemsize = quantum * qset; /* how many bytes in the listitem */
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = 0;
+
+	if (down_interruptible (&dev->sem))
+		return -ERESTARTSYS;
+	if (*f_pos > dev->size) 
+		goto nothing;
+	if (*f_pos + count > dev->size)
+		count = dev->size - *f_pos;
+	/* find listitem, qset index, and offset in the quantum */
+	item = ((long) *f_pos) / itemsize;
+	rest = ((long) *f_pos) %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+    	/* follow the list up to the right position (defined elsewhere) */
+	dptr = scullc_follow(dev, item);
+
+	if (!dptr->data)
+		goto nothing; /* don't fill holes */
+	if (!dptr->data[s_pos])
+		goto nothing;
+	if (count > quantum - q_pos)
+		count = quantum - q_pos; /* read only up to the end of this quantum */
+
+	if (copy_to_user (buf, dptr->data[s_pos]+q_pos, count)) {
+		retval = -EFAULT;
+		goto nothing;
+	}
+	up (&dev->sem);
+
+	*f_pos += count;
+	return count;
+
+  nothing:
+	up (&dev->sem);
+	return retval;
+}
+
+
+
+ssize_t scullc_write (struct file *filp, const char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scullc_dev *dev = filp->private_data;
+	struct scullc_dev *dptr;
+	int quantum = dev->quantum;
+	int qset = dev->qset;
+	int itemsize = quantum * qset;
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = -ENOMEM; /* our most likely error */
+
+	if (down_interruptible (&dev->sem))
+		return -ERESTARTSYS;
+
+	/* find listitem, qset index and offset in the quantum */
+	item = ((long) *f_pos) / itemsize;
+	rest = ((long) *f_pos) %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+	/* follow the list up to the right position */
+	dptr = scullc_follow(dev, item);
+	if (!dptr->data) {
+		dptr->data = kmalloc(qset * sizeof(void *), GFP_KERNEL);
+		if (!dptr->data)
+			goto nomem;
+		memset(dptr->data, 0, qset * sizeof(char *));
+	}
+	/* Allocate a quantum using the memory cache */
+	if (!dptr->data[s_pos]) {
+		dptr->data[s_pos] = kmem_cache_alloc(scullc_cache, GFP_KERNEL);
+		if (!dptr->data[s_pos])
+			goto nomem;
+		memset(dptr->data[s_pos], 0, scullc_quantum);
+	}
+	if (count > quantum - q_pos)
+		count = quantum - q_pos; /* write only up to the end of this quantum */
+	if (copy_from_user (dptr->data[s_pos]+q_pos, buf, count)) {
+		retval = -EFAULT;
+		goto nomem;
+	}
+	*f_pos += count;
+ 
+    	/* update the size */
+	if (dev->size < *f_pos)
+		dev->size = *f_pos;
+	up (&dev->sem);
+	return count;
+
+  nomem:
+	up (&dev->sem);
+	return retval;
+}
+
+/*
+ * The ioctl() implementation
+ */
+
+int scullc_ioctl (struct inode *inode, struct file *filp,
+                 unsigned int cmd, unsigned long arg)
+{
+
+	int err = 0, ret = 0, tmp;
+
+	/* don't even decode wrong cmds: better returning  ENOTTY than EFAULT */
+	if (_IOC_TYPE(cmd) != SCULLC_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > SCULLC_IOC_MAXNR) return -ENOTTY;
+
+	/*
+	 * the type is a bitmask, and VERIFY_WRITE catches R/W
+	 * transfers. Note that the type is user-oriented, while
+	 * verify_area is kernel-oriented, so the concept of "read" and
+	 * "write" is reversed
+	 */
+	if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+		err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	if (err)
+		return -EFAULT;
+
+	switch(cmd) {
+
+	case SCULLC_IOCRESET:
+		scullc_qset = SCULLC_QSET;
+		scullc_quantum = SCULLC_QUANTUM;
+		break;
+
+	case SCULLC_IOCSQUANTUM: /* Set: arg points to the value */
+		ret = __get_user(scullc_quantum, (int __user *) arg);
+		break;
+
+	case SCULLC_IOCTQUANTUM: /* Tell: arg is the value */
+		scullc_quantum = arg;
+		break;
+
+	case SCULLC_IOCGQUANTUM: /* Get: arg is pointer to result */
+		ret = __put_user (scullc_quantum, (int __user *) arg);
+		break;
+
+	case SCULLC_IOCQQUANTUM: /* Query: return it (it's positive) */
+		return scullc_quantum;
+
+	case SCULLC_IOCXQUANTUM: /* eXchange: use arg as pointer */
+		tmp = scullc_quantum;
+		ret = __get_user(scullc_quantum, (int __user *) arg);
+		if (ret == 0)
+			ret = __put_user(tmp, (int __user *) arg);
+		break;
+
+	case SCULLC_IOCHQUANTUM: /* sHift: like Tell + Query */
+		tmp = scullc_quantum;
+		scullc_quantum = arg;
+		return tmp;
+
+	case SCULLC_IOCSQSET:
+		ret = __get_user(scullc_qset, (int __user *) arg);
+		break;
+
+	case SCULLC_IOCTQSET:
+		scullc_qset = arg;
+		break;
+
+	case SCULLC_IOCGQSET:
+		ret = __put_user(scullc_qset, (int __user *)arg);
+		break;
+
+	case SCULLC_IOCQQSET:
+		return scullc_qset;
+
+	case SCULLC_IOCXQSET:
+		tmp = scullc_qset;
+		ret = __get_user(scullc_qset, (int __user *)arg);
+		if (ret == 0)
+			ret = __put_user(tmp, (int __user *)arg);
+		break;
+
+	case SCULLC_IOCHQSET:
+		tmp = scullc_qset;
+		scullc_qset = arg;
+		return tmp;
+
+	default:  /* redundant, as cmd was checked against MAXNR */
+		return -ENOTTY;
+	}
+
+	return ret;
+}
+
+/*
+ * The "extended" operations
+ */
+
+loff_t scullc_llseek (struct file *filp, loff_t off, int whence)
+{
+	struct scullc_dev *dev = filp->private_data;
+	long newpos;
+
+	switch(whence) {
+	case 0: /* SEEK_SET */
+		newpos = off;
+		break;
+
+	case 1: /* SEEK_CUR */
+		newpos = filp->f_pos + off;
+		break;
+
+	case 2: /* SEEK_END */
+		newpos = dev->size + off;
+		break;
+
+	default: /* can't happen */
+		return -EINVAL;
+	}
+	if (newpos<0) return -EINVAL;
+	filp->f_pos = newpos;
+	return newpos;
+}
+
+
+/*
+ * A simple asynchronous I/O implementation.
+ */
+
+struct async_work {
+	struct kiocb *iocb;
+	int result;
+	struct work_struct work;
+};
+
+/*
+ * "Complete" an asynchronous operation.
+ */
+static void scullc_do_deferred_op(void *p)
+{
+	struct async_work *stuff = (struct async_work *) p;
+	aio_complete(stuff->iocb, stuff->result, 0);
+	kfree(stuff);
+}
+
+
+static int scullc_defer_op(int write, struct kiocb *iocb, char __user *buf,
+		size_t count, loff_t pos)
+{
+	struct async_work *stuff;
+	int result;
+
+	/* Copy now while we can access the buffer */
+	if (write)
+		result = scullc_write(iocb->ki_filp, buf, count, &pos);
+	else
+		result = scullc_read(iocb->ki_filp, buf, count, &pos);
+
+	/* If this is a synchronous IOCB, we return our status now. */
+	if (is_sync_kiocb(iocb))
+		return result;
+
+	/* Otherwise defer the completion for a few milliseconds. */
+	stuff = kmalloc (sizeof (*stuff), GFP_KERNEL);
+	if (stuff == NULL)
+		return result; /* No memory, just complete now */
+	stuff->iocb = iocb;
+	stuff->result = result;
+	INIT_WORK(&stuff->work, scullc_do_deferred_op, stuff);
+	schedule_delayed_work(&stuff->work, HZ/100);
+	return -EIOCBQUEUED;
+}
+
+
+static ssize_t scullc_aio_read(struct kiocb *iocb, char __user *buf, size_t count,
+		loff_t pos)
+{
+	return scullc_defer_op(0, iocb, buf, count, pos);
+}
+
+static ssize_t scullc_aio_write(struct kiocb *iocb, const char __user *buf,
+		size_t count, loff_t pos)
+{
+	return scullc_defer_op(1, iocb, (char __user *) buf, count, pos);
+}
+
+
+ 
+
+/*
+ * The fops
+ */
+
+struct file_operations scullc_fops = {
+	.owner =     THIS_MODULE,
+	.llseek =    scullc_llseek,
+	.read =	     scullc_read,
+	.write =     scullc_write,
+	.ioctl =     scullc_ioctl,
+	.open =	     scullc_open,
+	.release =   scullc_release,
+	.aio_read =  scullc_aio_read,
+	.aio_write = scullc_aio_write,
+};
+
+int scullc_trim(struct scullc_dev *dev)
+{
+	struct scullc_dev *next, *dptr;
+	int qset = dev->qset;   /* "dev" is not-null */
+	int i;
+
+	if (dev->vmas) /* don't trim: there are active mappings */
+		return -EBUSY;
+
+	for (dptr = dev; dptr; dptr = next) { /* all the list items */
+		if (dptr->data) {
+			for (i = 0; i < qset; i++)
+				if (dptr->data[i])
+					kmem_cache_free(scullc_cache, dptr->data[i]);
+
+			kfree(dptr->data);
+			dptr->data=NULL;
+		}
+		next=dptr->next;
+		if (dptr != dev) kfree(dptr); /* all of them but the first */
+	}
+	dev->size = 0;
+	dev->qset = scullc_qset;
+	dev->quantum = scullc_quantum;
+	dev->next = NULL;
+	return 0;
+}
+
+
+static void scullc_setup_cdev(struct scullc_dev *dev, int index)
+{
+	int err, devno = MKDEV(scullc_major, index);
+    
+	cdev_init(&dev->cdev, &scullc_fops);
+	dev->cdev.owner = THIS_MODULE;
+	dev->cdev.ops = &scullc_fops;
+	err = cdev_add (&dev->cdev, devno, 1);
+	/* Fail gracefully if need be */
+	if (err)
+		printk(KERN_NOTICE "Error %%d adding scull%%d", err, index);
+}
+
+
+
+/*
+ * Finally, the module stuff
+ */
+
+int scullc_init(void)
+{
+	int result, i;
+	dev_t dev = MKDEV(scullc_major, 0);
+	
+	/*
+	 * Register your major, and accept a dynamic number.
+	 */
+	if (scullc_major)
+		result = register_chrdev_region(dev, scullc_devs, "scullc");
+	else {
+		result = alloc_chrdev_region(&dev, 0, scullc_devs, "scullc");
+		scullc_major = MAJOR(dev);
+	}
+	if (result < 0)
+		return result;
+
+	
+	/* 
+	 * allocate the devices -- we can't have them static, as the number
+	 * can be specified at load time
+	 */
+	scullc_devices = kmalloc(scullc_devs*sizeof (struct scullc_dev), GFP_KERNEL);
+	if (!scullc_devices) {
+		result = -ENOMEM;
+		goto fail_malloc;
+	}
+	memset(scullc_devices, 0, scullc_devs*sizeof (struct scullc_dev));
+	for (i = 0; i < scullc_devs; i++) {
+		scullc_devices[i].quantum = scullc_quantum;
+		scullc_devices[i].qset = scullc_qset;
+		sema_init (&scullc_devices[i].sem, 1);
+		scullc_setup_cdev(scullc_devices + i, i);
+	}
+
+	scullc_cache = kmem_cache_create("scullc", scullc_quantum,
+			0, SLAB_HWCACHE_ALIGN, NULL, NULL); /* no ctor/dtor */
+	if (!scullc_cache) {
+		scullc_cleanup();
+		return -ENOMEM;
+	}
+
+#ifdef SCULLC_USE_PROC /* only when available */
+	create_proc_read_entry("scullcmem", 0, NULL, scullc_read_procmem, NULL);
+#endif
+	return 0; /* succeed */
+
+  fail_malloc:
+	unregister_chrdev_region(dev, scullc_devs);
+	return result;
+}
+
+
+
+void scullc_cleanup(void)
+{
+	int i;
+
+#ifdef SCULLC_USE_PROC
+	remove_proc_entry("scullcmem", NULL);
+#endif
+
+	for (i = 0; i < scullc_devs; i++) {
+		cdev_del(&scullc_devices[i].cdev);
+		scullc_trim(scullc_devices + i);
+	}
+	kfree(scullc_devices);
+
+	if (scullc_cache)
+		kmem_cache_destroy(scullc_cache);
+	unregister_chrdev_region(MKDEV (scullc_major, 0), scullc_devs);
+}
+
+
+module_init(scullc_init);
+module_exit(scullc_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scullc_mmap">
+			<text>
+				<![CDATA[/*  -*- C -*-
+ * mmap.c -- memory mapping for the scullc char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: _mmap.c.in,v 1.13 2004/10/18 18:07:36 corbet Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+
+#include <linux/mm.h>		/* everything */
+#include <linux/errno.h>	/* error codes */
+#include <asm/pgtable.h>
+
+#include "scullc.h"		/* local definitions */
+
+
+/*
+ * open and close: just keep track of how many times the device is
+ * mapped, to avoid releasing it.
+ */
+
+void scullc_vma_open(struct vm_area_struct *vma)
+{
+	struct scullc_dev *dev = vma->vm_private_data;
+
+	dev->vmas++;
+}
+
+void scullc_vma_close(struct vm_area_struct *vma)
+{
+	struct scullc_dev *dev = vma->vm_private_data;
+
+	dev->vmas--;
+}
+
+/*
+ * The nopage method: the core of the file. It retrieves the
+ * page required from the scullc device and returns it to the
+ * user. The count for the page must be incremented, because
+ * it is automatically decremented at page unmap.
+ *
+ * For this reason, "order" must be zero. Otherwise, only the first
+ * page has its count incremented, and the allocating module must
+ * release it as a whole block. Therefore, it isn't possible to map
+ * pages from a multipage block: when they are unmapped, their count
+ * is individually decreased, and would drop to 0.
+ */
+
+struct page *scullc_vma_nopage(struct vm_area_struct *vma,
+                                unsigned long address, int *type)
+{
+	unsigned long offset;
+	struct scullc_dev *ptr, *dev = vma->vm_private_data;
+	struct page *page = NOPAGE_SIGBUS;
+	void *pageptr = NULL; /* default to "missing" */
+
+	down(&dev->sem);
+	offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
+	if (offset >= dev->size) goto out; /* out of range */
+
+	/*
+	 * Now retrieve the scullc device from the list,then the page.
+	 * If the device has holes, the process receives a SIGBUS when
+	 * accessing the hole.
+	 */
+	offset >>= PAGE_SHIFT; /* offset is a number of pages */
+	for (ptr = dev; ptr && offset >= dev->qset;) {
+		ptr = ptr->next;
+		offset -= dev->qset;
+	}
+	if (ptr && ptr->data) pageptr = ptr->data[offset];
+	if (!pageptr) goto out; /* hole or end-of-file */
+
+	/* got it, now increment the count */
+	get_page(page);
+	if (type)
+		*type = VM_FAULT_MINOR;
+  out:
+	up(&dev->sem);
+	return page;
+}
+
+
+
+struct vm_operations_struct scullc_vm_ops = {
+	.open =     scullc_vma_open,
+	.close =    scullc_vma_close,
+	.nopage =   scullc_vma_nopage,
+};
+
+
+int scullc_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+	struct inode *inode = filp->f_dentry->d_inode;
+
+	/* refuse to map if order is not 0 */
+	if (scullc_devices[iminor(inode)].order)
+		return -ENODEV;
+
+	/* don't do anything here: "nopage" will set up page table entries */
+	vma->vm_ops = &scullc_vm_ops;
+	vma->vm_flags |= VM_RESERVED;
+	vma->vm_private_data = filp->private_data;
+	scullc_vma_open(vma);
+	return 0;
+}
+
+]]>
+			</text>
+		</p>
 	</language.aliases>
 </options>
