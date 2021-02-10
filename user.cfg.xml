@@ -16334,5 +16334,6891 @@ int scullc_mmap(struct file *filp, struct vm_area_struct *vma)
 ]]>
 			</text>
 		</p>
+		<p n="xlnx_drv_sculld_main">
+			<text>
+				<![CDATA[/* -*- C -*-
+ * main.c -- the bare sculld char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: _main.c.in,v 1.21 2004/10/14 20:11:39 corbet Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+#include <linux/kernel.h>	/* printk() */
+#include <linux/slab.h>		/* kmalloc() */
+#include <linux/fs.h>		/* everything... */
+#include <linux/errno.h>	/* error codes */
+#include <linux/types.h>	/* size_t */
+#include <linux/proc_fs.h>
+#include <linux/fcntl.h>	/* O_ACCMODE */
+#include <linux/aio.h>
+#include <asm/uaccess.h>
+#include "sculld.h"		/* local definitions */
+
+
+int sculld_major =   SCULLD_MAJOR;
+int sculld_devs =    SCULLD_DEVS;	/* number of bare sculld devices */
+int sculld_qset =    SCULLD_QSET;
+int sculld_order =   SCULLD_ORDER;
+
+module_param(sculld_major, int, 0);
+module_param(sculld_devs, int, 0);
+module_param(sculld_qset, int, 0);
+module_param(sculld_order, int, 0);
+MODULE_AUTHOR("Alessandro Rubini");
+MODULE_LICENSE("Dual BSD/GPL");
+
+struct sculld_dev *sculld_devices; /* allocated in sculld_init */
+
+int sculld_trim(struct sculld_dev *dev);
+void sculld_cleanup(void);
+
+
+
+/* Device model stuff */
+
+static struct ldd_driver sculld_driver = {
+	.version = "$Revision: 1.21 $",
+	.module = THIS_MODULE,
+	.driver = {
+		.name = "sculld",
+	},
+};
+
+
+
+#ifdef SCULLD_USE_PROC /* don't waste space if unused */
+/*
+ * The proc filesystem: function to read and entry
+ */
+
+void sculld_proc_offset(char *buf, char **start, off_t *offset, int *len)
+{
+	if (*offset == 0)
+		return;
+	if (*offset >= *len) {
+		/* Not there yet */
+		*offset -= *len;
+		*len = 0;
+	} else {
+		/* We're into the interesting stuff now */
+		*start = buf + *offset;
+		*offset = 0;
+	}
+}
+
+/* FIXME: Do we need this here??  It be ugly  */
+int sculld_read_procmem(char *buf, char **start, off_t offset,
+                   int count, int *eof, void *data)
+{
+	int i, j, order, qset, len = 0;
+	int limit = count - 80; /* Don't print more than this */
+	struct sculld_dev *d;
+
+	*start = buf;
+	for(i = 0; i < sculld_devs; i++) {
+		d = &sculld_devices[i];
+		if (down_interruptible (&d->sem))
+			return -ERESTARTSYS;
+		qset = d->qset;  /* retrieve the features of each device */
+		order = d->order;
+		len += sprintf(buf+len,"\nDevice %%i: qset %%i, order %%i, sz %%li\n",
+				i, qset, order, (long)(d->size));
+		for (; d; d = d->next) { /* scan the list */
+			len += sprintf(buf+len,"  item at %%p, qset at %%p\n",d,d->data);
+			sculld_proc_offset (buf, start, &offset, &len);
+			if (len > limit)
+				goto out;
+			if (d->data && !d->next) /* dump only the last item - save space */
+				for (j = 0; j < qset; j++) {
+					if (d->data[j])
+						len += sprintf(buf+len,"    %% 4i:%%8p\n",j,d->data[j]);
+					sculld_proc_offset (buf, start, &offset, &len);
+					if (len > limit)
+						goto out;
+				}
+		}
+	  out:
+		up (&sculld_devices[i].sem);
+		if (len > limit)
+			break;
+	}
+	*eof = 1;
+	return len;
+}
+
+#endif /* SCULLD_USE_PROC */
+
+/*
+ * Open and close
+ */
+
+int sculld_open (struct inode *inode, struct file *filp)
+{
+	struct sculld_dev *dev; /* device information */
+
+	/*  Find the device */
+	dev = container_of(inode->i_cdev, struct sculld_dev, cdev);
+
+    	/* now trim to 0 the length of the device if open was write-only */
+	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY) {
+		if (down_interruptible (&dev->sem))
+			return -ERESTARTSYS;
+		sculld_trim(dev); /* ignore errors */
+		up (&dev->sem);
+	}
+
+	/* and use filp->private_data to point to the device data */
+	filp->private_data = dev;
+
+	return 0;          /* success */
+}
+
+int sculld_release (struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+/*
+ * Follow the list 
+ */
+struct sculld_dev *sculld_follow(struct sculld_dev *dev, int n)
+{
+	while (n--) {
+		if (!dev->next) {
+			dev->next = kmalloc(sizeof(struct sculld_dev), GFP_KERNEL);
+			memset(dev->next, 0, sizeof(struct sculld_dev));
+		}
+		dev = dev->next;
+		continue;
+	}
+	return dev;
+}
+
+/*
+ * Data management: read and write
+ */
+
+ssize_t sculld_read (struct file *filp, char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct sculld_dev *dev = filp->private_data; /* the first listitem */
+	struct sculld_dev *dptr;
+	int quantum = PAGE_SIZE << dev->order;
+	int qset = dev->qset;
+	int itemsize = quantum * qset; /* how many bytes in the listitem */
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = 0;
+
+	if (down_interruptible (&dev->sem))
+		return -ERESTARTSYS;
+	if (*f_pos > dev->size) 
+		goto nothing;
+	if (*f_pos + count > dev->size)
+		count = dev->size - *f_pos;
+	/* find listitem, qset index, and offset in the quantum */
+	item = ((long) *f_pos) / itemsize;
+	rest = ((long) *f_pos) %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+    	/* follow the list up to the right position (defined elsewhere) */
+	dptr = sculld_follow(dev, item);
+
+	if (!dptr->data)
+		goto nothing; /* don't fill holes */
+	if (!dptr->data[s_pos])
+		goto nothing;
+	if (count > quantum - q_pos)
+		count = quantum - q_pos; /* read only up to the end of this quantum */
+
+	if (copy_to_user (buf, dptr->data[s_pos]+q_pos, count)) {
+		retval = -EFAULT;
+		goto nothing;
+	}
+	up (&dev->sem);
+
+	*f_pos += count;
+	return count;
+
+  nothing:
+	up (&dev->sem);
+	return retval;
+}
+
+
+
+ssize_t sculld_write (struct file *filp, const char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct sculld_dev *dev = filp->private_data;
+	struct sculld_dev *dptr;
+	int quantum = PAGE_SIZE << dev->order;
+	int qset = dev->qset;
+	int itemsize = quantum * qset;
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = -ENOMEM; /* our most likely error */
+
+	if (down_interruptible (&dev->sem))
+		return -ERESTARTSYS;
+
+	/* find listitem, qset index and offset in the quantum */
+	item = ((long) *f_pos) / itemsize;
+	rest = ((long) *f_pos) %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+	/* follow the list up to the right position */
+	dptr = sculld_follow(dev, item);
+	if (!dptr->data) {
+		dptr->data = kmalloc(qset * sizeof(void *), GFP_KERNEL);
+		if (!dptr->data)
+			goto nomem;
+		memset(dptr->data, 0, qset * sizeof(char *));
+	}
+	/* Here's the allocation of a single quantum */
+	if (!dptr->data[s_pos]) {
+		dptr->data[s_pos] =
+			(void *)__get_free_pages(GFP_KERNEL, dptr->order);
+		if (!dptr->data[s_pos])
+			goto nomem;
+		memset(dptr->data[s_pos], 0, PAGE_SIZE << dptr->order);
+	}
+	if (count > quantum - q_pos)
+		count = quantum - q_pos; /* write only up to the end of this quantum */
+	if (copy_from_user (dptr->data[s_pos]+q_pos, buf, count)) {
+		retval = -EFAULT;
+		goto nomem;
+	}
+	*f_pos += count;
+ 
+    	/* update the size */
+	if (dev->size < *f_pos)
+		dev->size = *f_pos;
+	up (&dev->sem);
+	return count;
+
+  nomem:
+	up (&dev->sem);
+	return retval;
+}
+
+/*
+ * The ioctl() implementation
+ */
+
+int sculld_ioctl (struct inode *inode, struct file *filp,
+                 unsigned int cmd, unsigned long arg)
+{
+
+	int err = 0, ret = 0, tmp;
+
+	/* don't even decode wrong cmds: better returning  ENOTTY than EFAULT */
+	if (_IOC_TYPE(cmd) != SCULLD_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > SCULLD_IOC_MAXNR) return -ENOTTY;
+
+	/*
+	 * the type is a bitmask, and VERIFY_WRITE catches R/W
+	 * transfers. Note that the type is user-oriented, while
+	 * verify_area is kernel-oriented, so the concept of "read" and
+	 * "write" is reversed
+	 */
+	if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+		err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	if (err)
+		return -EFAULT;
+
+	switch(cmd) {
+
+	case SCULLD_IOCRESET:
+		sculld_qset = SCULLD_QSET;
+		sculld_order = SCULLD_ORDER;
+		break;
+
+	case SCULLD_IOCSORDER: /* Set: arg points to the value */
+		ret = __get_user(sculld_order, (int __user *) arg);
+		break;
+
+	case SCULLD_IOCTORDER: /* Tell: arg is the value */
+		sculld_order = arg;
+		break;
+
+	case SCULLD_IOCGORDER: /* Get: arg is pointer to result */
+		ret = __put_user (sculld_order, (int __user *) arg);
+		break;
+
+	case SCULLD_IOCQORDER: /* Query: return it (it's positive) */
+		return sculld_order;
+
+	case SCULLD_IOCXORDER: /* eXchange: use arg as pointer */
+		tmp = sculld_order;
+		ret = __get_user(sculld_order, (int __user *) arg);
+		if (ret == 0)
+			ret = __put_user(tmp, (int __user *) arg);
+		break;
+
+	case SCULLD_IOCHORDER: /* sHift: like Tell + Query */
+		tmp = sculld_order;
+		sculld_order = arg;
+		return tmp;
+
+	case SCULLD_IOCSQSET:
+		ret = __get_user(sculld_qset, (int __user *) arg);
+		break;
+
+	case SCULLD_IOCTQSET:
+		sculld_qset = arg;
+		break;
+
+	case SCULLD_IOCGQSET:
+		ret = __put_user(sculld_qset, (int __user *)arg);
+		break;
+
+	case SCULLD_IOCQQSET:
+		return sculld_qset;
+
+	case SCULLD_IOCXQSET:
+		tmp = sculld_qset;
+		ret = __get_user(sculld_qset, (int __user *)arg);
+		if (ret == 0)
+			ret = __put_user(tmp, (int __user *)arg);
+		break;
+
+	case SCULLD_IOCHQSET:
+		tmp = sculld_qset;
+		sculld_qset = arg;
+		return tmp;
+
+	default:  /* redundant, as cmd was checked against MAXNR */
+		return -ENOTTY;
+	}
+
+	return ret;
+}
+
+/*
+ * The "extended" operations
+ */
+
+loff_t sculld_llseek (struct file *filp, loff_t off, int whence)
+{
+	struct sculld_dev *dev = filp->private_data;
+	long newpos;
+
+	switch(whence) {
+	case 0: /* SEEK_SET */
+		newpos = off;
+		break;
+
+	case 1: /* SEEK_CUR */
+		newpos = filp->f_pos + off;
+		break;
+
+	case 2: /* SEEK_END */
+		newpos = dev->size + off;
+		break;
+
+	default: /* can't happen */
+		return -EINVAL;
+	}
+	if (newpos<0) return -EINVAL;
+	filp->f_pos = newpos;
+	return newpos;
+}
+
+
+/*
+ * A simple asynchronous I/O implementation.
+ */
+
+struct async_work {
+	struct kiocb *iocb;
+	int result;
+	struct work_struct work;
+};
+
+/*
+ * "Complete" an asynchronous operation.
+ */
+static void sculld_do_deferred_op(void *p)
+{
+	struct async_work *stuff = (struct async_work *) p;
+	aio_complete(stuff->iocb, stuff->result, 0);
+	kfree(stuff);
+}
+
+
+static int sculld_defer_op(int write, struct kiocb *iocb, char __user *buf,
+		size_t count, loff_t pos)
+{
+	struct async_work *stuff;
+	int result;
+
+	/* Copy now while we can access the buffer */
+	if (write)
+		result = sculld_write(iocb->ki_filp, buf, count, &pos);
+	else
+		result = sculld_read(iocb->ki_filp, buf, count, &pos);
+
+	/* If this is a synchronous IOCB, we return our status now. */
+	if (is_sync_kiocb(iocb))
+		return result;
+
+	/* Otherwise defer the completion for a few milliseconds. */
+	stuff = kmalloc (sizeof (*stuff), GFP_KERNEL);
+	if (stuff == NULL)
+		return result; /* No memory, just complete now */
+	stuff->iocb = iocb;
+	stuff->result = result;
+	INIT_WORK(&stuff->work, sculld_do_deferred_op, stuff);
+	schedule_delayed_work(&stuff->work, HZ/100);
+	return -EIOCBQUEUED;
+}
+
+
+static ssize_t sculld_aio_read(struct kiocb *iocb, char __user *buf, size_t count,
+		loff_t pos)
+{
+	return sculld_defer_op(0, iocb, buf, count, pos);
+}
+
+static ssize_t sculld_aio_write(struct kiocb *iocb, const char __user *buf,
+		size_t count, loff_t pos)
+{
+	return sculld_defer_op(1, iocb, (char __user *) buf, count, pos);
+}
+
+
+ 
+/*
+ * Mmap *is* available, but confined in a different file
+ */
+extern int sculld_mmap(struct file *filp, struct vm_area_struct *vma);
+
+
+/*
+ * The fops
+ */
+
+struct file_operations sculld_fops = {
+	.owner =     THIS_MODULE,
+	.llseek =    sculld_llseek,
+	.read =	     sculld_read,
+	.write =     sculld_write,
+	.ioctl =     sculld_ioctl,
+	.mmap =	     sculld_mmap,
+	.open =	     sculld_open,
+	.release =   sculld_release,
+	.aio_read =  sculld_aio_read,
+	.aio_write = sculld_aio_write,
+};
+
+int sculld_trim(struct sculld_dev *dev)
+{
+	struct sculld_dev *next, *dptr;
+	int qset = dev->qset;   /* "dev" is not-null */
+	int i;
+
+	if (dev->vmas) /* don't trim: there are active mappings */
+		return -EBUSY;
+
+	for (dptr = dev; dptr; dptr = next) { /* all the list items */
+		if (dptr->data) {
+			/* This code frees a whole quantum-set */
+			for (i = 0; i < qset; i++)
+				if (dptr->data[i])
+					free_pages((unsigned long)(dptr->data[i]),
+							dptr->order);
+
+			kfree(dptr->data);
+			dptr->data=NULL;
+		}
+		next=dptr->next;
+		if (dptr != dev) kfree(dptr); /* all of them but the first */
+	}
+	dev->size = 0;
+	dev->qset = sculld_qset;
+	dev->order = sculld_order;
+	dev->next = NULL;
+	return 0;
+}
+
+
+static void sculld_setup_cdev(struct sculld_dev *dev, int index)
+{
+	int err, devno = MKDEV(sculld_major, index);
+    
+	cdev_init(&dev->cdev, &sculld_fops);
+	dev->cdev.owner = THIS_MODULE;
+	dev->cdev.ops = &sculld_fops;
+	err = cdev_add (&dev->cdev, devno, 1);
+	/* Fail gracefully if need be */
+	if (err)
+		printk(KERN_NOTICE "Error %%d adding scull%%d", err, index);
+}
+
+static ssize_t sculld_show_dev(struct device *ddev, char *buf)
+{
+	struct sculld_dev *dev = ddev->driver_data;
+
+	return print_dev_t(buf, dev->cdev.dev);
+}
+
+static DEVICE_ATTR(dev, S_IRUGO, sculld_show_dev, NULL);
+
+static void sculld_register_dev(struct sculld_dev *dev, int index)
+{
+	sprintf(dev->devname, "sculld%%d", index);
+	dev->ldev.name = dev->devname;
+	dev->ldev.driver = &sculld_driver;
+	dev->ldev.dev.driver_data = dev;
+	register_ldd_device(&dev->ldev);
+	device_create_file(&dev->ldev.dev, &dev_attr_dev);
+}
+
+
+/*
+ * Finally, the module stuff
+ */
+
+int sculld_init(void)
+{
+	int result, i;
+	dev_t dev = MKDEV(sculld_major, 0);
+	
+	/*
+	 * Register your major, and accept a dynamic number.
+	 */
+	if (sculld_major)
+		result = register_chrdev_region(dev, sculld_devs, "sculld");
+	else {
+		result = alloc_chrdev_region(&dev, 0, sculld_devs, "sculld");
+		sculld_major = MAJOR(dev);
+	}
+	if (result < 0)
+		return result;
+
+	/*
+	 * Register with the driver core.
+	 */
+	register_ldd_driver(&sculld_driver);
+	
+	/* 
+	 * allocate the devices -- we can't have them static, as the number
+	 * can be specified at load time
+	 */
+	sculld_devices = kmalloc(sculld_devs*sizeof (struct sculld_dev), GFP_KERNEL);
+	if (!sculld_devices) {
+		result = -ENOMEM;
+		goto fail_malloc;
+	}
+	memset(sculld_devices, 0, sculld_devs*sizeof (struct sculld_dev));
+	for (i = 0; i < sculld_devs; i++) {
+		sculld_devices[i].order = sculld_order;
+		sculld_devices[i].qset = sculld_qset;
+		sema_init (&sculld_devices[i].sem, 1);
+		sculld_setup_cdev(sculld_devices + i, i);
+		sculld_register_dev(sculld_devices + i, i);
+	}
+
+
+#ifdef SCULLD_USE_PROC /* only when available */
+	create_proc_read_entry("sculldmem", 0, NULL, sculld_read_procmem, NULL);
+#endif
+	return 0; /* succeed */
+
+  fail_malloc:
+	unregister_chrdev_region(dev, sculld_devs);
+	return result;
+}
+
+
+
+void sculld_cleanup(void)
+{
+	int i;
+
+#ifdef SCULLD_USE_PROC
+	remove_proc_entry("sculldmem", NULL);
+#endif
+
+	for (i = 0; i < sculld_devs; i++) {
+		unregister_ldd_device(&sculld_devices[i].ldev);
+		cdev_del(&sculld_devices[i].cdev);
+		sculld_trim(sculld_devices + i);
+	}
+	kfree(sculld_devices);
+	unregister_ldd_driver(&sculld_driver);
+	unregister_chrdev_region(MKDEV (sculld_major, 0), sculld_devs);
+}
+
+
+module_init(sculld_init);
+module_exit(sculld_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_sculld_mmap">
+			<text>
+				<![CDATA[/*  -*- C -*-
+ * mmap.c -- memory mapping for the sculld char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: _mmap.c.in,v 1.13 2004/10/18 18:07:36 corbet Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+
+#include <linux/mm.h>		/* everything */
+#include <linux/errno.h>	/* error codes */
+#include <asm/pgtable.h>
+
+#include "sculld.h"		/* local definitions */
+
+
+/*
+ * open and close: just keep track of how many times the device is
+ * mapped, to avoid releasing it.
+ */
+
+void sculld_vma_open(struct vm_area_struct *vma)
+{
+	struct sculld_dev *dev = vma->vm_private_data;
+
+	dev->vmas++;
+}
+
+void sculld_vma_close(struct vm_area_struct *vma)
+{
+	struct sculld_dev *dev = vma->vm_private_data;
+
+	dev->vmas--;
+}
+
+/*
+ * The nopage method: the core of the file. It retrieves the
+ * page required from the sculld device and returns it to the
+ * user. The count for the page must be incremented, because
+ * it is automatically decremented at page unmap.
+ *
+ * For this reason, "order" must be zero. Otherwise, only the first
+ * page has its count incremented, and the allocating module must
+ * release it as a whole block. Therefore, it isn't possible to map
+ * pages from a multipage block: when they are unmapped, their count
+ * is individually decreased, and would drop to 0.
+ */
+
+struct page *sculld_vma_nopage(struct vm_area_struct *vma,
+                                unsigned long address, int *type)
+{
+	unsigned long offset;
+	struct sculld_dev *ptr, *dev = vma->vm_private_data;
+	struct page *page = NOPAGE_SIGBUS;
+	void *pageptr = NULL; /* default to "missing" */
+
+	down(&dev->sem);
+	offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
+	if (offset >= dev->size) goto out; /* out of range */
+
+	/*
+	 * Now retrieve the sculld device from the list,then the page.
+	 * If the device has holes, the process receives a SIGBUS when
+	 * accessing the hole.
+	 */
+	offset >>= PAGE_SHIFT; /* offset is a number of pages */
+	for (ptr = dev; ptr && offset >= dev->qset;) {
+		ptr = ptr->next;
+		offset -= dev->qset;
+	}
+	if (ptr && ptr->data) pageptr = ptr->data[offset];
+	if (!pageptr) goto out; /* hole or end-of-file */
+
+	/* got it, now increment the count */
+	get_page(page);
+	if (type)
+		*type = VM_FAULT_MINOR;
+  out:
+	up(&dev->sem);
+	return page;
+}
+
+
+
+struct vm_operations_struct sculld_vm_ops = {
+	.open =     sculld_vma_open,
+	.close =    sculld_vma_close,
+	.nopage =   sculld_vma_nopage,
+};
+
+
+int sculld_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+	struct inode *inode = filp->f_dentry->d_inode;
+
+	/* refuse to map if order is not 0 */
+	if (sculld_devices[iminor(inode)].order)
+		return -ENODEV;
+
+	/* don't do anything here: "nopage" will set up page table entries */
+	vma->vm_ops = &sculld_vm_ops;
+	vma->vm_flags |= VM_RESERVED;
+	vma->vm_private_data = filp->private_data;
+	sculld_vma_open(vma);
+	return 0;
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scullp_main">
+			<text>
+				<![CDATA[/* -*- C -*-
+ * main.c -- the bare scullp char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: _main.c.in,v 1.21 2004/10/14 20:11:39 corbet Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+#include <linux/kernel.h>	/* printk() */
+#include <linux/slab.h>		/* kmalloc() */
+#include <linux/fs.h>		/* everything... */
+#include <linux/errno.h>	/* error codes */
+#include <linux/types.h>	/* size_t */
+#include <linux/proc_fs.h>
+#include <linux/fcntl.h>	/* O_ACCMODE */
+#include <linux/aio.h>
+#include <asm/uaccess.h>
+#include "scullp.h"		/* local definitions */
+
+
+int scullp_major =   SCULLP_MAJOR;
+int scullp_devs =    SCULLP_DEVS;	/* number of bare scullp devices */
+int scullp_qset =    SCULLP_QSET;
+int scullp_order =   SCULLP_ORDER;
+
+module_param(scullp_major, int, 0);
+module_param(scullp_devs, int, 0);
+module_param(scullp_qset, int, 0);
+module_param(scullp_order, int, 0);
+MODULE_AUTHOR("Alessandro Rubini");
+MODULE_LICENSE("Dual BSD/GPL");
+
+struct scullp_dev *scullp_devices; /* allocated in scullp_init */
+
+int scullp_trim(struct scullp_dev *dev);
+void scullp_cleanup(void);
+
+
+
+
+
+
+#ifdef SCULLP_USE_PROC /* don't waste space if unused */
+/*
+ * The proc filesystem: function to read and entry
+ */
+
+void scullp_proc_offset(char *buf, char **start, off_t *offset, int *len)
+{
+	if (*offset == 0)
+		return;
+	if (*offset >= *len) {
+		/* Not there yet */
+		*offset -= *len;
+		*len = 0;
+	} else {
+		/* We're into the interesting stuff now */
+		*start = buf + *offset;
+		*offset = 0;
+	}
+}
+
+/* FIXME: Do we need this here??  It be ugly  */
+int scullp_read_procmem(char *buf, char **start, off_t offset,
+                   int count, int *eof, void *data)
+{
+	int i, j, order, qset, len = 0;
+	int limit = count - 80; /* Don't print more than this */
+	struct scullp_dev *d;
+
+	*start = buf;
+	for(i = 0; i < scullp_devs; i++) {
+		d = &scullp_devices[i];
+		if (down_interruptible (&d->sem))
+			return -ERESTARTSYS;
+		qset = d->qset;  /* retrieve the features of each device */
+		order = d->order;
+		len += sprintf(buf+len,"\nDevice %%i: qset %%i, order %%i, sz %%li\n",
+				i, qset, order, (long)(d->size));
+		for (; d; d = d->next) { /* scan the list */
+			len += sprintf(buf+len,"  item at %%p, qset at %%p\n",d,d->data);
+			scullp_proc_offset (buf, start, &offset, &len);
+			if (len > limit)
+				goto out;
+			if (d->data && !d->next) /* dump only the last item - save space */
+				for (j = 0; j < qset; j++) {
+					if (d->data[j])
+						len += sprintf(buf+len,"    %% 4i:%%8p\n",j,d->data[j]);
+					scullp_proc_offset (buf, start, &offset, &len);
+					if (len > limit)
+						goto out;
+				}
+		}
+	  out:
+		up (&scullp_devices[i].sem);
+		if (len > limit)
+			break;
+	}
+	*eof = 1;
+	return len;
+}
+
+#endif /* SCULLP_USE_PROC */
+
+/*
+ * Open and close
+ */
+
+int scullp_open (struct inode *inode, struct file *filp)
+{
+	struct scullp_dev *dev; /* device information */
+
+	/*  Find the device */
+	dev = container_of(inode->i_cdev, struct scullp_dev, cdev);
+
+    	/* now trim to 0 the length of the device if open was write-only */
+	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY) {
+		if (down_interruptible (&dev->sem))
+			return -ERESTARTSYS;
+		scullp_trim(dev); /* ignore errors */
+		up (&dev->sem);
+	}
+
+	/* and use filp->private_data to point to the device data */
+	filp->private_data = dev;
+
+	return 0;          /* success */
+}
+
+int scullp_release (struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+/*
+ * Follow the list 
+ */
+struct scullp_dev *scullp_follow(struct scullp_dev *dev, int n)
+{
+	while (n--) {
+		if (!dev->next) {
+			dev->next = kmalloc(sizeof(struct scullp_dev), GFP_KERNEL);
+			memset(dev->next, 0, sizeof(struct scullp_dev));
+		}
+		dev = dev->next;
+		continue;
+	}
+	return dev;
+}
+
+/*
+ * Data management: read and write
+ */
+
+ssize_t scullp_read (struct file *filp, char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scullp_dev *dev = filp->private_data; /* the first listitem */
+	struct scullp_dev *dptr;
+	int quantum = PAGE_SIZE << dev->order;
+	int qset = dev->qset;
+	int itemsize = quantum * qset; /* how many bytes in the listitem */
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = 0;
+
+	if (down_interruptible (&dev->sem))
+		return -ERESTARTSYS;
+	if (*f_pos > dev->size) 
+		goto nothing;
+	if (*f_pos + count > dev->size)
+		count = dev->size - *f_pos;
+	/* find listitem, qset index, and offset in the quantum */
+	item = ((long) *f_pos) / itemsize;
+	rest = ((long) *f_pos) %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+    	/* follow the list up to the right position (defined elsewhere) */
+	dptr = scullp_follow(dev, item);
+
+	if (!dptr->data)
+		goto nothing; /* don't fill holes */
+	if (!dptr->data[s_pos])
+		goto nothing;
+	if (count > quantum - q_pos)
+		count = quantum - q_pos; /* read only up to the end of this quantum */
+
+	if (copy_to_user (buf, dptr->data[s_pos]+q_pos, count)) {
+		retval = -EFAULT;
+		goto nothing;
+	}
+	up (&dev->sem);
+
+	*f_pos += count;
+	return count;
+
+  nothing:
+	up (&dev->sem);
+	return retval;
+}
+
+
+
+ssize_t scullp_write (struct file *filp, const char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scullp_dev *dev = filp->private_data;
+	struct scullp_dev *dptr;
+	int quantum = PAGE_SIZE << dev->order;
+	int qset = dev->qset;
+	int itemsize = quantum * qset;
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = -ENOMEM; /* our most likely error */
+
+	if (down_interruptible (&dev->sem))
+		return -ERESTARTSYS;
+
+	/* find listitem, qset index and offset in the quantum */
+	item = ((long) *f_pos) / itemsize;
+	rest = ((long) *f_pos) %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+	/* follow the list up to the right position */
+	dptr = scullp_follow(dev, item);
+	if (!dptr->data) {
+		dptr->data = kmalloc(qset * sizeof(void *), GFP_KERNEL);
+		if (!dptr->data)
+			goto nomem;
+		memset(dptr->data, 0, qset * sizeof(char *));
+	}
+	/* Here's the allocation of a single quantum */
+	if (!dptr->data[s_pos]) {
+		dptr->data[s_pos] =
+			(void *)__get_free_pages(GFP_KERNEL, dptr->order);
+		if (!dptr->data[s_pos])
+			goto nomem;
+		memset(dptr->data[s_pos], 0, PAGE_SIZE << dptr->order);
+	}
+	if (count > quantum - q_pos)
+		count = quantum - q_pos; /* write only up to the end of this quantum */
+	if (copy_from_user (dptr->data[s_pos]+q_pos, buf, count)) {
+		retval = -EFAULT;
+		goto nomem;
+	}
+	*f_pos += count;
+ 
+    	/* update the size */
+	if (dev->size < *f_pos)
+		dev->size = *f_pos;
+	up (&dev->sem);
+	return count;
+
+  nomem:
+	up (&dev->sem);
+	return retval;
+}
+
+/*
+ * The ioctl() implementation
+ */
+
+int scullp_ioctl (struct inode *inode, struct file *filp,
+                 unsigned int cmd, unsigned long arg)
+{
+
+	int err = 0, ret = 0, tmp;
+
+	/* don't even decode wrong cmds: better returning  ENOTTY than EFAULT */
+	if (_IOC_TYPE(cmd) != SCULLP_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > SCULLP_IOC_MAXNR) return -ENOTTY;
+
+	/*
+	 * the type is a bitmask, and VERIFY_WRITE catches R/W
+	 * transfers. Note that the type is user-oriented, while
+	 * verify_area is kernel-oriented, so the concept of "read" and
+	 * "write" is reversed
+	 */
+	if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+		err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	if (err)
+		return -EFAULT;
+
+	switch(cmd) {
+
+	case SCULLP_IOCRESET:
+		scullp_qset = SCULLP_QSET;
+		scullp_order = SCULLP_ORDER;
+		break;
+
+	case SCULLP_IOCSORDER: /* Set: arg points to the value */
+		ret = __get_user(scullp_order, (int __user *) arg);
+		break;
+
+	case SCULLP_IOCTORDER: /* Tell: arg is the value */
+		scullp_order = arg;
+		break;
+
+	case SCULLP_IOCGORDER: /* Get: arg is pointer to result */
+		ret = __put_user (scullp_order, (int __user *) arg);
+		break;
+
+	case SCULLP_IOCQORDER: /* Query: return it (it's positive) */
+		return scullp_order;
+
+	case SCULLP_IOCXORDER: /* eXchange: use arg as pointer */
+		tmp = scullp_order;
+		ret = __get_user(scullp_order, (int __user *) arg);
+		if (ret == 0)
+			ret = __put_user(tmp, (int __user *) arg);
+		break;
+
+	case SCULLP_IOCHORDER: /* sHift: like Tell + Query */
+		tmp = scullp_order;
+		scullp_order = arg;
+		return tmp;
+
+	case SCULLP_IOCSQSET:
+		ret = __get_user(scullp_qset, (int __user *) arg);
+		break;
+
+	case SCULLP_IOCTQSET:
+		scullp_qset = arg;
+		break;
+
+	case SCULLP_IOCGQSET:
+		ret = __put_user(scullp_qset, (int __user *)arg);
+		break;
+
+	case SCULLP_IOCQQSET:
+		return scullp_qset;
+
+	case SCULLP_IOCXQSET:
+		tmp = scullp_qset;
+		ret = __get_user(scullp_qset, (int __user *)arg);
+		if (ret == 0)
+			ret = __put_user(tmp, (int __user *)arg);
+		break;
+
+	case SCULLP_IOCHQSET:
+		tmp = scullp_qset;
+		scullp_qset = arg;
+		return tmp;
+
+	default:  /* redundant, as cmd was checked against MAXNR */
+		return -ENOTTY;
+	}
+
+	return ret;
+}
+
+/*
+ * The "extended" operations
+ */
+
+loff_t scullp_llseek (struct file *filp, loff_t off, int whence)
+{
+	struct scullp_dev *dev = filp->private_data;
+	long newpos;
+
+	switch(whence) {
+	case 0: /* SEEK_SET */
+		newpos = off;
+		break;
+
+	case 1: /* SEEK_CUR */
+		newpos = filp->f_pos + off;
+		break;
+
+	case 2: /* SEEK_END */
+		newpos = dev->size + off;
+		break;
+
+	default: /* can't happen */
+		return -EINVAL;
+	}
+	if (newpos<0) return -EINVAL;
+	filp->f_pos = newpos;
+	return newpos;
+}
+
+
+/*
+ * A simple asynchronous I/O implementation.
+ */
+
+struct async_work {
+	struct kiocb *iocb;
+	int result;
+	struct work_struct work;
+};
+
+/*
+ * "Complete" an asynchronous operation.
+ */
+static void scullp_do_deferred_op(void *p)
+{
+	struct async_work *stuff = (struct async_work *) p;
+	aio_complete(stuff->iocb, stuff->result, 0);
+	kfree(stuff);
+}
+
+
+static int scullp_defer_op(int write, struct kiocb *iocb, char __user *buf,
+		size_t count, loff_t pos)
+{
+	struct async_work *stuff;
+	int result;
+
+	/* Copy now while we can access the buffer */
+	if (write)
+		result = scullp_write(iocb->ki_filp, buf, count, &pos);
+	else
+		result = scullp_read(iocb->ki_filp, buf, count, &pos);
+
+	/* If this is a synchronous IOCB, we return our status now. */
+	if (is_sync_kiocb(iocb))
+		return result;
+
+	/* Otherwise defer the completion for a few milliseconds. */
+	stuff = kmalloc (sizeof (*stuff), GFP_KERNEL);
+	if (stuff == NULL)
+		return result; /* No memory, just complete now */
+	stuff->iocb = iocb;
+	stuff->result = result;
+	INIT_WORK(&stuff->work, scullp_do_deferred_op, stuff);
+	schedule_delayed_work(&stuff->work, HZ/100);
+	return -EIOCBQUEUED;
+}
+
+
+static ssize_t scullp_aio_read(struct kiocb *iocb, char __user *buf, size_t count,
+		loff_t pos)
+{
+	return scullp_defer_op(0, iocb, buf, count, pos);
+}
+
+static ssize_t scullp_aio_write(struct kiocb *iocb, const char __user *buf,
+		size_t count, loff_t pos)
+{
+	return scullp_defer_op(1, iocb, (char __user *) buf, count, pos);
+}
+
+
+ 
+/*
+ * Mmap *is* available, but confined in a different file
+ */
+extern int scullp_mmap(struct file *filp, struct vm_area_struct *vma);
+
+
+/*
+ * The fops
+ */
+
+struct file_operations scullp_fops = {
+	.owner =     THIS_MODULE,
+	.llseek =    scullp_llseek,
+	.read =	     scullp_read,
+	.write =     scullp_write,
+	.ioctl =     scullp_ioctl,
+	.mmap =	     scullp_mmap,
+	.open =	     scullp_open,
+	.release =   scullp_release,
+	.aio_read =  scullp_aio_read,
+	.aio_write = scullp_aio_write,
+};
+
+int scullp_trim(struct scullp_dev *dev)
+{
+	struct scullp_dev *next, *dptr;
+	int qset = dev->qset;   /* "dev" is not-null */
+	int i;
+
+	if (dev->vmas) /* don't trim: there are active mappings */
+		return -EBUSY;
+
+	for (dptr = dev; dptr; dptr = next) { /* all the list items */
+		if (dptr->data) {
+			/* This code frees a whole quantum-set */
+			for (i = 0; i < qset; i++)
+				if (dptr->data[i])
+					free_pages((unsigned long)(dptr->data[i]),
+							dptr->order);
+
+			kfree(dptr->data);
+			dptr->data=NULL;
+		}
+		next=dptr->next;
+		if (dptr != dev) kfree(dptr); /* all of them but the first */
+	}
+	dev->size = 0;
+	dev->qset = scullp_qset;
+	dev->order = scullp_order;
+	dev->next = NULL;
+	return 0;
+}
+
+
+static void scullp_setup_cdev(struct scullp_dev *dev, int index)
+{
+	int err, devno = MKDEV(scullp_major, index);
+    
+	cdev_init(&dev->cdev, &scullp_fops);
+	dev->cdev.owner = THIS_MODULE;
+	dev->cdev.ops = &scullp_fops;
+	err = cdev_add (&dev->cdev, devno, 1);
+	/* Fail gracefully if need be */
+	if (err)
+		printk(KERN_NOTICE "Error %%d adding scull%%d", err, index);
+}
+
+
+
+/*
+ * Finally, the module stuff
+ */
+
+int scullp_init(void)
+{
+	int result, i;
+	dev_t dev = MKDEV(scullp_major, 0);
+	
+	/*
+	 * Register your major, and accept a dynamic number.
+	 */
+	if (scullp_major)
+		result = register_chrdev_region(dev, scullp_devs, "scullp");
+	else {
+		result = alloc_chrdev_region(&dev, 0, scullp_devs, "scullp");
+		scullp_major = MAJOR(dev);
+	}
+	if (result < 0)
+		return result;
+
+	
+	/* 
+	 * allocate the devices -- we can't have them static, as the number
+	 * can be specified at load time
+	 */
+	scullp_devices = kmalloc(scullp_devs*sizeof (struct scullp_dev), GFP_KERNEL);
+	if (!scullp_devices) {
+		result = -ENOMEM;
+		goto fail_malloc;
+	}
+	memset(scullp_devices, 0, scullp_devs*sizeof (struct scullp_dev));
+	for (i = 0; i < scullp_devs; i++) {
+		scullp_devices[i].order = scullp_order;
+		scullp_devices[i].qset = scullp_qset;
+		sema_init (&scullp_devices[i].sem, 1);
+		scullp_setup_cdev(scullp_devices + i, i);
+	}
+
+
+#ifdef SCULLP_USE_PROC /* only when available */
+	create_proc_read_entry("scullpmem", 0, NULL, scullp_read_procmem, NULL);
+#endif
+	return 0; /* succeed */
+
+  fail_malloc:
+	unregister_chrdev_region(dev, scullp_devs);
+	return result;
+}
+
+
+
+void scullp_cleanup(void)
+{
+	int i;
+
+#ifdef SCULLP_USE_PROC
+	remove_proc_entry("scullpmem", NULL);
+#endif
+
+	for (i = 0; i < scullp_devs; i++) {
+		cdev_del(&scullp_devices[i].cdev);
+		scullp_trim(scullp_devices + i);
+	}
+	kfree(scullp_devices);
+	unregister_chrdev_region(MKDEV (scullp_major, 0), scullp_devs);
+}
+
+
+module_init(scullp_init);
+module_exit(scullp_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scullp_mmap">
+			<text>
+				<![CDATA[/*  -*- C -*-
+ * mmap.c -- memory mapping for the scullp char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: _mmap.c.in,v 1.13 2004/10/18 18:07:36 corbet Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+
+#include <linux/mm.h>		/* everything */
+#include <linux/errno.h>	/* error codes */
+#include <asm/pgtable.h>
+
+#include "scullp.h"		/* local definitions */
+
+
+/*
+ * open and close: just keep track of how many times the device is
+ * mapped, to avoid releasing it.
+ */
+
+void scullp_vma_open(struct vm_area_struct *vma)
+{
+	struct scullp_dev *dev = vma->vm_private_data;
+
+	dev->vmas++;
+}
+
+void scullp_vma_close(struct vm_area_struct *vma)
+{
+	struct scullp_dev *dev = vma->vm_private_data;
+
+	dev->vmas--;
+}
+
+/*
+ * The nopage method: the core of the file. It retrieves the
+ * page required from the scullp device and returns it to the
+ * user. The count for the page must be incremented, because
+ * it is automatically decremented at page unmap.
+ *
+ * For this reason, "order" must be zero. Otherwise, only the first
+ * page has its count incremented, and the allocating module must
+ * release it as a whole block. Therefore, it isn't possible to map
+ * pages from a multipage block: when they are unmapped, their count
+ * is individually decreased, and would drop to 0.
+ */
+
+struct page *scullp_vma_nopage(struct vm_area_struct *vma,
+                                unsigned long address, int *type)
+{
+	unsigned long offset;
+	struct scullp_dev *ptr, *dev = vma->vm_private_data;
+	struct page *page = NOPAGE_SIGBUS;
+	void *pageptr = NULL; /* default to "missing" */
+
+	down(&dev->sem);
+	offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
+	if (offset >= dev->size) goto out; /* out of range */
+
+	/*
+	 * Now retrieve the scullp device from the list,then the page.
+	 * If the device has holes, the process receives a SIGBUS when
+	 * accessing the hole.
+	 */
+	offset >>= PAGE_SHIFT; /* offset is a number of pages */
+	for (ptr = dev; ptr && offset >= dev->qset;) {
+		ptr = ptr->next;
+		offset -= dev->qset;
+	}
+	if (ptr && ptr->data) pageptr = ptr->data[offset];
+	if (!pageptr) goto out; /* hole or end-of-file */
+	page = virt_to_page(pageptr);
+
+	/* got it, now increment the count */
+	get_page(page);
+	if (type)
+		*type = VM_FAULT_MINOR;
+  out:
+	up(&dev->sem);
+	return page;
+}
+
+
+
+struct vm_operations_struct scullp_vm_ops = {
+	.open =     scullp_vma_open,
+	.close =    scullp_vma_close,
+	.nopage =   scullp_vma_nopage,
+};
+
+
+int scullp_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+	struct inode *inode = filp->f_dentry->d_inode;
+
+	/* refuse to map if order is not 0 */
+	if (scullp_devices[iminor(inode)].order)
+		return -ENODEV;
+
+	/* don't do anything here: "nopage" will set up page table entries */
+	vma->vm_ops = &scullp_vm_ops;
+	vma->vm_flags |= VM_RESERVED;
+	vma->vm_private_data = filp->private_data;
+	scullp_vma_open(vma);
+	return 0;
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scullv_main">
+			<text>
+				<![CDATA[/* -*- C -*-
+ * main.c -- the bare scullv char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: _main.c.in,v 1.21 2004/10/14 20:11:39 corbet Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+#include <linux/kernel.h>	/* printk() */
+#include <linux/slab.h>		/* kmalloc() */
+#include <linux/fs.h>		/* everything... */
+#include <linux/errno.h>	/* error codes */
+#include <linux/types.h>	/* size_t */
+#include <linux/proc_fs.h>
+#include <linux/fcntl.h>	/* O_ACCMODE */
+#include <linux/aio.h>
+#include <asm/uaccess.h>
+#include <linux/vmalloc.h>
+#include "scullv.h"		/* local definitions */
+
+
+int scullv_major =   SCULLV_MAJOR;
+int scullv_devs =    SCULLV_DEVS;	/* number of bare scullv devices */
+int scullv_qset =    SCULLV_QSET;
+int scullv_order =   SCULLV_ORDER;
+
+module_param(scullv_major, int, 0);
+module_param(scullv_devs, int, 0);
+module_param(scullv_qset, int, 0);
+module_param(scullv_order, int, 0);
+MODULE_AUTHOR("Alessandro Rubini");
+MODULE_LICENSE("Dual BSD/GPL");
+
+struct scullv_dev *scullv_devices; /* allocated in scullv_init */
+
+int scullv_trim(struct scullv_dev *dev);
+void scullv_cleanup(void);
+
+
+
+
+
+
+#ifdef SCULLV_USE_PROC /* don't waste space if unused */
+/*
+ * The proc filesystem: function to read and entry
+ */
+
+void scullv_proc_offset(char *buf, char **start, off_t *offset, int *len)
+{
+	if (*offset == 0)
+		return;
+	if (*offset >= *len) {
+		/* Not there yet */
+		*offset -= *len;
+		*len = 0;
+	} else {
+		/* We're into the interesting stuff now */
+		*start = buf + *offset;
+		*offset = 0;
+	}
+}
+
+/* FIXME: Do we need this here??  It be ugly  */
+int scullv_read_procmem(char *buf, char **start, off_t offset,
+                   int count, int *eof, void *data)
+{
+	int i, j, order, qset, len = 0;
+	int limit = count - 80; /* Don't print more than this */
+	struct scullv_dev *d;
+
+	*start = buf;
+	for(i = 0; i < scullv_devs; i++) {
+		d = &scullv_devices[i];
+		if (down_interruptible (&d->sem))
+			return -ERESTARTSYS;
+		qset = d->qset;  /* retrieve the features of each device */
+		order = d->order;
+		len += sprintf(buf+len,"\nDevice %%i: qset %%i, order %%i, sz %%li\n",
+				i, qset, order, (long)(d->size));
+		for (; d; d = d->next) { /* scan the list */
+			len += sprintf(buf+len,"  item at %%p, qset at %%p\n",d,d->data);
+			scullv_proc_offset (buf, start, &offset, &len);
+			if (len > limit)
+				goto out;
+			if (d->data && !d->next) /* dump only the last item - save space */
+				for (j = 0; j < qset; j++) {
+					if (d->data[j])
+						len += sprintf(buf+len,"    %% 4i:%%8p\n",j,d->data[j]);
+					scullv_proc_offset (buf, start, &offset, &len);
+					if (len > limit)
+						goto out;
+				}
+		}
+	  out:
+		up (&scullv_devices[i].sem);
+		if (len > limit)
+			break;
+	}
+	*eof = 1;
+	return len;
+}
+
+#endif /* SCULLV_USE_PROC */
+
+/*
+ * Open and close
+ */
+
+int scullv_open (struct inode *inode, struct file *filp)
+{
+	struct scullv_dev *dev; /* device information */
+
+	/*  Find the device */
+	dev = container_of(inode->i_cdev, struct scullv_dev, cdev);
+
+    	/* now trim to 0 the length of the device if open was write-only */
+	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY) {
+		if (down_interruptible (&dev->sem))
+			return -ERESTARTSYS;
+		scullv_trim(dev); /* ignore errors */
+		up (&dev->sem);
+	}
+
+	/* and use filp->private_data to point to the device data */
+	filp->private_data = dev;
+
+	return 0;          /* success */
+}
+
+int scullv_release (struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+/*
+ * Follow the list 
+ */
+struct scullv_dev *scullv_follow(struct scullv_dev *dev, int n)
+{
+	while (n--) {
+		if (!dev->next) {
+			dev->next = kmalloc(sizeof(struct scullv_dev), GFP_KERNEL);
+			memset(dev->next, 0, sizeof(struct scullv_dev));
+		}
+		dev = dev->next;
+		continue;
+	}
+	return dev;
+}
+
+/*
+ * Data management: read and write
+ */
+
+ssize_t scullv_read (struct file *filp, char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scullv_dev *dev = filp->private_data; /* the first listitem */
+	struct scullv_dev *dptr;
+	int quantum = PAGE_SIZE << dev->order;
+	int qset = dev->qset;
+	int itemsize = quantum * qset; /* how many bytes in the listitem */
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = 0;
+
+	if (down_interruptible (&dev->sem))
+		return -ERESTARTSYS;
+	if (*f_pos > dev->size) 
+		goto nothing;
+	if (*f_pos + count > dev->size)
+		count = dev->size - *f_pos;
+	/* find listitem, qset index, and offset in the quantum */
+	item = ((long) *f_pos) / itemsize;
+	rest = ((long) *f_pos) %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+    	/* follow the list up to the right position (defined elsewhere) */
+	dptr = scullv_follow(dev, item);
+
+	if (!dptr->data)
+		goto nothing; /* don't fill holes */
+	if (!dptr->data[s_pos])
+		goto nothing;
+	if (count > quantum - q_pos)
+		count = quantum - q_pos; /* read only up to the end of this quantum */
+
+	if (copy_to_user (buf, dptr->data[s_pos]+q_pos, count)) {
+		retval = -EFAULT;
+		goto nothing;
+	}
+	up (&dev->sem);
+
+	*f_pos += count;
+	return count;
+
+  nothing:
+	up (&dev->sem);
+	return retval;
+}
+
+
+
+ssize_t scullv_write (struct file *filp, const char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+	struct scullv_dev *dev = filp->private_data;
+	struct scullv_dev *dptr;
+	int quantum = PAGE_SIZE << dev->order;
+	int qset = dev->qset;
+	int itemsize = quantum * qset;
+	int item, s_pos, q_pos, rest;
+	ssize_t retval = -ENOMEM; /* our most likely error */
+
+	if (down_interruptible (&dev->sem))
+		return -ERESTARTSYS;
+
+	/* find listitem, qset index and offset in the quantum */
+	item = ((long) *f_pos) / itemsize;
+	rest = ((long) *f_pos) %% itemsize;
+	s_pos = rest / quantum; q_pos = rest %% quantum;
+
+	/* follow the list up to the right position */
+	dptr = scullv_follow(dev, item);
+	if (!dptr->data) {
+		dptr->data = kmalloc(qset * sizeof(void *), GFP_KERNEL);
+		if (!dptr->data)
+			goto nomem;
+		memset(dptr->data, 0, qset * sizeof(char *));
+	}
+	/* Allocate a quantum using virtual addresses */
+	if (!dptr->data[s_pos]) {
+		dptr->data[s_pos] = (void *)vmalloc(PAGE_SIZE << dptr->order);
+		if (!dptr->data[s_pos])
+			goto nomem;
+		memset(dptr->data[s_pos], 0, PAGE_SIZE << dptr->order);
+	}
+	if (count > quantum - q_pos)
+		count = quantum - q_pos; /* write only up to the end of this quantum */
+	if (copy_from_user (dptr->data[s_pos]+q_pos, buf, count)) {
+		retval = -EFAULT;
+		goto nomem;
+	}
+	*f_pos += count;
+ 
+    	/* update the size */
+	if (dev->size < *f_pos)
+		dev->size = *f_pos;
+	up (&dev->sem);
+	return count;
+
+  nomem:
+	up (&dev->sem);
+	return retval;
+}
+
+/*
+ * The ioctl() implementation
+ */
+
+int scullv_ioctl (struct inode *inode, struct file *filp,
+                 unsigned int cmd, unsigned long arg)
+{
+
+	int err = 0, ret = 0, tmp;
+
+	/* don't even decode wrong cmds: better returning  ENOTTY than EFAULT */
+	if (_IOC_TYPE(cmd) != SCULLV_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > SCULLV_IOC_MAXNR) return -ENOTTY;
+
+	/*
+	 * the type is a bitmask, and VERIFY_WRITE catches R/W
+	 * transfers. Note that the type is user-oriented, while
+	 * verify_area is kernel-oriented, so the concept of "read" and
+	 * "write" is reversed
+	 */
+	if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+		err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	if (err)
+		return -EFAULT;
+
+	switch(cmd) {
+
+	case SCULLV_IOCRESET:
+		scullv_qset = SCULLV_QSET;
+		scullv_order = SCULLV_ORDER;
+		break;
+
+	case SCULLV_IOCSORDER: /* Set: arg points to the value */
+		ret = __get_user(scullv_order, (int __user *) arg);
+		break;
+
+	case SCULLV_IOCTORDER: /* Tell: arg is the value */
+		scullv_order = arg;
+		break;
+
+	case SCULLV_IOCGORDER: /* Get: arg is pointer to result */
+		ret = __put_user (scullv_order, (int __user *) arg);
+		break;
+
+	case SCULLV_IOCQORDER: /* Query: return it (it's positive) */
+		return scullv_order;
+
+	case SCULLV_IOCXORDER: /* eXchange: use arg as pointer */
+		tmp = scullv_order;
+		ret = __get_user(scullv_order, (int __user *) arg);
+		if (ret == 0)
+			ret = __put_user(tmp, (int __user *) arg);
+		break;
+
+	case SCULLV_IOCHORDER: /* sHift: like Tell + Query */
+		tmp = scullv_order;
+		scullv_order = arg;
+		return tmp;
+
+	case SCULLV_IOCSQSET:
+		ret = __get_user(scullv_qset, (int __user *) arg);
+		break;
+
+	case SCULLV_IOCTQSET:
+		scullv_qset = arg;
+		break;
+
+	case SCULLV_IOCGQSET:
+		ret = __put_user(scullv_qset, (int __user *)arg);
+		break;
+
+	case SCULLV_IOCQQSET:
+		return scullv_qset;
+
+	case SCULLV_IOCXQSET:
+		tmp = scullv_qset;
+		ret = __get_user(scullv_qset, (int __user *)arg);
+		if (ret == 0)
+			ret = __put_user(tmp, (int __user *)arg);
+		break;
+
+	case SCULLV_IOCHQSET:
+		tmp = scullv_qset;
+		scullv_qset = arg;
+		return tmp;
+
+	default:  /* redundant, as cmd was checked against MAXNR */
+		return -ENOTTY;
+	}
+
+	return ret;
+}
+
+/*
+ * The "extended" operations
+ */
+
+loff_t scullv_llseek (struct file *filp, loff_t off, int whence)
+{
+	struct scullv_dev *dev = filp->private_data;
+	long newpos;
+
+	switch(whence) {
+	case 0: /* SEEK_SET */
+		newpos = off;
+		break;
+
+	case 1: /* SEEK_CUR */
+		newpos = filp->f_pos + off;
+		break;
+
+	case 2: /* SEEK_END */
+		newpos = dev->size + off;
+		break;
+
+	default: /* can't happen */
+		return -EINVAL;
+	}
+	if (newpos<0) return -EINVAL;
+	filp->f_pos = newpos;
+	return newpos;
+}
+
+
+/*
+ * A simple asynchronous I/O implementation.
+ */
+
+struct async_work {
+	struct kiocb *iocb;
+	int result;
+	struct work_struct work;
+};
+
+/*
+ * "Complete" an asynchronous operation.
+ */
+static void scullv_do_deferred_op(void *p)
+{
+	struct async_work *stuff = (struct async_work *) p;
+	aio_complete(stuff->iocb, stuff->result, 0);
+	kfree(stuff);
+}
+
+
+static int scullv_defer_op(int write, struct kiocb *iocb, char __user *buf,
+		size_t count, loff_t pos)
+{
+	struct async_work *stuff;
+	int result;
+
+	/* Copy now while we can access the buffer */
+	if (write)
+		result = scullv_write(iocb->ki_filp, buf, count, &pos);
+	else
+		result = scullv_read(iocb->ki_filp, buf, count, &pos);
+
+	/* If this is a synchronous IOCB, we return our status now. */
+	if (is_sync_kiocb(iocb))
+		return result;
+
+	/* Otherwise defer the completion for a few milliseconds. */
+	stuff = kmalloc (sizeof (*stuff), GFP_KERNEL);
+	if (stuff == NULL)
+		return result; /* No memory, just complete now */
+	stuff->iocb = iocb;
+	stuff->result = result;
+	INIT_WORK(&stuff->work, scullv_do_deferred_op, stuff);
+	schedule_delayed_work(&stuff->work, HZ/100);
+	return -EIOCBQUEUED;
+}
+
+
+static ssize_t scullv_aio_read(struct kiocb *iocb, char __user *buf, size_t count,
+		loff_t pos)
+{
+	return scullv_defer_op(0, iocb, buf, count, pos);
+}
+
+static ssize_t scullv_aio_write(struct kiocb *iocb, const char __user *buf,
+		size_t count, loff_t pos)
+{
+	return scullv_defer_op(1, iocb, (char __user *) buf, count, pos);
+}
+
+
+ 
+/*
+ * Mmap *is* available, but confined in a different file
+ */
+extern int scullv_mmap(struct file *filp, struct vm_area_struct *vma);
+
+
+/*
+ * The fops
+ */
+
+struct file_operations scullv_fops = {
+	.owner =     THIS_MODULE,
+	.llseek =    scullv_llseek,
+	.read =	     scullv_read,
+	.write =     scullv_write,
+	.ioctl =     scullv_ioctl,
+	.mmap =	     scullv_mmap,
+	.open =	     scullv_open,
+	.release =   scullv_release,
+	.aio_read =  scullv_aio_read,
+	.aio_write = scullv_aio_write,
+};
+
+int scullv_trim(struct scullv_dev *dev)
+{
+	struct scullv_dev *next, *dptr;
+	int qset = dev->qset;   /* "dev" is not-null */
+	int i;
+
+	if (dev->vmas) /* don't trim: there are active mappings */
+		return -EBUSY;
+
+	for (dptr = dev; dptr; dptr = next) { /* all the list items */
+		if (dptr->data) {
+			/* Release the quantum-set */
+			for (i = 0; i < qset; i++)
+				if (dptr->data[i])
+					vfree(dptr->data[i]);
+
+			kfree(dptr->data);
+			dptr->data=NULL;
+		}
+		next=dptr->next;
+		if (dptr != dev) kfree(dptr); /* all of them but the first */
+	}
+	dev->size = 0;
+	dev->qset = scullv_qset;
+	dev->order = scullv_order;
+	dev->next = NULL;
+	return 0;
+}
+
+
+static void scullv_setup_cdev(struct scullv_dev *dev, int index)
+{
+	int err, devno = MKDEV(scullv_major, index);
+    
+	cdev_init(&dev->cdev, &scullv_fops);
+	dev->cdev.owner = THIS_MODULE;
+	dev->cdev.ops = &scullv_fops;
+	err = cdev_add (&dev->cdev, devno, 1);
+	/* Fail gracefully if need be */
+	if (err)
+		printk(KERN_NOTICE "Error %%d adding scull%%d", err, index);
+}
+
+
+
+/*
+ * Finally, the module stuff
+ */
+
+int scullv_init(void)
+{
+	int result, i;
+	dev_t dev = MKDEV(scullv_major, 0);
+	
+	/*
+	 * Register your major, and accept a dynamic number.
+	 */
+	if (scullv_major)
+		result = register_chrdev_region(dev, scullv_devs, "scullv");
+	else {
+		result = alloc_chrdev_region(&dev, 0, scullv_devs, "scullv");
+		scullv_major = MAJOR(dev);
+	}
+	if (result < 0)
+		return result;
+
+	
+	/* 
+	 * allocate the devices -- we can't have them static, as the number
+	 * can be specified at load time
+	 */
+	scullv_devices = kmalloc(scullv_devs*sizeof (struct scullv_dev), GFP_KERNEL);
+	if (!scullv_devices) {
+		result = -ENOMEM;
+		goto fail_malloc;
+	}
+	memset(scullv_devices, 0, scullv_devs*sizeof (struct scullv_dev));
+	for (i = 0; i < scullv_devs; i++) {
+		scullv_devices[i].order = scullv_order;
+		scullv_devices[i].qset = scullv_qset;
+		sema_init (&scullv_devices[i].sem, 1);
+		scullv_setup_cdev(scullv_devices + i, i);
+	}
+
+
+#ifdef SCULLV_USE_PROC /* only when available */
+	create_proc_read_entry("scullvmem", 0, NULL, scullv_read_procmem, NULL);
+#endif
+	return 0; /* succeed */
+
+  fail_malloc:
+	unregister_chrdev_region(dev, scullv_devs);
+	return result;
+}
+
+
+
+void scullv_cleanup(void)
+{
+	int i;
+
+#ifdef SCULLV_USE_PROC
+	remove_proc_entry("scullvmem", NULL);
+#endif
+
+	for (i = 0; i < scullv_devs; i++) {
+		cdev_del(&scullv_devices[i].cdev);
+		scullv_trim(scullv_devices + i);
+	}
+	kfree(scullv_devices);
+	unregister_chrdev_region(MKDEV (scullv_major, 0), scullv_devs);
+}
+
+
+module_init(scullv_init);
+module_exit(scullv_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scullv_mmap">
+			<text>
+				<![CDATA[/*  -*- C -*-
+ * mmap.c -- memory mapping for the scullv char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: _mmap.c.in,v 1.13 2004/10/18 18:07:36 corbet Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+
+#include <linux/mm.h>		/* everything */
+#include <linux/errno.h>	/* error codes */
+#include <asm/pgtable.h>
+
+#include "scullv.h"		/* local definitions */
+
+
+/*
+ * open and close: just keep track of how many times the device is
+ * mapped, to avoid releasing it.
+ */
+
+void scullv_vma_open(struct vm_area_struct *vma)
+{
+	struct scullv_dev *dev = vma->vm_private_data;
+
+	dev->vmas++;
+}
+
+void scullv_vma_close(struct vm_area_struct *vma)
+{
+	struct scullv_dev *dev = vma->vm_private_data;
+
+	dev->vmas--;
+}
+
+/*
+ * The nopage method: the core of the file. It retrieves the
+ * page required from the scullv device and returns it to the
+ * user. The count for the page must be incremented, because
+ * it is automatically decremented at page unmap.
+ *
+ * For this reason, "order" must be zero. Otherwise, only the first
+ * page has its count incremented, and the allocating module must
+ * release it as a whole block. Therefore, it isn't possible to map
+ * pages from a multipage block: when they are unmapped, their count
+ * is individually decreased, and would drop to 0.
+ */
+
+struct page *scullv_vma_nopage(struct vm_area_struct *vma,
+                                unsigned long address, int *type)
+{
+	unsigned long offset;
+	struct scullv_dev *ptr, *dev = vma->vm_private_data;
+	struct page *page = NOPAGE_SIGBUS;
+	void *pageptr = NULL; /* default to "missing" */
+
+	down(&dev->sem);
+	offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
+	if (offset >= dev->size) goto out; /* out of range */
+
+	/*
+	 * Now retrieve the scullv device from the list,then the page.
+	 * If the device has holes, the process receives a SIGBUS when
+	 * accessing the hole.
+	 */
+	offset >>= PAGE_SHIFT; /* offset is a number of pages */
+	for (ptr = dev; ptr && offset >= dev->qset;) {
+		ptr = ptr->next;
+		offset -= dev->qset;
+	}
+	if (ptr && ptr->data) pageptr = ptr->data[offset];
+	if (!pageptr) goto out; /* hole or end-of-file */
+
+	/*
+	 * After scullv lookup, "page" is now the address of the page
+	 * needed by the current process. Since it's a vmalloc address,
+	 * turn it into a struct page.
+	 */
+	page = vmalloc_to_page(pageptr);
+
+	/* got it, now increment the count */
+	get_page(page);
+	if (type)
+		*type = VM_FAULT_MINOR;
+  out:
+	up(&dev->sem);
+	return page;
+}
+
+
+
+struct vm_operations_struct scullv_vm_ops = {
+	.open =     scullv_vma_open,
+	.close =    scullv_vma_close,
+	.nopage =   scullv_vma_nopage,
+};
+
+
+int scullv_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+
+	/* don't do anything here: "nopage" will set up page table entries */
+	vma->vm_ops = &scullv_vm_ops;
+	vma->vm_flags |= VM_RESERVED;
+	vma->vm_private_data = filp->private_data;
+	scullv_vma_open(vma);
+	return 0;
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_short">
+			<text>
+				<![CDATA[/*
+ * short.c -- Simple Hardware Operations and Raw Tests
+ * short.c -- also a brief example of interrupt handling ("short int")
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: short.c,v 1.16 2004/10/29 16:45:40 corbet Exp $
+ */
+
+/*
+ * FIXME: this driver is not safe with concurrent readers or
+ * writers.
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+
+#include <linux/sched.h>
+#include <linux/kernel.h>	/* printk() */
+#include <linux/fs.h>		/* everything... */
+#include <linux/errno.h>	/* error codes */
+#include <linux/delay.h>	/* udelay */
+#include <linux/kdev_t.h>
+#include <linux/slab.h>
+#include <linux/mm.h>
+#include <linux/ioport.h>
+#include <linux/interrupt.h>
+#include <linux/workqueue.h>
+#include <linux/poll.h>
+#include <linux/wait.h>
+
+#include <asm/io.h>
+
+#define SHORT_NR_PORTS	8	/* use 8 ports by default */
+
+/*
+ * all of the parameters have no "short_" prefix, to save typing when
+ * specifying them at load time
+ */
+static int major = 0;	/* dynamic by default */
+module_param(major, int, 0);
+
+static int use_mem = 0;	/* default is I/O-mapped */
+module_param(use_mem, int, 0);
+
+/* default is the first printer port on PC's. "short_base" is there too
+   because it's what we want to use in the code */
+static unsigned long base = 0x378;
+unsigned long short_base = 0;
+module_param(base, long, 0);
+
+/* The interrupt line is undefined by default. "short_irq" is as above */
+static int irq = -1;
+volatile int short_irq = -1;
+module_param(irq, int, 0);
+
+static int probe = 0;	/* select at load time how to probe irq line */
+module_param(probe, int, 0);
+
+static int wq = 0;	/* select at load time whether a workqueue is used */
+module_param(wq, int, 0);
+
+static int tasklet = 0;	/* select whether a tasklet is used */
+module_param(tasklet, int, 0);
+
+static int share = 0;	/* select at load time whether install a shared irq */
+module_param(share, int, 0);
+
+MODULE_AUTHOR ("Alessandro Rubini");
+MODULE_LICENSE("Dual BSD/GPL");
+
+
+unsigned long short_buffer = 0;
+unsigned long volatile short_head;
+volatile unsigned long short_tail;
+DECLARE_WAIT_QUEUE_HEAD(short_queue);
+
+/* Set up our tasklet if we're doing that. */
+void short_do_tasklet(unsigned long);
+DECLARE_TASKLET(short_tasklet, short_do_tasklet, 0);
+
+/*
+ * Atomicly increment an index into short_buffer
+ */
+static inline void short_incr_bp(volatile unsigned long *index, int delta)
+{
+	unsigned long new = *index + delta;
+	barrier();  /* Don't optimize these two together */
+	*index = (new >= (short_buffer + PAGE_SIZE)) ? short_buffer : new;
+}
+
+
+/*
+ * The devices with low minor numbers write/read burst of data to/from
+ * specific I/O ports (by default the parallel ones).
+ * 
+ * The device with 128 as minor number returns ascii strings telling
+ * when interrupts have been received. Writing to the device toggles
+ * 00/FF on the parallel data lines. If there is a loopback wire, this
+ * generates interrupts.  
+ */
+
+int short_open (struct inode *inode, struct file *filp)
+{
+	extern struct file_operations short_i_fops;
+
+	if (iminor (inode) & 0x80)
+		filp->f_op = &short_i_fops; /* the interrupt-driven node */
+	return 0;
+}
+
+
+int short_release (struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+
+/* first, the port-oriented device */
+
+enum short_modes {SHORT_DEFAULT=0, SHORT_PAUSE, SHORT_STRING, SHORT_MEMORY};
+
+ssize_t do_short_read (struct inode *inode, struct file *filp, char __user *buf,
+		size_t count, loff_t *f_pos)
+{
+	int retval = count, minor = iminor (inode);
+	unsigned long port = short_base + (minor&0x0f);
+	void *address = (void *) short_base + (minor&0x0f);
+	int mode = (minor&0x70) >> 4;
+	unsigned char *kbuf = kmalloc(count, GFP_KERNEL), *ptr;
+    
+	if (!kbuf)
+		return -ENOMEM;
+	ptr = kbuf;
+
+	if (use_mem)
+		mode = SHORT_MEMORY;
+	
+	switch(mode) {
+	    case SHORT_STRING:
+		insb(port, ptr, count);
+		rmb();
+		break;
+
+	    case SHORT_DEFAULT:
+		while (count--) {
+			*(ptr++) = inb(port);
+			rmb();
+		}
+		break;
+
+	    case SHORT_MEMORY:
+		while (count--) {
+			*ptr++ = ioread8(address);
+			rmb();
+		}
+		break;
+	    case SHORT_PAUSE:
+		while (count--) {
+			*(ptr++) = inb_p(port);
+			rmb();
+		}
+		break;
+
+	    default: /* no more modes defined by now */
+		retval = -EINVAL;
+		break;
+	}
+	if ((retval > 0) && copy_to_user(buf, kbuf, retval))
+		retval = -EFAULT;
+	kfree(kbuf);
+	return retval;
+}
+
+
+/*
+ * Version-specific methods for the fops structure.  FIXME don't need anymore.
+ */
+ssize_t short_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	return do_short_read(filp->f_dentry->d_inode, filp, buf, count, f_pos);
+}
+
+
+
+ssize_t do_short_write (struct inode *inode, struct file *filp, const char __user *buf,
+		size_t count, loff_t *f_pos)
+{
+	int retval = count, minor = iminor(inode);
+	unsigned long port = short_base + (minor&0x0f);
+	void *address = (void *) short_base + (minor&0x0f);
+	int mode = (minor&0x70) >> 4;
+	unsigned char *kbuf = kmalloc(count, GFP_KERNEL), *ptr;
+
+	if (!kbuf)
+		return -ENOMEM;
+	if (copy_from_user(kbuf, buf, count))
+		return -EFAULT;
+	ptr = kbuf;
+
+	if (use_mem)
+		mode = SHORT_MEMORY;
+
+	switch(mode) {
+	case SHORT_PAUSE:
+		while (count--) {
+			outb_p(*(ptr++), port);
+			wmb();
+		}
+		break;
+
+	case SHORT_STRING:
+		outsb(port, ptr, count);
+		wmb();
+		break;
+
+	case SHORT_DEFAULT:
+		while (count--) {
+			outb(*(ptr++), port);
+			wmb();
+		}
+		break;
+
+	case SHORT_MEMORY:
+		while (count--) {
+			iowrite8(*ptr++, address);
+			wmb();
+		}
+		break;
+
+	default: /* no more modes defined by now */
+		retval = -EINVAL;
+		break;
+	}
+	kfree(kbuf);
+	return retval;
+}
+
+
+ssize_t short_write(struct file *filp, const char __user *buf, size_t count,
+		loff_t *f_pos)
+{
+	return do_short_write(filp->f_dentry->d_inode, filp, buf, count, f_pos);
+}
+
+
+
+
+unsigned int short_poll(struct file *filp, poll_table *wait)
+{
+	return POLLIN | POLLRDNORM | POLLOUT | POLLWRNORM;
+}
+
+
+
+
+
+
+struct file_operations short_fops = {
+	.owner	 = THIS_MODULE,
+	.read	 = short_read,
+	.write	 = short_write,
+	.poll	 = short_poll,
+	.open	 = short_open,
+	.release = short_release,
+};
+
+/* then,  the interrupt-related device */
+
+ssize_t short_i_read (struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	int count0;
+	DEFINE_WAIT(wait);
+
+	while (short_head == short_tail) {
+		prepare_to_wait(&short_queue, &wait, TASK_INTERRUPTIBLE);
+		if (short_head == short_tail)
+			schedule();
+		finish_wait(&short_queue, &wait);
+		if (signal_pending (current))  /* a signal arrived */
+			return -ERESTARTSYS; /* tell the fs layer to handle it */
+	} 
+	/* count0 is the number of readable data bytes */
+	count0 = short_head - short_tail;
+	if (count0 < 0) /* wrapped */
+		count0 = short_buffer + PAGE_SIZE - short_tail;
+	if (count0 < count) count = count0;
+
+	if (copy_to_user(buf, (char *)short_tail, count))
+		return -EFAULT;
+	short_incr_bp (&short_tail, count);
+	return count;
+}
+
+ssize_t short_i_write (struct file *filp, const char __user *buf, size_t count,
+		loff_t *f_pos)
+{
+	int written = 0, odd = *f_pos & 1;
+	unsigned long port = short_base; /* output to the parallel data latch */
+	void *address = (void *) short_base;
+
+	if (use_mem) {
+		while (written < count)
+			iowrite8(0xff * ((++written + odd) & 1), address);
+	} else {
+		while (written < count)
+			outb(0xff * ((++written + odd) & 1), port);
+	}
+
+	*f_pos += count;
+	return written;
+}
+
+
+
+
+struct file_operations short_i_fops = {
+	.owner	 = THIS_MODULE,
+	.read	 = short_i_read,
+	.write	 = short_i_write,
+	.open	 = short_open,
+	.release = short_release,
+};
+
+irqreturn_t short_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+	struct timeval tv;
+	int written;
+
+	do_gettimeofday(&tv);
+
+	    /* Write a 16 byte record. Assume PAGE_SIZE is a multiple of 16 */
+	written = sprintf((char *)short_head,"%%08u.%%06u\n",
+			(int)(tv.tv_sec %% 100000000), (int)(tv.tv_usec));
+	BUG_ON(written != 16);
+	short_incr_bp(&short_head, written);
+	wake_up_interruptible(&short_queue); /* awake any reading process */
+	return IRQ_HANDLED;
+}
+
+/*
+ * The following two functions are equivalent to the previous one,
+ * but split in top and bottom half. First, a few needed variables
+ */
+
+#define NR_TIMEVAL 512 /* length of the array of time values */
+
+struct timeval tv_data[NR_TIMEVAL]; /* too lazy to allocate it */
+volatile struct timeval *tv_head=tv_data;
+volatile struct timeval *tv_tail=tv_data;
+
+static struct work_struct short_wq;
+
+
+int short_wq_count = 0;
+
+/*
+ * Increment a circular buffer pointer in a way that nobody sees
+ * an intermediate value.
+ */
+static inline void short_incr_tv(volatile struct timeval **tvp)
+{
+	if (*tvp == (tv_data + NR_TIMEVAL - 1))
+		*tvp = tv_data;	 /* Wrap */
+	else
+		(*tvp)++;
+}
+
+
+
+void short_do_tasklet (unsigned long unused)
+{
+	int savecount = short_wq_count, written;
+	short_wq_count = 0; /* we have already been removed from the queue */
+	/*
+	 * The bottom half reads the tv array, filled by the top half,
+	 * and prints it to the circular text buffer, which is then consumed
+	 * by reading processes
+	 */
+
+	/* First write the number of interrupts that occurred before this bh */
+	written = sprintf((char *)short_head,"bh after %%6i\n",savecount);
+	short_incr_bp(&short_head, written);
+
+	/*
+	 * Then, write the time values. Write exactly 16 bytes at a time,
+	 * so it aligns with PAGE_SIZE
+	 */
+
+	do {
+		written = sprintf((char *)short_head,"%%08u.%%06u\n",
+				(int)(tv_tail->tv_sec %% 100000000),
+				(int)(tv_tail->tv_usec));
+		short_incr_bp(&short_head, written);
+		short_incr_tv(&tv_tail);
+	} while (tv_tail != tv_head);
+
+	wake_up_interruptible(&short_queue); /* awake any reading process */
+}
+
+
+irqreturn_t short_wq_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+	/* Grab the current time information. */
+	do_gettimeofday((struct timeval *) tv_head);
+	short_incr_tv(&tv_head);
+
+	/* Queue the bh. Don't worry about multiple enqueueing */
+	schedule_work(&short_wq);
+
+	short_wq_count++; /* record that an interrupt arrived */
+	return IRQ_HANDLED;
+}
+
+
+/*
+ * Tasklet top half
+ */
+
+irqreturn_t short_tl_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+	do_gettimeofday((struct timeval *) tv_head); /* cast to stop 'volatile' warning */
+	short_incr_tv(&tv_head);
+	tasklet_schedule(&short_tasklet);
+	short_wq_count++; /* record that an interrupt arrived */
+	return IRQ_HANDLED;
+}
+
+
+
+
+irqreturn_t short_sh_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+	int value, written;
+	struct timeval tv;
+
+	/* If it wasn't short, return immediately */
+	value = inb(short_base);
+	if (!(value & 0x80))
+		return IRQ_NONE;
+	
+	/* clear the interrupting bit */
+	outb(value & 0x7F, short_base);
+
+	/* the rest is unchanged */
+
+	do_gettimeofday(&tv);
+	written = sprintf((char *)short_head,"%%08u.%%06u\n",
+			(int)(tv.tv_sec %% 100000000), (int)(tv.tv_usec));
+	short_incr_bp(&short_head, written);
+	wake_up_interruptible(&short_queue); /* awake any reading process */
+	return IRQ_HANDLED;
+}
+
+void short_kernelprobe(void)
+{
+	int count = 0;
+	do {
+		unsigned long mask;
+
+		mask = probe_irq_on();
+		outb_p(0x10,short_base+2); /* enable reporting */
+		outb_p(0x00,short_base);   /* clear the bit */
+		outb_p(0xFF,short_base);   /* set the bit: interrupt! */
+		outb_p(0x00,short_base+2); /* disable reporting */
+		udelay(5);  /* give it some time */
+		short_irq = probe_irq_off(mask);
+
+		if (short_irq == 0) { /* none of them? */
+			printk(KERN_INFO "short: no irq reported by probe\n");
+			short_irq = -1;
+		}
+		/*
+		 * if more than one line has been activated, the result is
+		 * negative. We should service the interrupt (no need for lpt port)
+		 * and loop over again. Loop at most five times, then give up
+		 */
+	} while (short_irq < 0 && count++ < 5);
+	if (short_irq < 0)
+		printk("short: probe failed %%i times, giving up\n", count);
+}
+
+irqreturn_t short_probing(int irq, void *dev_id, struct pt_regs *regs)
+{
+	if (short_irq == 0) short_irq = irq;	/* found */
+	if (short_irq != irq) short_irq = -irq; /* ambiguous */
+	return IRQ_HANDLED;
+}
+
+void short_selfprobe(void)
+{
+	int trials[] = {3, 5, 7, 9, 0};
+	int tried[]  = {0, 0, 0, 0, 0};
+	int i, count = 0;
+
+	/*
+	 * install the probing handler for all possible lines. Remember
+	 * the result (0 for success, or -EBUSY) in order to only free
+	 * what has been acquired
+      */
+	for (i = 0; trials[i]; i++)
+		tried[i] = request_irq(trials[i], short_probing,
+				SA_INTERRUPT, "short probe", NULL);
+
+	do {
+		short_irq = 0; /* none got, yet */
+		outb_p(0x10,short_base+2); /* enable */
+		outb_p(0x00,short_base);
+		outb_p(0xFF,short_base); /* toggle the bit */
+		outb_p(0x00,short_base+2); /* disable */
+		udelay(5);  /* give it some time */
+
+		/* the value has been set by the handler */
+		if (short_irq == 0) { /* none of them? */
+			printk(KERN_INFO "short: no irq reported by probe\n");
+		}
+		/*
+		 * If more than one line has been activated, the result is
+		 * negative. We should service the interrupt (but the lpt port
+		 * doesn't need it) and loop over again. Do it at most 5 times
+		 */
+	} while (short_irq <=0 && count++ < 5);
+
+	/* end of loop, uninstall the handler */
+	for (i = 0; trials[i]; i++)
+		if (tried[i] == 0)
+			free_irq(trials[i], NULL);
+
+	if (short_irq < 0)
+		printk("short: probe failed %%i times, giving up\n", count);
+}
+
+
+
+/* Finally, init and cleanup */
+
+int short_init(void)
+{
+	int result;
+
+	/*
+	 * first, sort out the base/short_base ambiguity: we'd better
+	 * use short_base in the code, for clarity, but allow setting
+	 * just "base" at load time. Same for "irq".
+	 */
+	short_base = base;
+	short_irq = irq;
+
+	/* Get our needed resources. */
+	if (!use_mem) {
+		if (! request_region(short_base, SHORT_NR_PORTS, "short")) {
+			printk(KERN_INFO "short: can't get I/O port address 0x%%lx\n",
+					short_base);
+			return -ENODEV;
+		}
+
+	} else {
+		if (! request_mem_region(short_base, SHORT_NR_PORTS, "short")) {
+			printk(KERN_INFO "short: can't get I/O mem address 0x%%lx\n",
+					short_base);
+			return -ENODEV;
+		}
+
+		/* also, ioremap it */
+		short_base = (unsigned long) ioremap(short_base, SHORT_NR_PORTS);
+		/* Hmm... we should check the return value */
+	}
+	/* Here we register our device - should not fail thereafter */
+	result = register_chrdev(major, "short", &short_fops);
+	if (result < 0) {
+		printk(KERN_INFO "short: can't get major number\n");
+		release_region(short_base,SHORT_NR_PORTS);  /* FIXME - use-mem case? */
+		return result;
+	}
+	if (major == 0) major = result; /* dynamic */
+
+	short_buffer = __get_free_pages(GFP_KERNEL,0); /* never fails */  /* FIXME */
+	short_head = short_tail = short_buffer;
+
+	/*
+	 * Fill the workqueue structure, used for the bottom half handler.
+	 * The cast is there to prevent warnings about the type of the
+	 * (unused) argument.
+	 */
+	/* this line is in short_init() */
+	INIT_WORK(&short_wq, (void (*)(void *)) short_do_tasklet, NULL);
+
+	/*
+	 * Now we deal with the interrupt: either kernel-based
+	 * autodetection, DIY detection or default number
+	 */
+
+	if (short_irq < 0 && probe == 1)
+		short_kernelprobe();
+
+	if (short_irq < 0 && probe == 2)
+		short_selfprobe();
+
+	if (short_irq < 0) /* not yet specified: force the default on */
+		switch(short_base) {
+		    case 0x378: short_irq = 7; break;
+		    case 0x278: short_irq = 2; break;
+		    case 0x3bc: short_irq = 5; break;
+		}
+
+	/*
+	 * If shared has been specified, installed the shared handler
+	 * instead of the normal one. Do it first, before a -EBUSY will
+	 * force short_irq to -1.
+	 */
+	if (short_irq >= 0 && share > 0) {
+		result = request_irq(short_irq, short_sh_interrupt,
+				SA_SHIRQ | SA_INTERRUPT,"short",
+				short_sh_interrupt);
+		if (result) {
+			printk(KERN_INFO "short: can't get assigned irq %%i\n", short_irq);
+			short_irq = -1;
+		}
+		else { /* actually enable it -- assume this *is* a parallel port */
+			outb(0x10, short_base+2);
+		}
+		return 0; /* the rest of the function only installs handlers */
+	}
+
+	if (short_irq >= 0) {
+		result = request_irq(short_irq, short_interrupt,
+				SA_INTERRUPT, "short", NULL);
+		if (result) {
+			printk(KERN_INFO "short: can't get assigned irq %%i\n",
+					short_irq);
+			short_irq = -1;
+		}
+		else { /* actually enable it -- assume this *is* a parallel port */
+			outb(0x10,short_base+2);
+		}
+	}
+
+	/*
+	 * Ok, now change the interrupt handler if using top/bottom halves
+	 * has been requested
+	 */
+	if (short_irq >= 0 && (wq + tasklet) > 0) {
+		free_irq(short_irq,NULL);
+		result = request_irq(short_irq,
+				tasklet ? short_tl_interrupt :
+				short_wq_interrupt,
+				SA_INTERRUPT,"short-bh", NULL);
+		if (result) {
+			printk(KERN_INFO "short-bh: can't get assigned irq %%i\n",
+					short_irq);
+			short_irq = -1;
+		}
+	}
+
+	return 0;
+}
+
+void short_cleanup(void)
+{
+	if (short_irq >= 0) {
+		outb(0x0, short_base + 2);   /* disable the interrupt */
+		if (!share) free_irq(short_irq, NULL);
+		else free_irq(short_irq, short_sh_interrupt);
+	}
+	/* Make sure we don't leave work queue/tasklet functions running */
+	if (tasklet)
+		tasklet_disable(&short_tasklet);
+	else
+		flush_scheduled_work();
+	unregister_chrdev(major, "short");
+	if (use_mem) {
+		iounmap((void __iomem *)short_base);
+		release_mem_region(short_base, SHORT_NR_PORTS);
+	} else {
+		release_region(short_base,SHORT_NR_PORTS);
+	}
+	if (short_buffer) free_page(short_buffer);
+}
+
+module_init(short_init);
+module_exit(short_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_shortprint">
+			<text>
+				<![CDATA[/*
+ * A version of the "short" driver which drives a parallel printer directly,
+ * with a lot of simplifying assumptions.
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: shortprint.c,v 1.4 2004/09/26 08:01:04 gregkh Exp $
+ */
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+
+#include <linux/sched.h>
+#include <linux/kernel.h> /* printk() */
+#include <linux/fs.h>	  /* everything... */
+#include <linux/errno.h>  /* error codes */
+#include <linux/delay.h>  /* udelay */
+#include <linux/slab.h>
+#include <linux/ioport.h>
+#include <linux/interrupt.h>
+#include <linux/workqueue.h>
+#include <linux/timer.h>
+#include <linux/poll.h>
+
+#include <asm/io.h>
+#include <asm/semaphore.h>
+#include <asm/atomic.h>
+
+#include "shortprint.h"
+
+#define SHORTP_NR_PORTS 3
+
+/*
+ * all of the parameters have no "shortp_" prefix, to save typing when
+ * specifying them at load time
+ */
+static int major = 0; /* dynamic by default */
+module_param(major, int, 0);
+
+/* default is the first printer port on PC's. "shortp_base" is there too
+   because it's what we want to use in the code */
+static unsigned long base = 0x378;
+unsigned long shortp_base = 0;
+module_param(base, long, 0);
+
+/* The interrupt line is undefined by default. "shortp_irq" is as above */
+static int irq = -1;
+static int shortp_irq = -1;
+module_param(irq, int, 0);
+
+/* Microsecond delay around strobe. */
+static int delay = 0;
+static int shortp_delay;
+module_param(delay, int, 0);
+
+MODULE_AUTHOR ("Jonathan Corbet");
+MODULE_LICENSE("Dual BSD/GPL");
+
+/*
+ * Forwards.
+ */
+static void shortp_cleanup(void);
+static void shortp_timeout(unsigned long unused);
+
+/*
+ * Input is managed through a simple circular buffer which, among other things,
+ * is allowed to overrun if the reader isn't fast enough.  That makes life simple
+ * on the "read" interrupt side, where we don't want to block.
+ */
+static unsigned long shortp_in_buffer = 0;
+static unsigned long volatile shortp_in_head;
+static volatile unsigned long shortp_in_tail;
+DECLARE_WAIT_QUEUE_HEAD(shortp_in_queue);
+static struct timeval shortp_tv;  /* When the interrupt happened. */
+
+/*
+ * Atomicly increment an index into shortp_in_buffer
+ */
+static inline void shortp_incr_bp(volatile unsigned long *index, int delta)
+{
+	unsigned long new = *index + delta;
+	barrier ();  /* Don't optimize these two together */
+	*index = (new >= (shortp_in_buffer + PAGE_SIZE)) ? shortp_in_buffer : new;
+}
+
+
+/*
+ * On the write side we have to be more careful, since we don't want to drop
+ * data.  The semaphore is used to serialize write-side access to the buffer;
+ * there is only one consumer, so read-side access is unregulated.  The
+ * wait queue will be awakened when space becomes available in the buffer.
+ */
+static unsigned char *shortp_out_buffer = NULL;
+static volatile unsigned char *shortp_out_head, *shortp_out_tail;
+static struct semaphore shortp_out_sem;
+static DECLARE_WAIT_QUEUE_HEAD(shortp_out_queue);
+
+/*
+ * Feeding the output queue to the device is handled by way of a
+ * workqueue.
+ */
+static void shortp_do_work(void *);
+static DECLARE_WORK(shortp_work, shortp_do_work, NULL);
+static struct workqueue_struct *shortp_workqueue;
+
+/*
+ * Available space in the output buffer; should be called with the semaphore
+ * held.  Returns contiguous space, so caller need not worry about wraps.
+ */
+static inline int shortp_out_space(void)
+{
+	if (shortp_out_head >= shortp_out_tail) {
+		int space = PAGE_SIZE - (shortp_out_head - shortp_out_buffer);
+		return (shortp_out_tail == shortp_out_buffer) ? space - 1 : space;
+	} else
+		return (shortp_out_tail - shortp_out_head) - 1;
+}
+
+static inline void shortp_incr_out_bp(volatile unsigned char **bp, int incr)
+{
+	unsigned char *new = (unsigned char *) *bp + incr;
+	if (new >= (shortp_out_buffer + PAGE_SIZE))
+		new -= PAGE_SIZE;
+	*bp = new;
+}
+
+/*
+ * The output "process" is controlled by a spin lock; decisions on
+ * shortp_output_active or manipulation of shortp_out_tail require
+ * that this lock be held.
+ */
+static spinlock_t shortp_out_lock;
+volatile static int shortp_output_active;
+DECLARE_WAIT_QUEUE_HEAD(shortp_empty_queue); /* waked when queue empties */
+
+/*
+ * When output is active, the timer is too, in case we miss interrupts.	 Hold
+ * shortp_out_lock if you mess with the timer.
+ */
+static struct timer_list shortp_timer;
+#define TIMEOUT 5*HZ  /* Wait a long time */
+
+
+/*
+ * Open the device.
+ */
+static int shortp_open(struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+
+static int shortp_release(struct inode *inode, struct file *filp)
+{
+	/* Wait for any pending output to complete */
+	wait_event_interruptible(shortp_empty_queue, shortp_output_active==0);
+
+	return 0;
+}
+
+
+
+static unsigned int shortp_poll(struct file *filp, poll_table *wait)
+{
+    return POLLIN | POLLRDNORM | POLLOUT | POLLWRNORM;
+}
+
+
+
+/*
+ * The read routine, which doesn't return data from the device; instead, it
+ * returns timing information just like the "short" device.
+ */
+static ssize_t shortp_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	int count0;
+	DEFINE_WAIT(wait);
+
+	while (shortp_in_head == shortp_in_tail) {
+		prepare_to_wait(&shortp_in_queue, &wait, TASK_INTERRUPTIBLE);
+		if (shortp_in_head == shortp_in_tail)
+			schedule();
+		finish_wait(&shortp_in_queue, &wait);
+		if (signal_pending (current))  /* a signal arrived */
+			return -ERESTARTSYS; /* tell the fs layer to handle it */
+	}
+
+	/* count0 is the number of readable data bytes */
+	count0 = shortp_in_head - shortp_in_tail;
+	if (count0 < 0) /* wrapped */
+		count0 = shortp_in_buffer + PAGE_SIZE - shortp_in_tail;
+	if (count0 < count)
+		count = count0;
+
+	if (copy_to_user(buf, (char *)shortp_in_tail, count))
+		return -EFAULT;
+	shortp_incr_bp(&shortp_in_tail, count);
+	return count;
+}
+
+
+/*
+ * Wait for the printer to be ready; this can sleep.
+ */
+static void shortp_wait(void)
+{
+	if ((inb(shortp_base + SP_STATUS) & SP_SR_BUSY) == 0) {
+		printk(KERN_INFO "shortprint: waiting for printer busy\n");
+		printk(KERN_INFO "Status is 0x%%x\n", inb(shortp_base + SP_STATUS));
+		while ((inb(shortp_base + SP_STATUS) & SP_SR_BUSY) == 0) {
+			set_current_state(TASK_INTERRUPTIBLE);
+			schedule_timeout(10*HZ); 
+		}
+	}
+}
+
+
+/*
+ * Write the next character from the buffer.  There should *be* a next
+ * character...	 The spinlock should be held when this routine is called.
+ */
+static void shortp_do_write(void)
+{
+	unsigned char cr = inb(shortp_base + SP_CONTROL);
+
+	/* Something happened; reset the timer */
+	mod_timer(&shortp_timer, jiffies + TIMEOUT);
+
+	/* Strobe a byte out to the device */
+	outb_p(*shortp_out_tail, shortp_base+SP_DATA);
+	shortp_incr_out_bp(&shortp_out_tail, 1);
+	if (shortp_delay)
+		udelay(shortp_delay);
+	outb_p(cr | SP_CR_STROBE, shortp_base+SP_CONTROL);
+	if (shortp_delay)
+		udelay(shortp_delay);
+	outb_p(cr & ~SP_CR_STROBE, shortp_base+SP_CONTROL);
+}
+
+
+/*
+ * Start output; call under lock.
+ */
+static void shortp_start_output(void)
+{
+	if (shortp_output_active) /* Should never happen */
+		return;
+
+	/* Set up our 'missed interrupt' timer */
+	shortp_output_active = 1;
+	shortp_timer.expires = jiffies + TIMEOUT;
+	add_timer(&shortp_timer);
+
+	/*  And get the process going. */
+	queue_work(shortp_workqueue, &shortp_work);
+}
+
+
+/*
+ * Write to the device.
+ */
+static ssize_t shortp_write(struct file *filp, const char __user *buf, size_t count,
+		loff_t *f_pos)
+{
+	int space, written = 0;
+	unsigned long flags;
+	/*
+	 * Take and hold the semaphore for the entire duration of the operation.  The
+	 * consumer side ignores it, and it will keep other data from interleaving
+	 * with ours.
+	 */
+	if (down_interruptible(&shortp_out_sem))
+		return -ERESTARTSYS;
+	/*
+	 * Out with the data.
+	 */
+	while (written < count) {
+		/* Hang out until some buffer space is available. */
+		space = shortp_out_space();
+		if (space <= 0) {
+			if (wait_event_interruptible(shortp_out_queue,
+					    (space = shortp_out_space()) > 0))
+				goto out;
+		}
+
+		/* Move data into the buffer. */
+		if ((space + written) > count)
+			space = count - written;
+		if (copy_from_user((char *) shortp_out_head, buf, space)) {
+			up(&shortp_out_sem);
+			return -EFAULT;
+		}
+		shortp_incr_out_bp(&shortp_out_head, space);
+		buf += space;
+		written += space;
+
+		/* If no output is active, make it active. */
+		spin_lock_irqsave(&shortp_out_lock, flags);
+		if (! shortp_output_active)
+			shortp_start_output();
+		spin_unlock_irqrestore(&shortp_out_lock, flags);
+	}
+
+out:
+	*f_pos += written;
+	up(&shortp_out_sem);
+	return written;
+}
+
+
+/*
+ * The bottom-half handler.
+ */
+
+
+static void shortp_do_work(void *unused)
+{
+	int written;
+	unsigned long flags;
+
+	/* Wait until the device is ready */
+	shortp_wait();
+	
+	spin_lock_irqsave(&shortp_out_lock, flags);
+
+	/* Have we written everything? */
+	if (shortp_out_head == shortp_out_tail) { /* empty */
+		shortp_output_active = 0;
+		wake_up_interruptible(&shortp_empty_queue);
+		del_timer(&shortp_timer);  
+	}
+	/* Nope, write another byte */
+	else
+		shortp_do_write();
+
+	/* If somebody's waiting, maybe wake them up. */
+	if (((PAGE_SIZE + shortp_out_tail - shortp_out_head) %% PAGE_SIZE) > SP_MIN_SPACE) {
+		wake_up_interruptible(&shortp_out_queue);
+	}
+	spin_unlock_irqrestore(&shortp_out_lock, flags);
+
+	/* Handle the "read" side operation */
+	written = sprintf((char *)shortp_in_head, "%%08u.%%06u\n",
+			(int)(shortp_tv.tv_sec %% 100000000),
+			(int)(shortp_tv.tv_usec));
+	shortp_incr_bp(&shortp_in_head, written);
+	wake_up_interruptible(&shortp_in_queue); /* awake any reading process */
+}
+
+
+/*
+ * The top-half interrupt handler.
+ */
+static irqreturn_t shortp_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+	if (! shortp_output_active) 
+		return IRQ_NONE;
+
+	/* Remember the time, and farm off the rest to the workqueue function */ 
+	do_gettimeofday(&shortp_tv);
+	queue_work(shortp_workqueue, &shortp_work);
+	return IRQ_HANDLED;
+}
+
+/*
+ * Interrupt timeouts.	Just because we got a timeout doesn't mean that
+ * things have gone wrong, however; printers can spend an awful long time
+ * just thinking about things.
+ */
+static void shortp_timeout(unsigned long unused)
+{
+	unsigned long flags;
+	unsigned char status;
+   
+	if (! shortp_output_active)
+		return;
+	spin_lock_irqsave(&shortp_out_lock, flags);
+	status = inb(shortp_base + SP_STATUS);
+
+	/* If the printer is still busy we just reset the timer */
+	if ((status & SP_SR_BUSY) == 0 || (status & SP_SR_ACK)) {
+		shortp_timer.expires = jiffies + TIMEOUT;
+		add_timer(&shortp_timer);
+		spin_unlock_irqrestore(&shortp_out_lock, flags);
+		return;
+	}
+
+	/* Otherwise we must have dropped an interrupt. */
+	spin_unlock_irqrestore(&shortp_out_lock, flags);
+	shortp_interrupt(shortp_irq, NULL, NULL);
+}
+    
+
+
+
+
+static struct file_operations shortp_fops = {
+	.read =	   shortp_read,
+	.write =   shortp_write,
+	.open =	   shortp_open,
+	.release = shortp_release,
+	.poll =	   shortp_poll,
+	.owner	 = THIS_MODULE
+};
+
+
+
+
+/*
+ * Module initialization
+ */
+
+static int shortp_init(void)
+{
+	int result;
+
+	/*
+	 * first, sort out the base/shortp_base ambiguity: we'd better
+	 * use shortp_base in the code, for clarity, but allow setting
+	 * just "base" at load time. Same for "irq".
+	 */
+	shortp_base = base;
+	shortp_irq = irq;
+	shortp_delay = delay;
+
+	/* Get our needed resources. */
+	if (! request_region(shortp_base, SHORTP_NR_PORTS, "shortprint")) {
+		printk(KERN_INFO "shortprint: can't get I/O port address 0x%%lx\n",
+				shortp_base);
+		return -ENODEV;
+	}	
+
+	/* Register the device */
+	result = register_chrdev(major, "shortprint", &shortp_fops);
+	if (result < 0) {
+		printk(KERN_INFO "shortp: can't get major number\n");
+		release_region(shortp_base, SHORTP_NR_PORTS);
+		return result;
+	}
+	if (major == 0)
+		major = result; /* dynamic */
+
+	/* Initialize the input buffer. */
+	shortp_in_buffer = __get_free_pages(GFP_KERNEL, 0); /* never fails */
+	shortp_in_head = shortp_in_tail = shortp_in_buffer;
+
+	/* And the output buffer. */
+	shortp_out_buffer = (unsigned char *) __get_free_pages(GFP_KERNEL, 0);
+	shortp_out_head = shortp_out_tail = shortp_out_buffer;
+	sema_init(&shortp_out_sem, 1);
+    
+	/* And the output info */
+	shortp_output_active = 0;
+	spin_lock_init(&shortp_out_lock);
+	init_timer(&shortp_timer);
+	shortp_timer.function = shortp_timeout;
+	shortp_timer.data = 0;
+    
+	/* Set up our workqueue. */
+	shortp_workqueue = create_singlethread_workqueue("shortprint");
+
+	/* If no IRQ was explicitly requested, pick a default */
+	if (shortp_irq < 0)
+		switch(shortp_base) {
+		    case 0x378: shortp_irq = 7; break;
+		    case 0x278: shortp_irq = 2; break;
+		    case 0x3bc: shortp_irq = 5; break;
+		}
+
+	/* Request the IRQ */
+	result = request_irq(shortp_irq, shortp_interrupt, 0, "shortprint", NULL);
+	if (result) {
+		printk(KERN_INFO "shortprint: can't get assigned irq %%i\n",
+				shortp_irq);
+		shortp_irq = -1;
+		shortp_cleanup ();
+		return result;
+	}
+
+	/* Initialize the control register, turning on interrupts. */
+	outb(SP_CR_IRQ | SP_CR_SELECT | SP_CR_INIT, shortp_base + SP_CONTROL);
+
+	return 0;
+}
+
+static void shortp_cleanup(void)
+{
+	/* Return the IRQ if we have one */
+	if (shortp_irq >= 0) {
+		outb(0x0, shortp_base + SP_CONTROL);   /* disable the interrupt */
+		free_irq(shortp_irq, NULL);
+	}
+
+	/* All done with the device */
+	unregister_chrdev(major, "shortprint");
+	release_region(shortp_base,SHORTP_NR_PORTS);
+
+	/* Don't leave any timers floating around.  Note that any active output
+	   is effectively stopped by turning off the interrupt */
+	if (shortp_output_active)
+		del_timer_sync (&shortp_timer);
+	flush_workqueue(shortp_workqueue);
+	destroy_workqueue(shortp_workqueue);
+
+	if (shortp_in_buffer)
+		free_page(shortp_in_buffer);
+	if (shortp_out_buffer)
+		free_page((unsigned long) shortp_out_buffer);
+}
+
+module_init(shortp_init);
+module_exit(shortp_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_simple">
+			<text>
+				<![CDATA[/*
+ * Simple - REALLY simple memory mapping demonstration.
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: simple.c,v 1.12 2005/01/31 16:15:31 rubini Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+
+#include <linux/kernel.h>   /* printk() */
+#include <linux/slab.h>   /* kmalloc() */
+#include <linux/fs.h>       /* everything... */
+#include <linux/errno.h>    /* error codes */
+#include <linux/types.h>    /* size_t */
+#include <linux/mm.h>
+#include <linux/kdev_t.h>
+#include <asm/page.h>
+#include <linux/cdev.h>
+
+#include <linux/device.h>
+
+static int simple_major = 0;
+module_param(simple_major, int, 0);
+MODULE_AUTHOR("Jonathan Corbet");
+MODULE_LICENSE("Dual BSD/GPL");
+
+/*
+ * Open the device; in fact, there's nothing to do here.
+ */
+static int simple_open (struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+
+/*
+ * Closing is just as simpler.
+ */
+static int simple_release(struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+
+
+
+/*
+ * Common VMA ops.
+ */
+
+void simple_vma_open(struct vm_area_struct *vma)
+{
+	printk(KERN_NOTICE "Simple VMA open, virt %%lx, phys %%lx\n",
+			vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
+}
+
+void simple_vma_close(struct vm_area_struct *vma)
+{
+	printk(KERN_NOTICE "Simple VMA close.\n");
+}
+
+
+/*
+ * The remap_pfn_range version of mmap.  This one is heavily borrowed
+ * from drivers/char/mem.c.
+ */
+
+static struct vm_operations_struct simple_remap_vm_ops = {
+	.open =  simple_vma_open,
+	.close = simple_vma_close,
+};
+
+static int simple_remap_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+	if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+			    vma->vm_end - vma->vm_start,
+			    vma->vm_page_prot))
+		return -EAGAIN;
+
+	vma->vm_ops = &simple_remap_vm_ops;
+	simple_vma_open(vma);
+	return 0;
+}
+
+
+
+/*
+ * The nopage version.
+ */
+struct page *simple_vma_nopage(struct vm_area_struct *vma,
+                unsigned long address, int *type)
+{
+	struct page *pageptr;
+	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
+	unsigned long physaddr = address - vma->vm_start + offset;
+	unsigned long pageframe = physaddr >> PAGE_SHIFT;
+
+// Eventually remove these printks
+	printk (KERN_NOTICE "---- Nopage, off %%lx phys %%lx\n", offset, physaddr);
+	printk (KERN_NOTICE "VA is %%p\n", __va (physaddr));
+	printk (KERN_NOTICE "Page at %%p\n", virt_to_page (__va (physaddr)));
+	if (!pfn_valid(pageframe))
+		return NOPAGE_SIGBUS;
+	pageptr = pfn_to_page(pageframe);
+	printk (KERN_NOTICE "page->index = %%ld mapping %%p\n", pageptr->index, pageptr->mapping);
+	printk (KERN_NOTICE "Page frame %%ld\n", pageframe);
+	get_page(pageptr);
+	if (type)
+		*type = VM_FAULT_MINOR;
+	return pageptr;
+}
+
+static struct vm_operations_struct simple_nopage_vm_ops = {
+	.open =   simple_vma_open,
+	.close =  simple_vma_close,
+	.nopage = simple_vma_nopage,
+};
+
+static int simple_nopage_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
+
+	if (offset >= __pa(high_memory) || (filp->f_flags & O_SYNC))
+		vma->vm_flags |= VM_IO;
+	vma->vm_flags |= VM_RESERVED;
+
+	vma->vm_ops = &simple_nopage_vm_ops;
+	simple_vma_open(vma);
+	return 0;
+}
+
+
+/*
+ * Set up the cdev structure for a device.
+ */
+static void simple_setup_cdev(struct cdev *dev, int minor,
+		struct file_operations *fops)
+{
+	int err, devno = MKDEV(simple_major, minor);
+    
+	cdev_init(dev, fops);
+	dev->owner = THIS_MODULE;
+	dev->ops = fops;
+	err = cdev_add (dev, devno, 1);
+	/* Fail gracefully if need be */
+	if (err)
+		printk (KERN_NOTICE "Error %%d adding simple%%d", err, minor);
+}
+
+
+/*
+ * Our various sub-devices.
+ */
+/* Device 0 uses remap_pfn_range */
+static struct file_operations simple_remap_ops = {
+	.owner   = THIS_MODULE,
+	.open    = simple_open,
+	.release = simple_release,
+	.mmap    = simple_remap_mmap,
+};
+
+/* Device 1 uses nopage */
+static struct file_operations simple_nopage_ops = {
+	.owner   = THIS_MODULE,
+	.open    = simple_open,
+	.release = simple_release,
+	.mmap    = simple_nopage_mmap,
+};
+
+#define MAX_SIMPLE_DEV 2
+
+#if 0
+static struct file_operations *simple_fops[MAX_SIMPLE_DEV] = {
+	&simple_remap_ops,
+	&simple_nopage_ops,
+};
+#endif
+
+/*
+ * We export two simple devices.  There's no need for us to maintain any
+ * special housekeeping info, so we just deal with raw cdevs.
+ */
+static struct cdev SimpleDevs[MAX_SIMPLE_DEV];
+
+/*
+ * Module housekeeping.
+ */
+static int simple_init(void)
+{
+	int result;
+	dev_t dev = MKDEV(simple_major, 0);
+
+	/* Figure out our device number. */
+	if (simple_major)
+		result = register_chrdev_region(dev, 2, "simple");
+	else {
+		result = alloc_chrdev_region(&dev, 0, 2, "simple");
+		simple_major = MAJOR(dev);
+	}
+	if (result < 0) {
+		printk(KERN_WARNING "simple: unable to get major %%d\n", simple_major);
+		return result;
+	}
+	if (simple_major == 0)
+		simple_major = result;
+
+	/* Now set up two cdevs. */
+	simple_setup_cdev(SimpleDevs, 0, &simple_remap_ops);
+	simple_setup_cdev(SimpleDevs + 1, 1, &simple_nopage_ops);
+	return 0;
+}
+
+
+static void simple_cleanup(void)
+{
+	cdev_del(SimpleDevs);
+	cdev_del(SimpleDevs + 1);
+	unregister_chrdev_region(MKDEV(simple_major, 0), 2);
+}
+
+
+module_init(simple_init);
+module_exit(simple_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xln_drv_skull_clean">
+			<text>
+				<![CDATA[#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/version.h>
+
+#include <linux/ioport.h>
+
+void skull_release(unsigned int port, unsigned int range)
+{
+    release_region(port,range);
+}
+
+void skull_cleanup(void)
+{
+    /* should put real values here ... */
+    /* skull_release(0,0); */
+}
+
+module_exit(skull_cleanup);
+
+
+
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_skull_init">
+			<text>
+				<![CDATA[/*
+ * skull.c -- sample typeless module.
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * BUGS:
+ *   -it only runs on intel platforms.
+ *   -readb() should be used (see short.c): skull doesn't work with 2.1
+ *
+ */
+
+/* jc: cleaned up, but not yet run for anything */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/moduleparam.h>
+
+#include <linux/kernel.h> /* printk */
+#include <linux/ioport.h>
+#include <linux/errno.h>
+#include <asm/system.h> /* cli(), *_flags */
+#include <linux/mm.h> /* vremap (2.0) */
+#include <asm/io.h> /* ioremap */
+
+/* The region we look at. */
+#define ISA_REGION_BEGIN 0xA0000
+#define ISA_REGION_END   0x100000
+#define STEP 2048
+
+/* have three symbols to export */
+       void skull_fn1(void){}
+static void skull_fn2(void){}
+       int  skull_variable;
+
+EXPORT_SYMBOL (skull_fn1);
+EXPORT_SYMBOL (skull_fn2);
+EXPORT_SYMBOL (skull_variable);
+
+
+/* perform hardware autodetection */
+int skull_probe_hw(unsigned int port, unsigned int range)
+{
+   /* do smart probing here */
+   return -1; /* not found  :-) */
+}
+
+/* perform hardware initalizazion */
+int skull_init_board(unsigned int port)
+{
+  /* do smart initalization here */
+  return 0; /* done :-) */
+}
+
+/* detect the the device if the region is still free */
+static int skull_detect(unsigned int port, unsigned int range)
+{
+    int err;
+
+    if ((err = check_region(port,range)) < 0) return err; /* busy */
+    if (skull_probe_hw(port,range) != 0) return -ENODEV;  /* not found */
+    request_region(port,range,"skull");                   /* "Can't fail" */
+    return 0;
+}
+
+/*
+ * port ranges: the device can reside between
+ * 0x280 and 0x300, in step of 0x10. It uses 0x10 ports.
+ */
+#define SKULL_PORT_FLOOR 0x280
+#define SKULL_PORT_CEIL  0x300
+#define SKULL_PORT_RANGE  0x010
+
+/*
+ * the following function performs autodetection, unless a specific
+ * value was assigned by insmod to "skull_port_base"
+ */
+
+static int skull_port_base=0; /* 0 forces autodetection */
+module_param(skull_port_base, int, 0);
+
+static int skull_find_hw(void) /* returns the # of devices */
+{
+    /* base is either the load-time value or the first trial */
+    int base = skull_port_base ? skull_port_base 
+                             : SKULL_PORT_FLOOR; 
+    int result = 0;
+
+    /* loop one time if value assigned, try them all if autodetecting */
+    do {
+	if (skull_detect(base, SKULL_PORT_RANGE) == 0) {
+	    skull_init_board(base);
+	    result++;
+	}
+	base += SKULL_PORT_RANGE; /* prepare for next trial */
+    }
+    while (skull_port_base == 0 && base < SKULL_PORT_CEIL);
+
+    return result;
+}
+
+
+int skull_init(void)
+{
+    /*
+     * Print the isa region map, in blocks of 2K bytes.
+     * This is not the best code, as it prints too many lines,
+     * but it deserves to remain short to be included in the book.
+     * Note also that read() should be used instead of pointers.
+     */
+    unsigned char oldval, newval; /* values read from memory   */
+    unsigned long flags;          /* used to hold system flags */
+    unsigned long add, i;
+    void *base;
+    
+    /* Use ioremap to get a handle on our region */
+    base = ioremap(ISA_REGION_BEGIN, ISA_REGION_END - ISA_REGION_BEGIN);
+    base -= ISA_REGION_BEGIN;  /* Do the offset once */
+    
+    /* probe all the memory hole in 2KB steps */
+    for (add = ISA_REGION_BEGIN; add < ISA_REGION_END; add += STEP) {
+	/*
+	 * Check for an already allocated region.
+	 */
+	if (check_mem_region (add, 2048)) {
+		printk(KERN_INFO "%%lx: Allocated\n", add);
+		continue;
+	}
+	/*
+	 * Read and write the beginning of the region and see what happens.
+	 */
+	save_flags(flags); 
+	cli();
+	oldval = readb (base + add);  /* Read a byte */
+	writeb (oldval^0xff, base + add);
+	mb();
+	newval = readb (base + add);
+	writeb (oldval, base + add);
+	restore_flags(flags);
+
+	if ((oldval^newval) == 0xff) {  /* we re-read our change: it's ram */
+	    printk(KERN_INFO "%%lx: RAM\n", add);
+	    continue;
+	}
+	if ((oldval^newval) != 0) {  /* random bits changed: it's empty */
+	    printk(KERN_INFO "%%lx: empty\n", add);
+	    continue;
+	}
+	
+	/*
+	 * Expansion rom (executed at boot time by the bios)
+	 * has a signature where the first byt is 0x55, the second 0xaa,
+	 * and the third byte indicates the size of such rom
+	 */
+	if ( (oldval == 0x55) && (readb (base + add + 1) == 0xaa)) {
+	    int size = 512 * readb (base + add + 2);
+	    printk(KERN_INFO "%%lx: Expansion ROM, %%i bytes\n",
+                   add, size);
+	    add += (size & ~2048) - 2048; /* skip it */
+	    continue;
+	}
+	
+	/*
+	 * If the tests above failed, we still don't know if it is ROM or
+	 * empty. Since empty memory can appear as 0x00, 0xff, or the low
+	 * address byte, we must probe multiple bytes: if at least one of
+	 * them is different from these three values, then this is rom
+	 * (though not boot rom).
+	 */
+	printk(KERN_INFO "%%lx: ", add);
+	for (i=0; i<5; i++) {
+	    unsigned long radd = add + 57*(i+1);  /* a "random" value */
+	    unsigned char val = readb (base + radd);
+	    if (val && val != 0xFF && val != ((unsigned long) radd&0xFF))
+		break;
+	}    
+	printk("%%s\n", i==5 ? "empty" : "ROM");
+    }
+
+    /*
+     * Find you hardware 
+     */
+    skull_find_hw();
+
+    /*
+     * Always fail to load (or suceed).
+     */
+    return 0;
+}
+
+module_init(skull_init);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_snull">
+			<text>
+				<![CDATA[/*
+ * snull.c --  the Simple Network Utility
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: snull.c,v 1.21 2004/11/05 02:36:03 rubini Exp $
+ */
+
+#include <linux/config.h>
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/moduleparam.h>
+
+#include <linux/sched.h>
+#include <linux/kernel.h> /* printk() */
+#include <linux/slab.h> /* kmalloc() */
+#include <linux/errno.h>  /* error codes */
+#include <linux/types.h>  /* size_t */
+#include <linux/interrupt.h> /* mark_bh */
+
+#include <linux/in.h>
+#include <linux/netdevice.h>   /* struct device, and other headers */
+#include <linux/etherdevice.h> /* eth_type_trans */
+#include <linux/ip.h>          /* struct iphdr */
+#include <linux/tcp.h>         /* struct tcphdr */
+#include <linux/skbuff.h>
+
+#include "snull.h"
+
+#include <linux/in6.h>
+#include <asm/checksum.h>
+
+MODULE_AUTHOR("Alessandro Rubini, Jonathan Corbet");
+MODULE_LICENSE("Dual BSD/GPL");
+
+
+/*
+ * Transmitter lockup simulation, normally disabled.
+ */
+static int lockup = 0;
+module_param(lockup, int, 0);
+
+static int timeout = SNULL_TIMEOUT;
+module_param(timeout, int, 0);
+
+/*
+ * Do we run in NAPI mode?
+ */
+static int use_napi = 0;
+module_param(use_napi, int, 0);
+
+
+/*
+ * A structure representing an in-flight packet.
+ */
+struct snull_packet {
+	struct snull_packet *next;
+	struct net_device *dev;
+	int	datalen;
+	u8 data[ETH_DATA_LEN];
+};
+
+int pool_size = 8;
+module_param(pool_size, int, 0);
+
+/*
+ * This structure is private to each device. It is used to pass
+ * packets in and out, so there is place for a packet
+ */
+
+struct snull_priv {
+	struct net_device_stats stats;
+	int status;
+	struct snull_packet *ppool;
+	struct snull_packet *rx_queue;  /* List of incoming packets */
+	int rx_int_enabled;
+	int tx_packetlen;
+	u8 *tx_packetdata;
+	struct sk_buff *skb;
+	spinlock_t lock;
+};
+
+static void snull_tx_timeout(struct net_device *dev);
+static void (*snull_interrupt)(int, void *, struct pt_regs *);
+
+/*
+ * Set up a device's packet pool.
+ */
+void snull_setup_pool(struct net_device *dev)
+{
+	struct snull_priv *priv = netdev_priv(dev);
+	int i;
+	struct snull_packet *pkt;
+
+	priv->ppool = NULL;
+	for (i = 0; i < pool_size; i++) {
+		pkt = kmalloc (sizeof (struct snull_packet), GFP_KERNEL);
+		if (pkt == NULL) {
+			printk (KERN_NOTICE "Ran out of memory allocating packet pool\n");
+			return;
+		}
+		pkt->dev = dev;
+		pkt->next = priv->ppool;
+		priv->ppool = pkt;
+	}
+}
+
+void snull_teardown_pool(struct net_device *dev)
+{
+	struct snull_priv *priv = netdev_priv(dev);
+	struct snull_packet *pkt;
+    
+	while ((pkt = priv->ppool)) {
+		priv->ppool = pkt->next;
+		kfree (pkt);
+		/* FIXME - in-flight packets ? */
+	}
+}    
+
+/*
+ * Buffer/pool management.
+ */
+struct snull_packet *snull_get_tx_buffer(struct net_device *dev)
+{
+	struct snull_priv *priv = netdev_priv(dev);
+	unsigned long flags;
+	struct snull_packet *pkt;
+    
+	spin_lock_irqsave(&priv->lock, flags);
+	pkt = priv->ppool;
+	priv->ppool = pkt->next;
+	if (priv->ppool == NULL) {
+		printk (KERN_INFO "Pool empty\n");
+		netif_stop_queue(dev);
+	}
+	spin_unlock_irqrestore(&priv->lock, flags);
+	return pkt;
+}
+
+
+void snull_release_buffer(struct snull_packet *pkt)
+{
+	unsigned long flags;
+	struct snull_priv *priv = netdev_priv(pkt->dev);
+	
+	spin_lock_irqsave(&priv->lock, flags);
+	pkt->next = priv->ppool;
+	priv->ppool = pkt;
+	spin_unlock_irqrestore(&priv->lock, flags);
+	if (netif_queue_stopped(pkt->dev) && pkt->next == NULL)
+		netif_wake_queue(pkt->dev);
+}
+
+void snull_enqueue_buf(struct net_device *dev, struct snull_packet *pkt)
+{
+	unsigned long flags;
+	struct snull_priv *priv = netdev_priv(dev);
+
+	spin_lock_irqsave(&priv->lock, flags);
+	pkt->next = priv->rx_queue;  /* FIXME - misorders packets */
+	priv->rx_queue = pkt;
+	spin_unlock_irqrestore(&priv->lock, flags);
+}
+
+struct snull_packet *snull_dequeue_buf(struct net_device *dev)
+{
+	struct snull_priv *priv = netdev_priv(dev);
+	struct snull_packet *pkt;
+	unsigned long flags;
+
+	spin_lock_irqsave(&priv->lock, flags);
+	pkt = priv->rx_queue;
+	if (pkt != NULL)
+		priv->rx_queue = pkt->next;
+	spin_unlock_irqrestore(&priv->lock, flags);
+	return pkt;
+}
+
+/*
+ * Enable and disable receive interrupts.
+ */
+static void snull_rx_ints(struct net_device *dev, int enable)
+{
+	struct snull_priv *priv = netdev_priv(dev);
+	priv->rx_int_enabled = enable;
+}
+
+    
+/*
+ * Open and close
+ */
+
+int snull_open(struct net_device *dev)
+{
+	/* request_region(), request_irq(), ....  (like fops->open) */
+
+	/* 
+	 * Assign the hardware address of the board: use "\0SNULx", where
+	 * x is 0 or 1. The first byte is '\0' to avoid being a multicast
+	 * address (the first byte of multicast addrs is odd).
+	 */
+	memcpy(dev->dev_addr, "\0SNUL0", ETH_ALEN);
+	if (dev == snull_devs[1])
+		dev->dev_addr[ETH_ALEN-1]++; /* \0SNUL1 */
+	netif_start_queue(dev);
+	return 0;
+}
+
+int snull_release(struct net_device *dev)
+{
+    /* release ports, irq and such -- like fops->close */
+
+	netif_stop_queue(dev); /* can't transmit any more */
+	return 0;
+}
+
+/*
+ * Configuration changes (passed on by ifconfig)
+ */
+int snull_config(struct net_device *dev, struct ifmap *map)
+{
+	if (dev->flags & IFF_UP) /* can't act on a running interface */
+		return -EBUSY;
+
+	/* Don't allow changing the I/O address */
+	if (map->base_addr != dev->base_addr) {
+		printk(KERN_WARNING "snull: Can't change I/O address\n");
+		return -EOPNOTSUPP;
+	}
+
+	/* Allow changing the IRQ */
+	if (map->irq != dev->irq) {
+		dev->irq = map->irq;
+        	/* request_irq() is delayed to open-time */
+	}
+
+	/* ignore other fields */
+	return 0;
+}
+
+/*
+ * Receive a packet: retrieve, encapsulate and pass over to upper levels
+ */
+void snull_rx(struct net_device *dev, struct snull_packet *pkt)
+{
+	struct sk_buff *skb;
+	struct snull_priv *priv = netdev_priv(dev);
+
+	/*
+	 * The packet has been retrieved from the transmission
+	 * medium. Build an skb around it, so upper layers can handle it
+	 */
+	skb = dev_alloc_skb(pkt->datalen + 2);
+	if (!skb) {
+		if (printk_ratelimit())
+			printk(KERN_NOTICE "snull rx: low on mem - packet dropped\n");
+		priv->stats.rx_dropped++;
+		goto out;
+	}
+	skb_reserve(skb, 2); /* align IP on 16B boundary */  
+	memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
+
+	/* Write metadata, and then pass to the receive level */
+	skb->dev = dev;
+	skb->protocol = eth_type_trans(skb, dev);
+	skb->ip_summed = CHECKSUM_UNNECESSARY; /* don't check it */
+	priv->stats.rx_packets++;
+	priv->stats.rx_bytes += pkt->datalen;
+	netif_rx(skb);
+  out:
+	return;
+}
+    
+
+/*
+ * The poll implementation.
+ */
+static int snull_poll(struct net_device *dev, int *budget)
+{
+	int npackets = 0, quota = min(dev->quota, *budget);
+	struct sk_buff *skb;
+	struct snull_priv *priv = netdev_priv(dev);
+	struct snull_packet *pkt;
+    
+	while (npackets < quota && priv->rx_queue) {
+		pkt = snull_dequeue_buf(dev);
+		skb = dev_alloc_skb(pkt->datalen + 2);
+		if (! skb) {
+			if (printk_ratelimit())
+				printk(KERN_NOTICE "snull: packet dropped\n");
+			priv->stats.rx_dropped++;
+			snull_release_buffer(pkt);
+			continue;
+		}
+		skb_reserve(skb, 2); /* align IP on 16B boundary */  
+		memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
+		skb->dev = dev;
+		skb->protocol = eth_type_trans(skb, dev);
+		skb->ip_summed = CHECKSUM_UNNECESSARY; /* don't check it */
+		netif_receive_skb(skb);
+		
+        	/* Maintain stats */
+		npackets++;
+		priv->stats.rx_packets++;
+		priv->stats.rx_bytes += pkt->datalen;
+		snull_release_buffer(pkt);
+	}
+	/* If we processed all packets, we're done; tell the kernel and reenable ints */
+	*budget -= npackets;
+	dev->quota -= npackets;
+	if (! priv->rx_queue) {
+		netif_rx_complete(dev);
+		snull_rx_ints(dev, 1);
+		return 0;
+	}
+	/* We couldn't process everything. */
+	return 1;
+}
+	    
+        
+/*
+ * The typical interrupt entry point
+ */
+static void snull_regular_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+	int statusword;
+	struct snull_priv *priv;
+	struct snull_packet *pkt = NULL;
+	/*
+	 * As usual, check the "device" pointer to be sure it is
+	 * really interrupting.
+	 * Then assign "struct device *dev"
+	 */
+	struct net_device *dev = (struct net_device *)dev_id;
+	/* ... and check with hw if it's really ours */
+
+	/* paranoid */
+	if (!dev)
+		return;
+
+	/* Lock the device */
+	priv = netdev_priv(dev);
+	spin_lock(&priv->lock);
+
+	/* retrieve statusword: real netdevices use I/O instructions */
+	statusword = priv->status;
+	priv->status = 0;
+	if (statusword & SNULL_RX_INTR) {
+		/* send it to snull_rx for handling */
+		pkt = priv->rx_queue;
+		if (pkt) {
+			priv->rx_queue = pkt->next;
+			snull_rx(dev, pkt);
+		}
+	}
+	if (statusword & SNULL_TX_INTR) {
+		/* a transmission is over: free the skb */
+		priv->stats.tx_packets++;
+		priv->stats.tx_bytes += priv->tx_packetlen;
+		dev_kfree_skb(priv->skb);
+	}
+
+	/* Unlock the device and we are done */
+	spin_unlock(&priv->lock);
+	if (pkt) snull_release_buffer(pkt); /* Do this outside the lock! */
+	return;
+}
+
+/*
+ * A NAPI interrupt handler.
+ */
+static void snull_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+	int statusword;
+	struct snull_priv *priv;
+
+	/*
+	 * As usual, check the "device" pointer for shared handlers.
+	 * Then assign "struct device *dev"
+	 */
+	struct net_device *dev = (struct net_device *)dev_id;
+	/* ... and check with hw if it's really ours */
+
+	/* paranoid */
+	if (!dev)
+		return;
+
+	/* Lock the device */
+	priv = netdev_priv(dev);
+	spin_lock(&priv->lock);
+
+	/* retrieve statusword: real netdevices use I/O instructions */
+	statusword = priv->status;
+	priv->status = 0;
+	if (statusword & SNULL_RX_INTR) {
+		snull_rx_ints(dev, 0);  /* Disable further interrupts */
+		netif_rx_schedule(dev);
+	}
+	if (statusword & SNULL_TX_INTR) {
+        	/* a transmission is over: free the skb */
+		priv->stats.tx_packets++;
+		priv->stats.tx_bytes += priv->tx_packetlen;
+		dev_kfree_skb(priv->skb);
+	}
+
+	/* Unlock the device and we are done */
+	spin_unlock(&priv->lock);
+	return;
+}
+
+
+
+/*
+ * Transmit a packet (low level interface)
+ */
+static void snull_hw_tx(char *buf, int len, struct net_device *dev)
+{
+	/*
+	 * This function deals with hw details. This interface loops
+	 * back the packet to the other snull interface (if any).
+	 * In other words, this function implements the snull behaviour,
+	 * while all other procedures are rather device-independent
+	 */
+	struct iphdr *ih;
+	struct net_device *dest;
+	struct snull_priv *priv;
+	u32 *saddr, *daddr;
+	struct snull_packet *tx_buffer;
+    
+	/* I am paranoid. Ain't I? */
+	if (len < sizeof(struct ethhdr) + sizeof(struct iphdr)) {
+		printk("snull: Hmm... packet too short (%%i octets)\n",
+				len);
+		return;
+	}
+
+	if (0) { /* enable this conditional to look at the data */
+		int i;
+		PDEBUG("len is %%i\n" KERN_DEBUG "data:",len);
+		for (i=14 ; i<len; i++)
+			printk(" %%02x",buf[i]&0xff);
+		printk("\n");
+	}
+	/*
+	 * Ethhdr is 14 bytes, but the kernel arranges for iphdr
+	 * to be aligned (i.e., ethhdr is unaligned)
+	 */
+	ih = (struct iphdr *)(buf+sizeof(struct ethhdr));
+	saddr = &ih->saddr;
+	daddr = &ih->daddr;
+
+	((u8 *)saddr)[2] ^= 1; /* change the third octet (class C) */
+	((u8 *)daddr)[2] ^= 1;
+
+	ih->check = 0;         /* and rebuild the checksum (ip needs it) */
+	ih->check = ip_fast_csum((unsigned char *)ih,ih->ihl);
+
+	if (dev == snull_devs[0])
+		PDEBUGG("%%08x:%%05i --> %%08x:%%05i\n",
+				ntohl(ih->saddr),ntohs(((struct tcphdr *)(ih+1))->source),
+				ntohl(ih->daddr),ntohs(((struct tcphdr *)(ih+1))->dest));
+	else
+		PDEBUGG("%%08x:%%05i <-- %%08x:%%05i\n",
+				ntohl(ih->daddr),ntohs(((struct tcphdr *)(ih+1))->dest),
+				ntohl(ih->saddr),ntohs(((struct tcphdr *)(ih+1))->source));
+
+	/*
+	 * Ok, now the packet is ready for transmission: first simulate a
+	 * receive interrupt on the twin device, then  a
+	 * transmission-done on the transmitting device
+	 */
+	dest = snull_devs[dev == snull_devs[0] ? 1 : 0];
+	priv = netdev_priv(dest);
+	tx_buffer = snull_get_tx_buffer(dev);
+	tx_buffer->datalen = len;
+	memcpy(tx_buffer->data, buf, len);
+	snull_enqueue_buf(dest, tx_buffer);
+	if (priv->rx_int_enabled) {
+		priv->status |= SNULL_RX_INTR;
+		snull_interrupt(0, dest, NULL);
+	}
+
+	priv = netdev_priv(dev);
+	priv->tx_packetlen = len;
+	priv->tx_packetdata = buf;
+	priv->status |= SNULL_TX_INTR;
+	if (lockup && ((priv->stats.tx_packets + 1) %% lockup) == 0) {
+        	/* Simulate a dropped transmit interrupt */
+		netif_stop_queue(dev);
+		PDEBUG("Simulate lockup at %%ld, txp %%ld\n", jiffies,
+				(unsigned long) priv->stats.tx_packets);
+	}
+	else
+		snull_interrupt(0, dev, NULL);
+}
+
+/*
+ * Transmit a packet (called by the kernel)
+ */
+int snull_tx(struct sk_buff *skb, struct net_device *dev)
+{
+	int len;
+	char *data, shortpkt[ETH_ZLEN];
+	struct snull_priv *priv = netdev_priv(dev);
+	
+	data = skb->data;
+	len = skb->len;
+	if (len < ETH_ZLEN) {
+		memset(shortpkt, 0, ETH_ZLEN);
+		memcpy(shortpkt, skb->data, skb->len);
+		len = ETH_ZLEN;
+		data = shortpkt;
+	}
+	dev->trans_start = jiffies; /* save the timestamp */
+
+	/* Remember the skb, so we can free it at interrupt time */
+	priv->skb = skb;
+
+	/* actual deliver of data is device-specific, and not shown here */
+	snull_hw_tx(data, len, dev);
+
+	return 0; /* Our simple device can not fail */
+}
+
+/*
+ * Deal with a transmit timeout.
+ */
+void snull_tx_timeout (struct net_device *dev)
+{
+	struct snull_priv *priv = netdev_priv(dev);
+
+	PDEBUG("Transmit timeout at %%ld, latency %%ld\n", jiffies,
+			jiffies - dev->trans_start);
+        /* Simulate a transmission interrupt to get things moving */
+	priv->status = SNULL_TX_INTR;
+	snull_interrupt(0, dev, NULL);
+	priv->stats.tx_errors++;
+	netif_wake_queue(dev);
+	return;
+}
+
+
+
+/*
+ * Ioctl commands 
+ */
+int snull_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+{
+	PDEBUG("ioctl\n");
+	return 0;
+}
+
+/*
+ * Return statistics to the caller
+ */
+struct net_device_stats *snull_stats(struct net_device *dev)
+{
+	struct snull_priv *priv = netdev_priv(dev);
+	return &priv->stats;
+}
+
+/*
+ * This function is called to fill up an eth header, since arp is not
+ * available on the interface
+ */
+int snull_rebuild_header(struct sk_buff *skb)
+{
+	struct ethhdr *eth = (struct ethhdr *) skb->data;
+	struct net_device *dev = skb->dev;
+    
+	memcpy(eth->h_source, dev->dev_addr, dev->addr_len);
+	memcpy(eth->h_dest, dev->dev_addr, dev->addr_len);
+	eth->h_dest[ETH_ALEN-1]   ^= 0x01;   /* dest is us xor 1 */
+	return 0;
+}
+
+
+int snull_header(struct sk_buff *skb, struct net_device *dev,
+                unsigned short type, void *daddr, void *saddr,
+                unsigned int len)
+{
+	struct ethhdr *eth = (struct ethhdr *)skb_push(skb,ETH_HLEN);
+
+	eth->h_proto = htons(type);
+	memcpy(eth->h_source, saddr ? saddr : dev->dev_addr, dev->addr_len);
+	memcpy(eth->h_dest,   daddr ? daddr : dev->dev_addr, dev->addr_len);
+	eth->h_dest[ETH_ALEN-1]   ^= 0x01;   /* dest is us xor 1 */
+	return (dev->hard_header_len);
+}
+
+
+
+
+
+/*
+ * The "change_mtu" method is usually not needed.
+ * If you need it, it must be like this.
+ */
+int snull_change_mtu(struct net_device *dev, int new_mtu)
+{
+	unsigned long flags;
+	struct snull_priv *priv = netdev_priv(dev);
+	spinlock_t *lock = &priv->lock;
+    
+	/* check ranges */
+	if ((new_mtu < 68) || (new_mtu > 1500))
+		return -EINVAL;
+	/*
+	 * Do anything you need, and the accept the value
+	 */
+	spin_lock_irqsave(lock, flags);
+	dev->mtu = new_mtu;
+	spin_unlock_irqrestore(lock, flags);
+	return 0; /* success */
+}
+
+/*
+ * The init function (sometimes called probe).
+ * It is invoked by register_netdev()
+ */
+void snull_init(struct net_device *dev)
+{
+	struct snull_priv *priv;
+#if 0
+    	/*
+	 * Make the usual checks: check_region(), probe irq, ...  -ENODEV
+	 * should be returned if no device found.  No resource should be
+	 * grabbed: this is done on open(). 
+	 */
+#endif
+
+    	/* 
+	 * Then, assign other fields in dev, using ether_setup() and some
+	 * hand assignments
+	 */
+	ether_setup(dev); /* assign some of the fields */
+
+	dev->open            = snull_open;
+	dev->stop            = snull_release;
+	dev->set_config      = snull_config;
+	dev->hard_start_xmit = snull_tx;
+	dev->do_ioctl        = snull_ioctl;
+	dev->get_stats       = snull_stats;
+	dev->change_mtu      = snull_change_mtu;  
+	dev->rebuild_header  = snull_rebuild_header;
+	dev->hard_header     = snull_header;
+	dev->tx_timeout      = snull_tx_timeout;
+	dev->watchdog_timeo = timeout;
+	if (use_napi) {
+		dev->poll        = snull_poll;
+		dev->weight      = 2;
+	}
+	/* keep the default flags, just add NOARP */
+	dev->flags           |= IFF_NOARP;
+	dev->features        |= NETIF_F_NO_CSUM;
+	dev->hard_header_cache = NULL;      /* Disable caching */
+
+	/*
+	 * Then, initialize the priv field. This encloses the statistics
+	 * and a few private fields.
+	 */
+	priv = netdev_priv(dev);
+	memset(priv, 0, sizeof(struct snull_priv));
+	spin_lock_init(&priv->lock);
+	snull_rx_ints(dev, 1);		/* enable receive interrupts */
+	snull_setup_pool(dev);
+}
+
+/*
+ * The devices
+ */
+
+struct net_device *snull_devs[2];
+
+
+
+/*
+ * Finally, the module stuff
+ */
+
+void snull_cleanup(void)
+{
+	int i;
+    
+	for (i = 0; i < 2;  i++) {
+		if (snull_devs[i]) {
+			unregister_netdev(snull_devs[i]);
+			snull_teardown_pool(snull_devs[i]);
+			free_netdev(snull_devs[i]);
+		}
+	}
+	return;
+}
+
+
+
+
+int snull_init_module(void)
+{
+	int result, i, ret = -ENOMEM;
+
+	snull_interrupt = use_napi ? snull_napi_interrupt : snull_regular_interrupt;
+
+	/* Allocate the devices */
+	snull_devs[0] = alloc_netdev(sizeof(struct snull_priv), "sn%%d",
+			snull_init);
+	snull_devs[1] = alloc_netdev(sizeof(struct snull_priv), "sn%%d",
+			snull_init);
+	if (snull_devs[0] == NULL || snull_devs[1] == NULL)
+		goto out;
+
+	ret = -ENODEV;
+	for (i = 0; i < 2;  i++)
+		if ((result = register_netdev(snull_devs[i])))
+			printk("snull: error %%i registering device \"%%s\"\n",
+					result, snull_devs[i]->name);
+		else
+			ret = 0;
+   out:
+	if (ret) 
+		snull_cleanup();
+	return ret;
+}
+
+
+module_init(snull_init_module);
+module_exit(snull_cleanup);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_tiny_serial">
+			<text>
+				<![CDATA[/*
+ * Tiny Serial driver
+ *
+ * Copyright (C) 2002-2004 Greg Kroah-Hartman (greg@kroah.com)
+ *
+ *	This program is free software; you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, version 2 of the License.
+ *
+ * This driver shows how to create a minimal serial driver.  It does not rely on
+ * any backing hardware, but creates a timer that emulates data being received
+ * from some kind of hardware.
+ */
+
+#include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/init.h>
+#include <linux/slab.h>
+#include <linux/tty.h>
+#include <linux/tty_flip.h>
+#include <linux/serial.h>
+#include <linux/serial_core.h>
+#include <linux/module.h>
+
+
+#define DRIVER_AUTHOR "Greg Kroah-Hartman <greg@kroah.com>"
+#define DRIVER_DESC "Tiny serial driver"
+
+/* Module information */
+MODULE_AUTHOR( DRIVER_AUTHOR );
+MODULE_DESCRIPTION( DRIVER_DESC );
+MODULE_LICENSE("GPL");
+
+#define DELAY_TIME		HZ * 2	/* 2 seconds per character */
+#define TINY_DATA_CHARACTER	't'
+
+#define TINY_SERIAL_MAJOR	240	/* experimental range */
+#define TINY_SERIAL_MINORS	1	/* only have one minor */
+#define UART_NR			1	/* only use one port */
+
+#define TINY_SERIAL_NAME	"ttytiny"
+
+#define MY_NAME			TINY_SERIAL_NAME
+
+static struct timer_list *timer;
+
+static void tiny_stop_tx(struct uart_port *port, unsigned int tty_stop)
+{
+}
+
+static void tiny_stop_rx(struct uart_port *port)
+{
+}
+
+static void tiny_enable_ms(struct uart_port *port)
+{
+}
+
+static void tiny_tx_chars(struct uart_port *port)
+{
+	struct circ_buf *xmit = &port->info->xmit;
+	int count;
+
+	if (port->x_char) {
+		pr_debug("wrote %%2x", port->x_char);
+		port->icount.tx++;
+		port->x_char = 0;
+		return;
+	}
+	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
+		tiny_stop_tx(port, 0);
+		return;
+	}
+
+	count = port->fifosize >> 1;
+	do {
+		pr_debug("wrote %%2x", xmit->buf[xmit->tail]);
+		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+		port->icount.tx++;
+		if (uart_circ_empty(xmit))
+			break;
+	} while (--count > 0);
+
+	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+		uart_write_wakeup(port);
+
+	if (uart_circ_empty(xmit))
+		tiny_stop_tx(port, 0);
+}
+
+static void tiny_start_tx(struct uart_port *port, unsigned int tty_start)
+{
+}
+
+static void tiny_timer(unsigned long data)
+{
+	struct uart_port *port;
+	struct tty_struct *tty;
+
+
+	port = (struct uart_port *)data;
+	if (!port)
+		return;
+	if (!port->info)
+		return;
+	tty = port->info->tty;
+	if (!tty)
+		return;
+
+	/* add one character to the tty port */
+	/* this doesn't actually push the data through unless tty->low_latency is set */
+	tty_insert_flip_char(tty, TINY_DATA_CHARACTER, 0);
+
+	tty_flip_buffer_push(tty);
+
+	/* resubmit the timer again */
+	timer->expires = jiffies + DELAY_TIME;
+	add_timer(timer);
+
+	/* see if we have any data to transmit */
+	tiny_tx_chars(port);
+}
+
+static unsigned int tiny_tx_empty(struct uart_port *port)
+{
+	return 0;
+}
+
+static unsigned int tiny_get_mctrl(struct uart_port *port)
+{
+	return 0;
+}
+
+static void tiny_set_mctrl(struct uart_port *port, unsigned int mctrl)
+{
+}
+
+static void tiny_break_ctl(struct uart_port *port, int break_state)
+{
+}
+
+static void tiny_set_termios(struct uart_port *port,
+			     struct termios *new, struct termios *old)
+{
+	int baud, quot, cflag = new->c_cflag;
+	/* get the byte size */
+	switch (cflag & CSIZE) {
+	case CS5:
+		printk(KERN_DEBUG " - data bits = 5\n");
+		break;
+	case CS6:
+		printk(KERN_DEBUG " - data bits = 6\n");
+		break;
+	case CS7:
+		printk(KERN_DEBUG " - data bits = 7\n");
+		break;
+	default: // CS8
+		printk(KERN_DEBUG " - data bits = 8\n");
+		break;
+	}
+
+	/* determine the parity */
+	if (cflag & PARENB)
+		if (cflag & PARODD)
+			pr_debug(" - parity = odd\n");
+		else
+			pr_debug(" - parity = even\n");
+	else
+		pr_debug(" - parity = none\n");
+
+	/* figure out the stop bits requested */
+	if (cflag & CSTOPB)
+		pr_debug(" - stop bits = 2\n");
+	else
+		pr_debug(" - stop bits = 1\n");
+
+	/* figure out the flow control settings */
+	if (cflag & CRTSCTS)
+		pr_debug(" - RTS/CTS is enabled\n");
+	else
+		pr_debug(" - RTS/CTS is disabled\n");
+
+	/* Set baud rate */
+        baud = uart_get_baud_rate(port, new, old, 0, port->uartclk/16);
+        quot = uart_get_divisor(port, baud);
+	
+	//UART_PUT_DIV_LO(port, (quot & 0xff));
+	//UART_PUT_DIV_HI(port, ((quot & 0xf00) >> 8));
+}
+
+static int tiny_startup(struct uart_port *port)
+{
+	/* this is the first time this port is opened */
+	/* do any hardware initialization needed here */
+
+	/* create our timer and submit it */
+	if (!timer) {
+		timer = kmalloc(sizeof(*timer), GFP_KERNEL);
+		if (!timer)
+			return -ENOMEM;
+	}
+	timer->data = (unsigned long)port;
+	timer->expires = jiffies + DELAY_TIME;
+	timer->function = tiny_timer;
+	add_timer(timer);
+	return 0;
+}
+
+static void tiny_shutdown(struct uart_port *port)
+{
+	/* The port is being closed by the last user. */
+	/* Do any hardware specific stuff here */
+
+	/* shut down our timer */
+	del_timer(timer);
+}
+
+static const char *tiny_type(struct uart_port *port)
+{
+	return "tinytty";
+}
+
+static void tiny_release_port(struct uart_port *port)
+{
+
+}
+
+static int tiny_request_port(struct uart_port *port)
+{
+	return 0;
+}
+
+static void tiny_config_port(struct uart_port *port, int flags)
+{
+}
+
+static int tiny_verify_port(struct uart_port *port, struct serial_struct *ser)
+{
+	return 0;
+}
+
+static struct uart_ops tiny_ops = {
+	.tx_empty	= tiny_tx_empty,
+	.set_mctrl	= tiny_set_mctrl,
+	.get_mctrl	= tiny_get_mctrl,
+	.stop_tx	= tiny_stop_tx,
+	.start_tx	= tiny_start_tx,
+	.stop_rx	= tiny_stop_rx,
+	.enable_ms	= tiny_enable_ms,
+	.break_ctl	= tiny_break_ctl,
+	.startup	= tiny_startup,
+	.shutdown	= tiny_shutdown,
+	.set_termios	= tiny_set_termios,
+	.type		= tiny_type,
+	.release_port	= tiny_release_port,
+	.request_port	= tiny_request_port,
+	.config_port	= tiny_config_port,
+	.verify_port	= tiny_verify_port,
+};
+
+static struct uart_port tiny_port = {
+	.ops		= &tiny_ops,
+};
+
+static struct uart_driver tiny_reg = {
+	.owner		= THIS_MODULE,
+	.driver_name	= TINY_SERIAL_NAME,
+	.dev_name	= TINY_SERIAL_NAME,
+	.major		= TINY_SERIAL_MAJOR,
+	.minor		= TINY_SERIAL_MINORS,
+	.nr		= UART_NR,
+};
+
+static int __init tiny_init(void)
+{
+	int result;
+
+	printk(KERN_INFO "Tiny serial driver loaded\n");
+
+	result = uart_register_driver(&tiny_reg);
+	if (result)
+		return result;
+
+	result = uart_add_one_port(&tiny_reg, &tiny_port);
+	if (result)
+		uart_unregister_driver(&tiny_reg);
+
+	return result;
+}
+
+module_init(tiny_init);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_tiny_tty">
+			<text>
+				<![CDATA[/*
+ * Tiny TTY driver
+ *
+ * Copyright (C) 2002-2004 Greg Kroah-Hartman (greg@kroah.com)
+ *
+ *	This program is free software; you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, version 2 of the License.
+ *
+ * This driver shows how to create a minimal tty driver.  It does not rely on
+ * any backing hardware, but creates a timer that emulates data being received
+ * from some kind of hardware.
+ */
+
+#include <linux/config.h>
+#include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/wait.h>
+#include <linux/tty.h>
+#include <linux/tty_driver.h>
+#include <linux/tty_flip.h>
+#include <linux/serial.h>
+#include <asm/uaccess.h>
+
+
+#define DRIVER_VERSION "v2.0"
+#define DRIVER_AUTHOR "Greg Kroah-Hartman <greg@kroah.com>"
+#define DRIVER_DESC "Tiny TTY driver"
+
+/* Module information */
+MODULE_AUTHOR( DRIVER_AUTHOR );
+MODULE_DESCRIPTION( DRIVER_DESC );
+MODULE_LICENSE("GPL");
+
+#define DELAY_TIME		HZ * 2	/* 2 seconds per character */
+#define TINY_DATA_CHARACTER	't'
+
+#define TINY_TTY_MAJOR		240	/* experimental range */
+#define TINY_TTY_MINORS		4	/* only have 4 devices */
+
+struct tiny_serial {
+	struct tty_struct	*tty;		/* pointer to the tty for this device */
+	int			open_count;	/* number of times this port has been opened */
+	struct semaphore	sem;		/* locks this structure */
+	struct timer_list	*timer;
+
+	/* for tiocmget and tiocmset functions */
+	int			msr;		/* MSR shadow */
+	int			mcr;		/* MCR shadow */
+
+	/* for ioctl fun */
+	struct serial_struct	serial;
+	wait_queue_head_t	wait;
+	struct async_icount	icount;
+};
+
+static struct tiny_serial *tiny_table[TINY_TTY_MINORS];	/* initially all NULL */
+
+
+static void tiny_timer(unsigned long timer_data)
+{
+	struct tiny_serial *tiny = (struct tiny_serial *)timer_data;
+	struct tty_struct *tty;
+	int i;
+	char data[1] = {TINY_DATA_CHARACTER};
+	int data_size = 1;
+
+	if (!tiny)
+		return;
+
+	tty = tiny->tty;
+
+	/* send the data to the tty layer for users to read.  This doesn't
+	 * actually push the data through unless tty->low_latency is set */
+	for (i = 0; i < data_size; ++i) {
+		if (tty->flip.count >= TTY_FLIPBUF_SIZE)
+			tty_flip_buffer_push(tty);
+		tty_insert_flip_char(tty, data[i], TTY_NORMAL);
+	}
+	tty_flip_buffer_push(tty);
+
+	/* resubmit the timer again */
+	tiny->timer->expires = jiffies + DELAY_TIME;
+	add_timer(tiny->timer);
+}
+
+static int tiny_open(struct tty_struct *tty, struct file *file)
+{
+	struct tiny_serial *tiny;
+	struct timer_list *timer;
+	int index;
+
+	/* initialize the pointer in case something fails */
+	tty->driver_data = NULL;
+
+	/* get the serial object associated with this tty pointer */
+	index = tty->index;
+	tiny = tiny_table[index];
+	if (tiny == NULL) {
+		/* first time accessing this device, let's create it */
+		tiny = kmalloc(sizeof(*tiny), GFP_KERNEL);
+		if (!tiny)
+			return -ENOMEM;
+
+		init_MUTEX(&tiny->sem);
+		tiny->open_count = 0;
+		tiny->timer = NULL;
+
+		tiny_table[index] = tiny;
+	}
+
+	down(&tiny->sem);
+
+	/* save our structure within the tty structure */
+	tty->driver_data = tiny;
+	tiny->tty = tty;
+
+	++tiny->open_count;
+	if (tiny->open_count == 1) {
+		/* this is the first time this port is opened */
+		/* do any hardware initialization needed here */
+
+		/* create our timer and submit it */
+		if (!tiny->timer) {
+			timer = kmalloc(sizeof(*timer), GFP_KERNEL);
+			if (!timer) {
+				up(&tiny->sem);
+				return -ENOMEM;
+			}
+			tiny->timer = timer;
+		}
+		tiny->timer->data = (unsigned long )tiny;
+		tiny->timer->expires = jiffies + DELAY_TIME;
+		tiny->timer->function = tiny_timer;
+		add_timer(tiny->timer);
+	}
+
+	up(&tiny->sem);
+	return 0;
+}
+
+static void do_close(struct tiny_serial *tiny)
+{
+	down(&tiny->sem);
+
+	if (!tiny->open_count) {
+		/* port was never opened */
+		goto exit;
+	}
+
+	--tiny->open_count;
+	if (tiny->open_count <= 0) {
+		/* The port is being closed by the last user. */
+		/* Do any hardware specific stuff here */
+
+		/* shut down our timer */
+		del_timer(tiny->timer);
+	}
+exit:
+	up(&tiny->sem);
+}
+
+static void tiny_close(struct tty_struct *tty, struct file *file)
+{
+	struct tiny_serial *tiny = tty->driver_data;
+
+	if (tiny)
+		do_close(tiny);
+}	
+
+static int tiny_write(struct tty_struct *tty, 
+		      const unsigned char *buffer, int count)
+{
+	struct tiny_serial *tiny = tty->driver_data;
+	int i;
+	int retval = -EINVAL;
+
+	if (!tiny)
+		return -ENODEV;
+
+	down(&tiny->sem);
+
+	if (!tiny->open_count)
+		/* port was not opened */
+		goto exit;
+
+	/* fake sending the data out a hardware port by
+	 * writing it to the kernel debug log.
+	 */
+	printk(KERN_DEBUG "%%s - ", __FUNCTION__);
+	for (i = 0; i < count; ++i)
+		printk("%%02x ", buffer[i]);
+	printk("\n");
+		
+exit:
+	up(&tiny->sem);
+	return retval;
+}
+
+static int tiny_write_room(struct tty_struct *tty) 
+{
+	struct tiny_serial *tiny = tty->driver_data;
+	int room = -EINVAL;
+
+	if (!tiny)
+		return -ENODEV;
+
+	down(&tiny->sem);
+	
+	if (!tiny->open_count) {
+		/* port was not opened */
+		goto exit;
+	}
+
+	/* calculate how much room is left in the device */
+	room = 255;
+
+exit:
+	up(&tiny->sem);
+	return room;
+}
+
+#define RELEVANT_IFLAG(iflag) ((iflag) & (IGNBRK|BRKINT|IGNPAR|PARMRK|INPCK))
+
+static void tiny_set_termios(struct tty_struct *tty, struct termios *old_termios)
+{
+	unsigned int cflag;
+
+	cflag = tty->termios->c_cflag;
+
+	/* check that they really want us to change something */
+	if (old_termios) {
+		if ((cflag == old_termios->c_cflag) &&
+		    (RELEVANT_IFLAG(tty->termios->c_iflag) == 
+		     RELEVANT_IFLAG(old_termios->c_iflag))) {
+			printk(KERN_DEBUG " - nothing to change...\n");
+			return;
+		}
+	}
+
+	/* get the byte size */
+	switch (cflag & CSIZE) {
+		case CS5:
+			printk(KERN_DEBUG " - data bits = 5\n");
+			break;
+		case CS6:
+			printk(KERN_DEBUG " - data bits = 6\n");
+			break;
+		case CS7:
+			printk(KERN_DEBUG " - data bits = 7\n");
+			break;
+		default:
+		case CS8:
+			printk(KERN_DEBUG " - data bits = 8\n");
+			break;
+	}
+	
+	/* determine the parity */
+	if (cflag & PARENB)
+		if (cflag & PARODD)
+			printk(KERN_DEBUG " - parity = odd\n");
+		else
+			printk(KERN_DEBUG " - parity = even\n");
+	else
+		printk(KERN_DEBUG " - parity = none\n");
+
+	/* figure out the stop bits requested */
+	if (cflag & CSTOPB)
+		printk(KERN_DEBUG " - stop bits = 2\n");
+	else
+		printk(KERN_DEBUG " - stop bits = 1\n");
+
+	/* figure out the hardware flow control settings */
+	if (cflag & CRTSCTS)
+		printk(KERN_DEBUG " - RTS/CTS is enabled\n");
+	else
+		printk(KERN_DEBUG " - RTS/CTS is disabled\n");
+	
+	/* determine software flow control */
+	/* if we are implementing XON/XOFF, set the start and 
+	 * stop character in the device */
+	if (I_IXOFF(tty) || I_IXON(tty)) {
+		unsigned char stop_char  = STOP_CHAR(tty);
+		unsigned char start_char = START_CHAR(tty);
+
+		/* if we are implementing INBOUND XON/XOFF */
+		if (I_IXOFF(tty))
+			printk(KERN_DEBUG " - INBOUND XON/XOFF is enabled, "
+				"XON = %%2x, XOFF = %%2x", start_char, stop_char);
+		else
+			printk(KERN_DEBUG" - INBOUND XON/XOFF is disabled");
+
+		/* if we are implementing OUTBOUND XON/XOFF */
+		if (I_IXON(tty))
+			printk(KERN_DEBUG" - OUTBOUND XON/XOFF is enabled, "
+				"XON = %%2x, XOFF = %%2x", start_char, stop_char);
+		else
+			printk(KERN_DEBUG" - OUTBOUND XON/XOFF is disabled");
+	}
+
+	/* get the baud rate wanted */
+	printk(KERN_DEBUG " - baud rate = %%d", tty_get_baud_rate(tty));
+}
+
+/* Our fake UART values */
+#define MCR_DTR		0x01
+#define MCR_RTS		0x02
+#define MCR_LOOP	0x04
+#define MSR_CTS		0x08
+#define MSR_CD		0x10
+#define MSR_RI		0x20
+#define MSR_DSR		0x40
+
+static int tiny_tiocmget(struct tty_struct *tty, struct file *file)
+{
+	struct tiny_serial *tiny = tty->driver_data;
+
+	unsigned int result = 0;
+	unsigned int msr = tiny->msr;
+	unsigned int mcr = tiny->mcr;
+
+	result = ((mcr & MCR_DTR)  ? TIOCM_DTR  : 0) |	/* DTR is set */
+             ((mcr & MCR_RTS)  ? TIOCM_RTS  : 0) |	/* RTS is set */
+             ((mcr & MCR_LOOP) ? TIOCM_LOOP : 0) |	/* LOOP is set */
+             ((msr & MSR_CTS)  ? TIOCM_CTS  : 0) |	/* CTS is set */
+             ((msr & MSR_CD)   ? TIOCM_CAR  : 0) |	/* Carrier detect is set*/
+             ((msr & MSR_RI)   ? TIOCM_RI   : 0) |	/* Ring Indicator is set */
+             ((msr & MSR_DSR)  ? TIOCM_DSR  : 0);	/* DSR is set */
+
+	return result;
+}
+
+static int tiny_tiocmset(struct tty_struct *tty, struct file *file,
+                         unsigned int set, unsigned int clear)
+{
+	struct tiny_serial *tiny = tty->driver_data;
+	unsigned int mcr = tiny->mcr;
+
+	if (set & TIOCM_RTS)
+		mcr |= MCR_RTS;
+	if (set & TIOCM_DTR)
+		mcr |= MCR_RTS;
+
+	if (clear & TIOCM_RTS)
+		mcr &= ~MCR_RTS;
+	if (clear & TIOCM_DTR)
+		mcr &= ~MCR_RTS;
+
+	/* set the new MCR value in the device */
+	tiny->mcr = mcr;
+	return 0;
+}
+
+static int tiny_read_proc(char *page, char **start, off_t off, int count,
+                          int *eof, void *data)
+{
+	struct tiny_serial *tiny;
+	off_t begin = 0;
+	int length = 0;
+	int i;
+
+	length += sprintf(page, "tinyserinfo:1.0 driver:%%s\n", DRIVER_VERSION);
+	for (i = 0; i < TINY_TTY_MINORS && length < PAGE_SIZE; ++i) {
+		tiny = tiny_table[i];
+		if (tiny == NULL)
+			continue;
+
+		length += sprintf(page+length, "%%d\n", i);
+		if ((length + begin) > (off + count))
+			goto done;
+		if ((length + begin) < off) {
+			begin += length;
+			length = 0;
+		}
+	}
+	*eof = 1;
+done:
+	if (off >= (length + begin))
+		return 0;
+	*start = page + (off-begin);
+	return (count < begin+length-off) ? count : begin + length-off;
+}
+
+#define tiny_ioctl tiny_ioctl_tiocgserial
+static int tiny_ioctl(struct tty_struct *tty, struct file *file,
+                      unsigned int cmd, unsigned long arg)
+{
+	struct tiny_serial *tiny = tty->driver_data;
+
+	if (cmd == TIOCGSERIAL) {
+		struct serial_struct tmp;
+
+		if (!arg)
+			return -EFAULT;
+
+		memset(&tmp, 0, sizeof(tmp));
+
+		tmp.type		= tiny->serial.type;
+		tmp.line		= tiny->serial.line;
+		tmp.port		= tiny->serial.port;
+		tmp.irq			= tiny->serial.irq;
+		tmp.flags		= ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ;
+		tmp.xmit_fifo_size	= tiny->serial.xmit_fifo_size;
+		tmp.baud_base		= tiny->serial.baud_base;
+		tmp.close_delay		= 5*HZ;
+		tmp.closing_wait	= 30*HZ;
+		tmp.custom_divisor	= tiny->serial.custom_divisor;
+		tmp.hub6		= tiny->serial.hub6;
+		tmp.io_type		= tiny->serial.io_type;
+
+		if (copy_to_user((void __user *)arg, &tmp, sizeof(struct serial_struct)))
+			return -EFAULT;
+		return 0;
+	}
+	return -ENOIOCTLCMD;
+}
+#undef tiny_ioctl
+
+#define tiny_ioctl tiny_ioctl_tiocmiwait
+static int tiny_ioctl(struct tty_struct *tty, struct file *file,
+                      unsigned int cmd, unsigned long arg)
+{
+	struct tiny_serial *tiny = tty->driver_data;
+
+	if (cmd == TIOCMIWAIT) {
+		DECLARE_WAITQUEUE(wait, current);
+		struct async_icount cnow;
+		struct async_icount cprev;
+
+		cprev = tiny->icount;
+		while (1) {
+			add_wait_queue(&tiny->wait, &wait);
+			set_current_state(TASK_INTERRUPTIBLE);
+			schedule();
+			remove_wait_queue(&tiny->wait, &wait);
+
+			/* see if a signal woke us up */
+			if (signal_pending(current))
+				return -ERESTARTSYS;
+
+			cnow = tiny->icount;
+			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+				return -EIO; /* no change => error */
+			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
+			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
+			    ((arg & TIOCM_CD)  && (cnow.dcd != cprev.dcd)) ||
+			    ((arg & TIOCM_CTS) && (cnow.cts != cprev.cts)) ) {
+				return 0;
+			}
+			cprev = cnow;
+		}
+
+	}
+	return -ENOIOCTLCMD;
+}
+#undef tiny_ioctl
+
+#define tiny_ioctl tiny_ioctl_tiocgicount
+static int tiny_ioctl(struct tty_struct *tty, struct file *file,
+                      unsigned int cmd, unsigned long arg)
+{
+	struct tiny_serial *tiny = tty->driver_data;
+
+	if (cmd == TIOCGICOUNT) {
+		struct async_icount cnow = tiny->icount;
+		struct serial_icounter_struct icount;
+
+		icount.cts	= cnow.cts;
+		icount.dsr	= cnow.dsr;
+		icount.rng	= cnow.rng;
+		icount.dcd	= cnow.dcd;
+		icount.rx	= cnow.rx;
+		icount.tx	= cnow.tx;
+		icount.frame	= cnow.frame;
+		icount.overrun	= cnow.overrun;
+		icount.parity	= cnow.parity;
+		icount.brk	= cnow.brk;
+		icount.buf_overrun = cnow.buf_overrun;
+
+		if (copy_to_user((void __user *)arg, &icount, sizeof(icount)))
+			return -EFAULT;
+		return 0;
+	}
+	return -ENOIOCTLCMD;
+}
+#undef tiny_ioctl
+
+/* the real tiny_ioctl function.  The above is done to get the small functions in the book */
+static int tiny_ioctl(struct tty_struct *tty, struct file *file,
+                      unsigned int cmd, unsigned long arg)
+{
+	switch (cmd) {
+	case TIOCGSERIAL:
+		return tiny_ioctl_tiocgserial(tty, file, cmd, arg);
+	case TIOCMIWAIT:
+		return tiny_ioctl_tiocmiwait(tty, file, cmd, arg);
+	case TIOCGICOUNT:
+		return tiny_ioctl_tiocgicount(tty, file, cmd, arg);
+	}
+
+	return -ENOIOCTLCMD;
+}
+
+static struct tty_operations serial_ops = {
+	.open = tiny_open,
+	.close = tiny_close,
+	.write = tiny_write,
+	.write_room = tiny_write_room,
+	.set_termios = tiny_set_termios,
+};
+
+static struct tty_driver *tiny_tty_driver;
+
+static int __init tiny_init(void)
+{
+	int retval;
+	int i;
+
+	/* allocate the tty driver */
+	tiny_tty_driver = alloc_tty_driver(TINY_TTY_MINORS);
+	if (!tiny_tty_driver)
+		return -ENOMEM;
+
+	/* initialize the tty driver */
+	tiny_tty_driver->owner = THIS_MODULE;
+	tiny_tty_driver->driver_name = "tiny_tty";
+	tiny_tty_driver->name = "ttty";
+	tiny_tty_driver->devfs_name = "tts/ttty%%d";
+	tiny_tty_driver->major = TINY_TTY_MAJOR,
+	tiny_tty_driver->type = TTY_DRIVER_TYPE_SERIAL,
+	tiny_tty_driver->subtype = SERIAL_TYPE_NORMAL,
+	tiny_tty_driver->flags = TTY_DRIVER_REAL_RAW | TTY_DRIVER_NO_DEVFS,
+	tiny_tty_driver->init_termios = tty_std_termios;
+	tiny_tty_driver->init_termios.c_cflag = B9600 | CS8 | CREAD | HUPCL | CLOCAL;
+	tty_set_operations(tiny_tty_driver, &serial_ops);
+
+	/* hack to make the book purty, yet still use these functions in the
+	 * real driver.  They really should be set up in the serial_ops
+	 * structure above... */
+	tiny_tty_driver->read_proc = tiny_read_proc;
+	tiny_tty_driver->tiocmget = tiny_tiocmget;
+	tiny_tty_driver->tiocmset = tiny_tiocmset;
+	tiny_tty_driver->ioctl = tiny_ioctl;
+
+	/* register the tty driver */
+	retval = tty_register_driver(tiny_tty_driver);
+	if (retval) {
+		printk(KERN_ERR "failed to register tiny tty driver");
+		put_tty_driver(tiny_tty_driver);
+		return retval;
+	}
+
+	for (i = 0; i < TINY_TTY_MINORS; ++i)
+		tty_register_device(tiny_tty_driver, i, NULL);
+
+	printk(KERN_INFO DRIVER_DESC " " DRIVER_VERSION);
+	return retval;
+}
+
+static void __exit tiny_exit(void)
+{
+	struct tiny_serial *tiny;
+	int i;
+
+	for (i = 0; i < TINY_TTY_MINORS; ++i)
+		tty_unregister_device(tiny_tty_driver, i);
+	tty_unregister_driver(tiny_tty_driver);
+
+	/* shut down all of the timers and free the memory */
+	for (i = 0; i < TINY_TTY_MINORS; ++i) {
+		tiny = tiny_table[i];
+		if (tiny) {
+			/* close the port */
+			while (tiny->open_count)
+				do_close(tiny);
+
+			/* shut down our timer and free the memory */
+			del_timer(tiny->timer);
+			kfree(tiny->timer);
+			kfree(tiny);
+			tiny_table[i] = NULL;
+		}
+	}
+}
+
+module_init(tiny_init);
+module_exit(tiny_exit);
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_usb_skeleton">
+			<text>
+				<![CDATA[/*
+ * USB Skeleton driver - 2.0
+ *
+ * Copyright (C) 2001-2004 Greg Kroah-Hartman (greg@kroah.com)
+ *
+ *	This program is free software; you can redistribute it and/or
+ *	modify it under the terms of the GNU General Public License as
+ *	published by the Free Software Foundation, version 2.
+ *
+ * This driver is based on the 2.6.3 version of drivers/usb/usb-skeleton.c 
+ * but has been rewritten to be easy to read and use, as no locks are now
+ * needed anymore.
+ *
+ */
+
+#include <linux/config.h>
+#include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/init.h>
+#include <linux/slab.h>
+#include <linux/module.h>
+#include <linux/kref.h>
+#include <linux/smp_lock.h>
+#include <linux/usb.h>
+#include <asm/uaccess.h>
+
+
+/* Define these values to match your devices */
+#define USB_SKEL_VENDOR_ID	0xfff0
+#define USB_SKEL_PRODUCT_ID	0xfff0
+
+/* table of devices that work with this driver */
+static struct usb_device_id skel_table [] = {
+	{ USB_DEVICE(USB_SKEL_VENDOR_ID, USB_SKEL_PRODUCT_ID) },
+	{ }					/* Terminating entry */
+};
+MODULE_DEVICE_TABLE (usb, skel_table);
+
+
+/* Get a minor range for your devices from the usb maintainer */
+#define USB_SKEL_MINOR_BASE	192
+
+/* Structure to hold all of our device specific stuff */
+struct usb_skel {
+	struct usb_device *	udev;			/* the usb device for this device */
+	struct usb_interface *	interface;		/* the interface for this device */
+	unsigned char *		bulk_in_buffer;		/* the buffer to receive data */
+	size_t			bulk_in_size;		/* the size of the receive buffer */
+	__u8			bulk_in_endpointAddr;	/* the address of the bulk in endpoint */
+	__u8			bulk_out_endpointAddr;	/* the address of the bulk out endpoint */
+	struct kref		kref;
+};
+#define to_skel_dev(d) container_of(d, struct usb_skel, kref)
+
+static struct usb_driver skel_driver;
+
+static void skel_delete(struct kref *kref)
+{	
+	struct usb_skel *dev = to_skel_dev(kref);
+
+	usb_put_dev(dev->udev);
+	kfree (dev->bulk_in_buffer);
+	kfree (dev);
+}
+
+static int skel_open(struct inode *inode, struct file *file)
+{
+	struct usb_skel *dev;
+	struct usb_interface *interface;
+	int subminor;
+	int retval = 0;
+
+	subminor = iminor(inode);
+
+	interface = usb_find_interface(&skel_driver, subminor);
+	if (!interface) {
+		err ("%%s - error, can't find device for minor %%d",
+		     __FUNCTION__, subminor);
+		retval = -ENODEV;
+		goto exit;
+	}
+
+	dev = usb_get_intfdata(interface);
+	if (!dev) {
+		retval = -ENODEV;
+		goto exit;
+	}
+	
+	/* increment our usage count for the device */
+	kref_get(&dev->kref);
+
+	/* save our object in the file's private structure */
+	file->private_data = dev;
+
+exit:
+	return retval;
+}
+
+static int skel_release(struct inode *inode, struct file *file)
+{
+	struct usb_skel *dev;
+
+	dev = (struct usb_skel *)file->private_data;
+	if (dev == NULL)
+		return -ENODEV;
+
+	/* decrement the count on our device */
+	kref_put(&dev->kref, skel_delete);
+	return 0;
+}
+
+static ssize_t skel_read(struct file *file, char __user *buffer, size_t count, loff_t *ppos)
+{
+	struct usb_skel *dev;
+	int retval = 0;
+
+	dev = (struct usb_skel *)file->private_data;
+	
+	/* do a blocking bulk read to get data from the device */
+	retval = usb_bulk_msg(dev->udev,
+			      usb_rcvbulkpipe(dev->udev, dev->bulk_in_endpointAddr),
+			      dev->bulk_in_buffer,
+			      min(dev->bulk_in_size, count),
+			      &count, HZ*10);
+
+	/* if the read was successful, copy the data to userspace */
+	if (!retval) {
+		if (copy_to_user(buffer, dev->bulk_in_buffer, count))
+			retval = -EFAULT;
+		else
+			retval = count;
+	}
+
+	return retval;
+}
+
+static void skel_write_bulk_callback(struct urb *urb, struct pt_regs *regs)
+{
+	/* sync/async unlink faults aren't errors */
+	if (urb->status && 
+	    !(urb->status == -ENOENT || 
+	      urb->status == -ECONNRESET ||
+	      urb->status == -ESHUTDOWN)) {
+		dbg("%%s - nonzero write bulk status received: %%d",
+		    __FUNCTION__, urb->status);
+	}
+
+	/* free up our allocated buffer */
+	usb_buffer_free(urb->dev, urb->transfer_buffer_length, 
+			urb->transfer_buffer, urb->transfer_dma);
+}
+
+static ssize_t skel_write(struct file *file, const char __user *user_buffer, size_t count, loff_t *ppos)
+{
+	struct usb_skel *dev;
+	int retval = 0;
+	struct urb *urb = NULL;
+	char *buf = NULL;
+
+	dev = (struct usb_skel *)file->private_data;
+
+	/* verify that we actually have some data to write */
+	if (count == 0)
+		goto exit;
+
+	/* create a urb, and a buffer for it, and copy the data to the urb */
+	urb = usb_alloc_urb(0, GFP_KERNEL);
+	if (!urb) {
+		retval = -ENOMEM;
+		goto error;
+	}
+
+	buf = usb_buffer_alloc(dev->udev, count, GFP_KERNEL, &urb->transfer_dma);
+	if (!buf) {
+		retval = -ENOMEM;
+		goto error;
+	}
+	if (copy_from_user(buf, user_buffer, count)) {
+		retval = -EFAULT;
+		goto error;
+	}
+
+	/* initialize the urb properly */
+	usb_fill_bulk_urb(urb, dev->udev,
+			  usb_sndbulkpipe(dev->udev, dev->bulk_out_endpointAddr),
+			  buf, count, skel_write_bulk_callback, dev);
+	urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+
+	/* send the data out the bulk port */
+	retval = usb_submit_urb(urb, GFP_KERNEL);
+	if (retval) {
+		err("%%s - failed submitting write urb, error %%d", __FUNCTION__, retval);
+		goto error;
+	}
+
+	/* release our reference to this urb, the USB core will eventually free it entirely */
+	usb_free_urb(urb);
+
+exit:
+	return count;
+
+error:
+	usb_buffer_free(dev->udev, count, buf, urb->transfer_dma);
+	usb_free_urb(urb);
+	kfree(buf);
+	return retval;
+}
+
+static struct file_operations skel_fops = {
+	.owner =	THIS_MODULE,
+	.read =		skel_read,
+	.write =	skel_write,
+	.open =		skel_open,
+	.release =	skel_release,
+};
+
+/* 
+ * usb class driver info in order to get a minor number from the usb core,
+ * and to have the device registered with devfs and the driver core
+ */
+static struct usb_class_driver skel_class = {
+	.name = "usb/skel%%d",
+	.fops = &skel_fops,
+	.mode = S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH,
+	.minor_base = USB_SKEL_MINOR_BASE,
+};
+
+static int skel_probe(struct usb_interface *interface, const struct usb_device_id *id)
+{
+	struct usb_skel *dev = NULL;
+	struct usb_host_interface *iface_desc;
+	struct usb_endpoint_descriptor *endpoint;
+	size_t buffer_size;
+	int i;
+	int retval = -ENOMEM;
+
+	/* allocate memory for our device state and initialize it */
+	dev = kmalloc(sizeof(struct usb_skel), GFP_KERNEL);
+	if (dev == NULL) {
+		err("Out of memory");
+		goto error;
+	}
+	memset(dev, 0x00, sizeof (*dev));
+	kref_init(&dev->kref);
+
+	dev->udev = usb_get_dev(interface_to_usbdev(interface));
+	dev->interface = interface;
+
+	/* set up the endpoint information */
+	/* use only the first bulk-in and bulk-out endpoints */
+	iface_desc = interface->cur_altsetting;
+	for (i = 0; i < iface_desc->desc.bNumEndpoints; ++i) {
+		endpoint = &iface_desc->endpoint[i].desc;
+
+		if (!dev->bulk_in_endpointAddr &&
+		    (endpoint->bEndpointAddress & USB_DIR_IN) &&
+		    ((endpoint->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK)
+					== USB_ENDPOINT_XFER_BULK)) {
+			/* we found a bulk in endpoint */
+			buffer_size = endpoint->wMaxPacketSize;
+			dev->bulk_in_size = buffer_size;
+			dev->bulk_in_endpointAddr = endpoint->bEndpointAddress;
+			dev->bulk_in_buffer = kmalloc(buffer_size, GFP_KERNEL);
+			if (!dev->bulk_in_buffer) {
+				err("Could not allocate bulk_in_buffer");
+				goto error;
+			}
+		}
+
+		if (!dev->bulk_out_endpointAddr &&
+		    !(endpoint->bEndpointAddress & USB_DIR_IN) &&
+		    ((endpoint->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK)
+					== USB_ENDPOINT_XFER_BULK)) {
+			/* we found a bulk out endpoint */
+			dev->bulk_out_endpointAddr = endpoint->bEndpointAddress;
+		}
+	}
+	if (!(dev->bulk_in_endpointAddr && dev->bulk_out_endpointAddr)) {
+		err("Could not find both bulk-in and bulk-out endpoints");
+		goto error;
+	}
+
+	/* save our data pointer in this interface device */
+	usb_set_intfdata(interface, dev);
+
+	/* we can register the device now, as it is ready */
+	retval = usb_register_dev(interface, &skel_class);
+	if (retval) {
+		/* something prevented us from registering this driver */
+		err("Not able to get a minor for this device.");
+		usb_set_intfdata(interface, NULL);
+		goto error;
+	}
+
+	/* let the user know what node this device is now attached to */
+	info("USB Skeleton device now attached to USBSkel-%%d", interface->minor);
+	return 0;
+
+error:
+	if (dev)
+		kref_put(&dev->kref, skel_delete);
+	return retval;
+}
+
+static void skel_disconnect(struct usb_interface *interface)
+{
+	struct usb_skel *dev;
+	int minor = interface->minor;
+
+	/* prevent skel_open() from racing skel_disconnect() */
+	lock_kernel();
+
+	dev = usb_get_intfdata(interface);
+	usb_set_intfdata(interface, NULL);
+
+	/* give back our minor */
+	usb_deregister_dev(interface, &skel_class);
+
+	unlock_kernel();
+
+	/* decrement our usage count */
+	kref_put(&dev->kref, skel_delete);
+
+	info("USB Skeleton #%%d now disconnected", minor);
+}
+
+static struct usb_driver skel_driver = {
+	.owner = THIS_MODULE,
+	.name = "skeleton",
+	.id_table = skel_table,
+	.probe = skel_probe,
+	.disconnect = skel_disconnect,
+};
+
+static int __init usb_skel_init(void)
+{
+	int result;
+
+	/* register this driver with the USB subsystem */
+	result = usb_register(&skel_driver);
+	if (result)
+		err("usb_register failed. Error number %%d", result);
+
+	return result;
+}
+
+static void __exit usb_skel_exit(void)
+{
+	/* deregister this driver with the USB subsystem */
+	usb_deregister(&skel_driver);
+}
+
+module_init (usb_skel_init);
+module_exit (usb_skel_exit);
+
+MODULE_LICENSE("GPL");
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_ldbus_H">
+			<text>/*
+ * Definitions for the virtual LDD bus.
+ *
+ * $Id: lddbus.h,v 1.4 2004/08/20 18:49:44 corbet Exp $
+ */
+
+//extern struct device ldd_bus;
+extern struct bus_type ldd_bus_type;
+
+
+/*
+ * The LDD driver type.
+ */
+
+struct ldd_driver {
+	char *version;
+	struct module *module;
+	struct device_driver driver;
+	struct driver_attribute version_attr;
+};
+
+#define to_ldd_driver(drv) container_of(drv, struct ldd_driver, driver);
+
+/*
+ * A device type for things "plugged" into the LDD bus.
+ */
+
+struct ldd_device {
+	char *name;
+	struct ldd_driver *driver;
+	struct device dev;
+};
+
+#define to_ldd_device(dev) container_of(dev, struct ldd_device, dev);
+
+extern int register_ldd_device(struct ldd_device *);
+extern void unregister_ldd_device(struct ldd_device *);
+extern int register_ldd_driver(struct ldd_driver *);
+extern void unregister_ldd_driver(struct ldd_driver *);
+			</text>
+		</p>
+		<p n="xlnx_drv_sbull_H">
+			<text>
+				<![CDATA[
+/*
+ * sbull.h -- definitions for the char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ */
+
+
+#include <linux/ioctl.h>
+
+/* Multiqueue only works on 2.4 */
+#ifdef SBULL_MULTIQUEUE
+#    warning "Multiqueue only works on 2.4 kernels"
+#endif
+
+/*
+ * Macros to help debugging
+ */
+
+#undef PDEBUG             /* undef it, just in case */
+#ifdef SBULL_DEBUG
+#  ifdef __KERNEL__
+     /* This one if debugging is on, and kernel space */
+#    define PDEBUG(fmt, args...) printk( KERN_DEBUG "sbull: " fmt, ## args)
+#  else
+     /* This one for user space */
+#    define PDEBUG(fmt, args...) fprintf(stderr, fmt, ## args)
+#  endif
+#else
+#  define PDEBUG(fmt, args...) /* not debugging: nothing */
+#endif
+
+#undef PDEBUGG
+#define PDEBUGG(fmt, args...) /* nothing: it's a placeholder */
+
+
+#define SBULL_MAJOR 0       /* dynamic major by default */
+#define SBULL_DEVS 2        /* two disks */
+#define SBULL_RAHEAD 2      /* two sectors */
+#define SBULL_SIZE 2048     /* two megs each */
+#define SBULL_BLKSIZE 1024  /* 1k blocks */
+#define SBULL_HARDSECT 512  /* 2.2 and 2.4 can used different values */
+
+#define SBULLR_MAJOR 0      /* Dynamic major for raw device */
+/*
+ * The sbull device is removable: if it is left closed for more than
+ * half a minute, it is removed. Thus use a usage count and a
+ * kernel timer
+ */
+
+typedef struct Sbull_Dev {
+   int size;
+   int usage;
+   struct timer_list timer;
+   spinlock_t lock;
+   u8 *data;
+#ifdef SBULL_MULTIQUEUE
+   request_queue_t *queue;
+   int busy;
+#endif
+}              Sbull_Dev;
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scull_H">
+			<text>
+				<![CDATA[/*
+ * scull.h -- definitions for the char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ * $Id: scull.h,v 1.15 2004/11/04 17:51:18 rubini Exp $
+ */
+
+#ifndef _SCULL_H_
+#define _SCULL_H_
+
+#include <linux/ioctl.h> /* needed for the _IOW etc stuff used later */
+
+/*
+ * Macros to help debugging
+ */
+
+#undef PDEBUG             /* undef it, just in case */
+#ifdef SCULL_DEBUG
+#  ifdef __KERNEL__
+     /* This one if debugging is on, and kernel space */
+#    define PDEBUG(fmt, args...) printk( KERN_DEBUG "scull: " fmt, ## args)
+#  else
+     /* This one for user space */
+#    define PDEBUG(fmt, args...) fprintf(stderr, fmt, ## args)
+#  endif
+#else
+#  define PDEBUG(fmt, args...) /* not debugging: nothing */
+#endif
+
+#undef PDEBUGG
+#define PDEBUGG(fmt, args...) /* nothing: it's a placeholder */
+
+#ifndef SCULL_MAJOR
+#define SCULL_MAJOR 0   /* dynamic major by default */
+#endif
+
+#ifndef SCULL_NR_DEVS
+#define SCULL_NR_DEVS 4    /* scull0 through scull3 */
+#endif
+
+#ifndef SCULL_P_NR_DEVS
+#define SCULL_P_NR_DEVS 4  /* scullpipe0 through scullpipe3 */
+#endif
+
+/*
+ * The bare device is a variable-length region of memory.
+ * Use a linked list of indirect blocks.
+ *
+ * "scull_dev->data" points to an array of pointers, each
+ * pointer refers to a memory area of SCULL_QUANTUM bytes.
+ *
+ * The array (quantum-set) is SCULL_QSET long.
+ */
+#ifndef SCULL_QUANTUM
+#define SCULL_QUANTUM 4000
+#endif
+
+#ifndef SCULL_QSET
+#define SCULL_QSET    1000
+#endif
+
+/*
+ * The pipe device is a simple circular buffer. Here its default size
+ */
+#ifndef SCULL_P_BUFFER
+#define SCULL_P_BUFFER 4000
+#endif
+
+/*
+ * Representation of scull quantum sets.
+ */
+struct scull_qset {
+	void **data;
+	struct scull_qset *next;
+};
+
+struct scull_dev {
+	struct scull_qset *data;  /* Pointer to first quantum set */
+	int quantum;              /* the current quantum size */
+	int qset;                 /* the current array size */
+	unsigned long size;       /* amount of data stored here */
+	unsigned int access_key;  /* used by sculluid and scullpriv */
+	struct semaphore sem;     /* mutual exclusion semaphore     */
+	struct cdev cdev;	  /* Char device structure		*/
+};
+
+/*
+ * Split minors in two parts
+ */
+#define TYPE(minor)	(((minor) >> 4) & 0xf)	/* high nibble */
+#define NUM(minor)	((minor) & 0xf)		/* low  nibble */
+
+
+/*
+ * The different configurable parameters
+ */
+extern int scull_major;     /* main.c */
+extern int scull_nr_devs;
+extern int scull_quantum;
+extern int scull_qset;
+
+extern int scull_p_buffer;	/* pipe.c */
+
+
+/*
+ * Prototypes for shared functions
+ */
+
+int     scull_p_init(dev_t dev);
+void    scull_p_cleanup(void);
+int     scull_access_init(dev_t dev);
+void    scull_access_cleanup(void);
+
+int     scull_trim(struct scull_dev *dev);
+
+ssize_t scull_read(struct file *filp, char __user *buf, size_t count,
+                   loff_t *f_pos);
+ssize_t scull_write(struct file *filp, const char __user *buf, size_t count,
+                    loff_t *f_pos);
+loff_t  scull_llseek(struct file *filp, loff_t off, int whence);
+int     scull_ioctl(struct inode *inode, struct file *filp,
+                    unsigned int cmd, unsigned long arg);
+
+
+/*
+ * Ioctl definitions
+ */
+
+/* Use 'k' as magic number */
+#define SCULL_IOC_MAGIC  'k'
+/* Please use a different 8-bit number in your code */
+
+#define SCULL_IOCRESET    _IO(SCULL_IOC_MAGIC, 0)
+
+/*
+ * S means "Set" through a ptr,
+ * T means "Tell" directly with the argument value
+ * G means "Get": reply by setting through a pointer
+ * Q means "Query": response is on the return value
+ * X means "eXchange": switch G and S atomically
+ * H means "sHift": switch T and Q atomically
+ */
+#define SCULL_IOCSQUANTUM _IOW(SCULL_IOC_MAGIC,  1, int)
+#define SCULL_IOCSQSET    _IOW(SCULL_IOC_MAGIC,  2, int)
+#define SCULL_IOCTQUANTUM _IO(SCULL_IOC_MAGIC,   3)
+#define SCULL_IOCTQSET    _IO(SCULL_IOC_MAGIC,   4)
+#define SCULL_IOCGQUANTUM _IOR(SCULL_IOC_MAGIC,  5, int)
+#define SCULL_IOCGQSET    _IOR(SCULL_IOC_MAGIC,  6, int)
+#define SCULL_IOCQQUANTUM _IO(SCULL_IOC_MAGIC,   7)
+#define SCULL_IOCQQSET    _IO(SCULL_IOC_MAGIC,   8)
+#define SCULL_IOCXQUANTUM _IOWR(SCULL_IOC_MAGIC, 9, int)
+#define SCULL_IOCXQSET    _IOWR(SCULL_IOC_MAGIC,10, int)
+#define SCULL_IOCHQUANTUM _IO(SCULL_IOC_MAGIC,  11)
+#define SCULL_IOCHQSET    _IO(SCULL_IOC_MAGIC,  12)
+
+/*
+ * The other entities only have "Tell" and "Query", because they're
+ * not printed in the book, and there's no need to have all six.
+ * (The previous stuff was only there to show different ways to do it.
+ */
+#define SCULL_P_IOCTSIZE _IO(SCULL_IOC_MAGIC,   13)
+#define SCULL_P_IOCQSIZE _IO(SCULL_IOC_MAGIC,   14)
+/* ... more to come */
+
+#define SCULL_IOC_MAXNR 14
+
+#endif /* _SCULL_H_ */
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scullc_H">
+			<text>
+				<![CDATA[/* -*- C -*-
+ * scullc.h -- definitions for the scullc char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+#include <linux/ioctl.h>
+#include <linux/cdev.h>
+
+/*
+ * Macros to help debugging
+ */
+
+#undef PDEBUG             /* undef it, just in case */
+#ifdef SCULLC_DEBUG
+#  ifdef __KERNEL__
+     /* This one if debugging is on, and kernel space */
+#    define PDEBUG(fmt, args...) printk( KERN_DEBUG "scullc: " fmt, ## args)
+#  else
+     /* This one for user space */
+#    define PDEBUG(fmt, args...) fprintf(stderr, fmt, ## args)
+#  endif
+#else
+#  define PDEBUG(fmt, args...) /* not debugging: nothing */
+#endif
+
+#undef PDEBUGG
+#define PDEBUGG(fmt, args...) /* nothing: it's a placeholder */
+
+#define SCULLC_MAJOR 0   /* dynamic major by default */
+
+#define SCULLC_DEVS 4    /* scullc0 through scullc3 */
+
+/*
+ * The bare device is a variable-length region of memory.
+ * Use a linked list of indirect blocks.
+ *
+ * "scullc_dev->data" points to an array of pointers, each
+ * pointer refers to a memory page.
+ *
+ * The array (quantum-set) is SCULLC_QSET long.
+ */
+#define SCULLC_QUANTUM  4000 /* use a quantum size like scull */
+#define SCULLC_QSET     500
+
+struct scullc_dev {
+	void **data;
+	struct scullc_dev *next;  /* next listitem */
+	int vmas;                 /* active mappings */
+	int quantum;              /* the current allocation size */
+	int qset;                 /* the current array size */
+	size_t size;              /* 32-bit will suffice */
+	struct semaphore sem;     /* Mutual exclusion */
+	struct cdev cdev;
+};
+
+extern struct scullc_dev *scullc_devices;
+
+extern struct file_operations scullc_fops;
+
+/*
+ * The different configurable parameters
+ */
+extern int scullc_major;     /* main.c */
+extern int scullc_devs;
+extern int scullc_order;
+extern int scullc_qset;
+
+/*
+ * Prototypes for shared functions
+ */
+int scullc_trim(struct scullc_dev *dev);
+struct scullc_dev *scullc_follow(struct scullc_dev *dev, int n);
+
+
+#ifdef SCULLC_DEBUG
+#  define SCULLC_USE_PROC
+#endif
+
+/*
+ * Ioctl definitions
+ */
+
+/* Use 'K' as magic number */
+#define SCULLC_IOC_MAGIC  'K'
+
+#define SCULLC_IOCRESET    _IO(SCULLC_IOC_MAGIC, 0)
+
+/*
+ * S means "Set" through a ptr,
+ * T means "Tell" directly
+ * G means "Get" (to a pointed var)
+ * Q means "Query", response is on the return value
+ * X means "eXchange": G and S atomically
+ * H means "sHift": T and Q atomically
+ */
+#define SCULLC_IOCSQUANTUM _IOW(SCULLC_IOC_MAGIC,  1, int)
+#define SCULLC_IOCTQUANTUM _IO(SCULLC_IOC_MAGIC,   2)
+#define SCULLC_IOCGQUANTUM _IOR(SCULLC_IOC_MAGIC,  3, int)
+#define SCULLC_IOCQQUANTUM _IO(SCULLC_IOC_MAGIC,   4)
+#define SCULLC_IOCXQUANTUM _IOWR(SCULLC_IOC_MAGIC, 5, int)
+#define SCULLC_IOCHQUANTUM _IO(SCULLC_IOC_MAGIC,   6)
+#define SCULLC_IOCSQSET    _IOW(SCULLC_IOC_MAGIC,  7, int)
+#define SCULLC_IOCTQSET    _IO(SCULLC_IOC_MAGIC,   8)
+#define SCULLC_IOCGQSET    _IOR(SCULLC_IOC_MAGIC,  9, int)
+#define SCULLC_IOCQQSET    _IO(SCULLC_IOC_MAGIC,  10)
+#define SCULLC_IOCXQSET    _IOWR(SCULLC_IOC_MAGIC,11, int)
+#define SCULLC_IOCHQSET    _IO(SCULLC_IOC_MAGIC,  12)
+
+#define SCULLC_IOC_MAXNR 12
+
+
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_sculld_H">
+			<text>
+				<![CDATA[/* -*- C -*-
+ * sculld.h -- definitions for the sculld char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+#include <linux/ioctl.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include "../include/lddbus.h"
+
+/*
+ * Macros to help debugging
+ */
+
+#undef PDEBUG             /* undef it, just in case */
+#ifdef SCULLD_DEBUG
+#  ifdef __KERNEL__
+     /* This one if debugging is on, and kernel space */
+#    define PDEBUG(fmt, args...) printk( KERN_DEBUG "sculld: " fmt, ## args)
+#  else
+     /* This one for user space */
+#    define PDEBUG(fmt, args...) fprintf(stderr, fmt, ## args)
+#  endif
+#else
+#  define PDEBUG(fmt, args...) /* not debugging: nothing */
+#endif
+
+#undef PDEBUGG
+#define PDEBUGG(fmt, args...) /* nothing: it's a placeholder */
+
+#define SCULLD_MAJOR 0   /* dynamic major by default */
+
+#define SCULLD_DEVS 4    /* sculld0 through sculld3 */
+
+/*
+ * The bare device is a variable-length region of memory.
+ * Use a linked list of indirect blocks.
+ *
+ * "sculld_dev->data" points to an array of pointers, each
+ * pointer refers to a memory page.
+ *
+ * The array (quantum-set) is SCULLD_QSET long.
+ */
+#define SCULLD_ORDER    0 /* one page at a time */
+#define SCULLD_QSET     500
+
+struct sculld_dev {
+	void **data;
+	struct sculld_dev *next;  /* next listitem */
+	int vmas;                 /* active mappings */
+	int order;                /* the current allocation order */
+	int qset;                 /* the current array size */
+	size_t size;              /* 32-bit will suffice */
+	struct semaphore sem;     /* Mutual exclusion */
+	struct cdev cdev;
+	char devname[20];
+	struct ldd_device ldev;
+};
+
+extern struct sculld_dev *sculld_devices;
+
+extern struct file_operations sculld_fops;
+
+/*
+ * The different configurable parameters
+ */
+extern int sculld_major;     /* main.c */
+extern int sculld_devs;
+extern int sculld_order;
+extern int sculld_qset;
+
+/*
+ * Prototypes for shared functions
+ */
+int sculld_trim(struct sculld_dev *dev);
+struct sculld_dev *sculld_follow(struct sculld_dev *dev, int n);
+
+
+#ifdef SCULLD_DEBUG
+#  define SCULLD_USE_PROC
+#endif
+
+/*
+ * Ioctl definitions
+ */
+
+/* Use 'K' as magic number */
+#define SCULLD_IOC_MAGIC  'K'
+
+#define SCULLD_IOCRESET    _IO(SCULLD_IOC_MAGIC, 0)
+
+/*
+ * S means "Set" through a ptr,
+ * T means "Tell" directly
+ * G means "Get" (to a pointed var)
+ * Q means "Query", response is on the return value
+ * X means "eXchange": G and S atomically
+ * H means "sHift": T and Q atomically
+ */
+#define SCULLD_IOCSORDER   _IOW(SCULLD_IOC_MAGIC,  1, int)
+#define SCULLD_IOCTORDER   _IO(SCULLD_IOC_MAGIC,   2)
+#define SCULLD_IOCGORDER   _IOR(SCULLD_IOC_MAGIC,  3, int)
+#define SCULLD_IOCQORDER   _IO(SCULLD_IOC_MAGIC,   4)
+#define SCULLD_IOCXORDER   _IOWR(SCULLD_IOC_MAGIC, 5, int)
+#define SCULLD_IOCHORDER   _IO(SCULLD_IOC_MAGIC,   6)
+#define SCULLD_IOCSQSET    _IOW(SCULLD_IOC_MAGIC,  7, int)
+#define SCULLD_IOCTQSET    _IO(SCULLD_IOC_MAGIC,   8)
+#define SCULLD_IOCGQSET    _IOR(SCULLD_IOC_MAGIC,  9, int)
+#define SCULLD_IOCQQSET    _IO(SCULLD_IOC_MAGIC,  10)
+#define SCULLD_IOCXQSET    _IOWR(SCULLD_IOC_MAGIC,11, int)
+#define SCULLD_IOCHQSET    _IO(SCULLD_IOC_MAGIC,  12)
+
+#define SCULLD_IOC_MAXNR 12
+
+
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scullp_H">
+			<text>
+				<![CDATA[/* -*- C -*-
+ * scullp.h -- definitions for the scullp char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+#include <linux/ioctl.h>
+#include <linux/cdev.h>
+
+/*
+ * Macros to help debugging
+ */
+
+#undef PDEBUG             /* undef it, just in case */
+#ifdef SCULLP_DEBUG
+#  ifdef __KERNEL__
+     /* This one if debugging is on, and kernel space */
+#    define PDEBUG(fmt, args...) printk( KERN_DEBUG "scullp: " fmt, ## args)
+#  else
+     /* This one for user space */
+#    define PDEBUG(fmt, args...) fprintf(stderr, fmt, ## args)
+#  endif
+#else
+#  define PDEBUG(fmt, args...) /* not debugging: nothing */
+#endif
+
+#undef PDEBUGG
+#define PDEBUGG(fmt, args...) /* nothing: it's a placeholder */
+
+#define SCULLP_MAJOR 0   /* dynamic major by default */
+
+#define SCULLP_DEVS 4    /* scullp0 through scullp3 */
+
+/*
+ * The bare device is a variable-length region of memory.
+ * Use a linked list of indirect blocks.
+ *
+ * "scullp_dev->data" points to an array of pointers, each
+ * pointer refers to a memory page.
+ *
+ * The array (quantum-set) is SCULLP_QSET long.
+ */
+#define SCULLP_ORDER    0 /* one page at a time */
+#define SCULLP_QSET     500
+
+struct scullp_dev {
+	void **data;
+	struct scullp_dev *next;  /* next listitem */
+	int vmas;                 /* active mappings */
+	int order;                /* the current allocation order */
+	int qset;                 /* the current array size */
+	size_t size;              /* 32-bit will suffice */
+	struct semaphore sem;     /* Mutual exclusion */
+	struct cdev cdev;
+};
+
+extern struct scullp_dev *scullp_devices;
+
+extern struct file_operations scullp_fops;
+
+/*
+ * The different configurable parameters
+ */
+extern int scullp_major;     /* main.c */
+extern int scullp_devs;
+extern int scullp_order;
+extern int scullp_qset;
+
+/*
+ * Prototypes for shared functions
+ */
+int scullp_trim(struct scullp_dev *dev);
+struct scullp_dev *scullp_follow(struct scullp_dev *dev, int n);
+
+
+#ifdef SCULLP_DEBUG
+#  define SCULLP_USE_PROC
+#endif
+
+/*
+ * Ioctl definitions
+ */
+
+/* Use 'K' as magic number */
+#define SCULLP_IOC_MAGIC  'K'
+
+#define SCULLP_IOCRESET    _IO(SCULLP_IOC_MAGIC, 0)
+
+/*
+ * S means "Set" through a ptr,
+ * T means "Tell" directly
+ * G means "Get" (to a pointed var)
+ * Q means "Query", response is on the return value
+ * X means "eXchange": G and S atomically
+ * H means "sHift": T and Q atomically
+ */
+#define SCULLP_IOCSORDER   _IOW(SCULLP_IOC_MAGIC,  1, int)
+#define SCULLP_IOCTORDER   _IO(SCULLP_IOC_MAGIC,   2)
+#define SCULLP_IOCGORDER   _IOR(SCULLP_IOC_MAGIC,  3, int)
+#define SCULLP_IOCQORDER   _IO(SCULLP_IOC_MAGIC,   4)
+#define SCULLP_IOCXORDER   _IOWR(SCULLP_IOC_MAGIC, 5, int)
+#define SCULLP_IOCHORDER   _IO(SCULLP_IOC_MAGIC,   6)
+#define SCULLP_IOCSQSET    _IOW(SCULLP_IOC_MAGIC,  7, int)
+#define SCULLP_IOCTQSET    _IO(SCULLP_IOC_MAGIC,   8)
+#define SCULLP_IOCGQSET    _IOR(SCULLP_IOC_MAGIC,  9, int)
+#define SCULLP_IOCQQSET    _IO(SCULLP_IOC_MAGIC,  10)
+#define SCULLP_IOCXQSET    _IOWR(SCULLP_IOC_MAGIC,11, int)
+#define SCULLP_IOCHQSET    _IO(SCULLP_IOC_MAGIC,  12)
+
+#define SCULLP_IOC_MAXNR 12
+
+
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_scullv_H">
+			<text>
+				<![CDATA[/* -*- C -*-
+ * scullv.h -- definitions for the scullv char module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+#include <linux/ioctl.h>
+#include <linux/cdev.h>
+
+/*
+ * Macros to help debugging
+ */
+
+#undef PDEBUG             /* undef it, just in case */
+#ifdef SCULLV_DEBUG
+#  ifdef __KERNEL__
+     /* This one if debugging is on, and kernel space */
+#    define PDEBUG(fmt, args...) printk( KERN_DEBUG "scullv: " fmt, ## args)
+#  else
+     /* This one for user space */
+#    define PDEBUG(fmt, args...) fprintf(stderr, fmt, ## args)
+#  endif
+#else
+#  define PDEBUG(fmt, args...) /* not debugging: nothing */
+#endif
+
+#undef PDEBUGG
+#define PDEBUGG(fmt, args...) /* nothing: it's a placeholder */
+
+#define SCULLV_MAJOR 0   /* dynamic major by default */
+
+#define SCULLV_DEVS 4    /* scullv0 through scullv3 */
+
+/*
+ * The bare device is a variable-length region of memory.
+ * Use a linked list of indirect blocks.
+ *
+ * "scullv_dev->data" points to an array of pointers, each
+ * pointer refers to a memory page.
+ *
+ * The array (quantum-set) is SCULLV_QSET long.
+ */
+#define SCULLV_ORDER    4 /* 16 pages at a time */
+#define SCULLV_QSET     500
+
+struct scullv_dev {
+	void **data;
+	struct scullv_dev *next;  /* next listitem */
+	int vmas;                 /* active mappings */
+	int order;                /* the current allocation order */
+	int qset;                 /* the current array size */
+	size_t size;              /* 32-bit will suffice */
+	struct semaphore sem;     /* Mutual exclusion */
+	struct cdev cdev;
+};
+
+extern struct scullv_dev *scullv_devices;
+
+extern struct file_operations scullv_fops;
+
+/*
+ * The different configurable parameters
+ */
+extern int scullv_major;     /* main.c */
+extern int scullv_devs;
+extern int scullv_order;
+extern int scullv_qset;
+
+/*
+ * Prototypes for shared functions
+ */
+int scullv_trim(struct scullv_dev *dev);
+struct scullv_dev *scullv_follow(struct scullv_dev *dev, int n);
+
+
+#ifdef SCULLV_DEBUG
+#  define SCULLV_USE_PROC
+#endif
+
+/*
+ * Ioctl definitions
+ */
+
+/* Use 'K' as magic number */
+#define SCULLV_IOC_MAGIC  'K'
+
+#define SCULLV_IOCRESET    _IO(SCULLV_IOC_MAGIC, 0)
+
+/*
+ * S means "Set" through a ptr,
+ * T means "Tell" directly
+ * G means "Get" (to a pointed var)
+ * Q means "Query", response is on the return value
+ * X means "eXchange": G and S atomically
+ * H means "sHift": T and Q atomically
+ */
+#define SCULLV_IOCSORDER   _IOW(SCULLV_IOC_MAGIC,  1, int)
+#define SCULLV_IOCTORDER   _IO(SCULLV_IOC_MAGIC,   2)
+#define SCULLV_IOCGORDER   _IOR(SCULLV_IOC_MAGIC,  3, int)
+#define SCULLV_IOCQORDER   _IO(SCULLV_IOC_MAGIC,   4)
+#define SCULLV_IOCXORDER   _IOWR(SCULLV_IOC_MAGIC, 5, int)
+#define SCULLV_IOCHORDER   _IO(SCULLV_IOC_MAGIC,   6)
+#define SCULLV_IOCSQSET    _IOW(SCULLV_IOC_MAGIC,  7, int)
+#define SCULLV_IOCTQSET    _IO(SCULLV_IOC_MAGIC,   8)
+#define SCULLV_IOCGQSET    _IOR(SCULLV_IOC_MAGIC,  9, int)
+#define SCULLV_IOCQQSET    _IO(SCULLV_IOC_MAGIC,  10)
+#define SCULLV_IOCXQSET    _IOWR(SCULLV_IOC_MAGIC,11, int)
+#define SCULLV_IOCHQSET    _IO(SCULLV_IOC_MAGIC,  12)
+
+#define SCULLV_IOC_MAXNR 12
+
+
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_shortprint_H">
+			<text>
+				<![CDATA[/*
+ * Useful info describing the parallel port device.
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ *
+ */
+
+/*
+ * Register offsets
+ */
+#define SP_DATA    0x00
+#define SP_STATUS  0x01
+#define SP_CONTROL 0x02
+#define SP_NPORTS     3
+
+/*
+ * Status register bits.
+ */
+#define SP_SR_BUSY 	0x80
+#define SP_SR_ACK	0x40
+#define SP_SR_PAPER	0x20
+#define SP_SR_ONLINE	0x10
+#define SP_SR_ERR	0x08
+
+/*
+ * Control register.
+ */
+#define SP_CR_IRQ	0x10
+#define SP_CR_SELECT	0x08
+#define SP_CR_INIT	0x04
+#define SP_CR_AUTOLF	0x02
+#define SP_CR_STROBE	0x01
+
+/*
+ * Minimum space before waking up a writer.
+ */
+#define SP_MIN_SPACE	PAGE_SIZE/2
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_snull_H">
+			<text>
+				<![CDATA[
+/*
+ * snull.h -- definitions for the network module
+ *
+ * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
+ * Copyright (C) 2001 O'Reilly & Associates
+ *
+ * The source code in this file can be freely used, adapted,
+ * and redistributed in source or binary form, so long as an
+ * acknowledgment appears in derived source files.  The citation
+ * should list that the code comes from the book "Linux Device
+ * Drivers" by Alessandro Rubini and Jonathan Corbet, published
+ * by O'Reilly & Associates.   No warranty is attached;
+ * we cannot take responsibility for errors or fitness for use.
+ */
+
+/*
+ * Macros to help debugging
+ */
+
+#undef PDEBUG             /* undef it, just in case */
+#ifdef SNULL_DEBUG
+#  ifdef __KERNEL__
+     /* This one if debugging is on, and kernel space */
+#    define PDEBUG(fmt, args...) printk( KERN_DEBUG "snull: " fmt, ## args)
+#  else
+     /* This one for user space */
+#    define PDEBUG(fmt, args...) fprintf(stderr, fmt, ## args)
+#  endif
+#else
+#  define PDEBUG(fmt, args...) /* not debugging: nothing */
+#endif
+
+#undef PDEBUGG
+#define PDEBUGG(fmt, args...) /* nothing: it's a placeholder */
+
+
+/* These are the flags in the statusword */
+#define SNULL_RX_INTR 0x0001
+#define SNULL_TX_INTR 0x0002
+
+/* Default timeout period */
+#define SNULL_TIMEOUT 5   /* In jiffies */
+
+extern struct net_device *snull_devs[];
+
+
+
+
+]]>
+			</text>
+		</p>
+		<p n="xlnx_drv_attribute_H">
+			<text>
+				<![CDATA[/****************************************** 
+
+* File Name : attribute.h
+
+* Creation Date : 22-09-2018
+
+* Last Modified :
+
+* Created By : Mihai Constantin constant.mihai@googlemail.com
+
+* License : 
+
+******************************************/
+
+/**
+ * Purpose
+ */
+
+#ifndef _PRETTY_ATTRIBUTE_H_
+#define _PRETTY_ATTRIBUTE_H_
+
+/**
+ * ******************************************************
+ * @brief 
+ * ******************************************************
+**/
+#if __GNUC_  _ >= 3
+# undef  inline
+# define inline         inline __attribute_  _ ((always_inline))
+# define __noinline     __attribute__ ((noinline))
+# define __pure         __attribute__ ((pure))
+# define __const        __attribute__ ((const))
+# define __noreturn     __attribute__ ((noreturn))
+# define __malloc       __attribute__ ((malloc))
+# define __must_check   __attribute__ ((warn_unused_result))
+# define __deprecated   __attribute__ ((deprecated))
+# define __used         __attribute__ ((used))
+# define __unused       __attribute__ ((unused))
+# define __packed       __attribute__ ((packed))
+# define __align(x)     __attribute__ ((aligned (x)))
+# define __align_max    __attribute__ ((aligned))
+# define likely(x)      __builtin_expect (!!(x), 1)
+# define unlikely(x)    __builtin_expect (!!(x), 0)
+#else
+# define __noinline     /* no noinline */
+# define __pure         /* no pure */
+# define __const        /* no const */
+# define __noreturn     /* no noreturn */
+# define __malloc       /* no malloc */
+# define __must_check   /* no warn_unused_result */
+# define __deprecated   /* no deprecated */
+# define __used         /* no used */
+# define __unused       /* no unused */
+# define __packed       /* no packed */
+# define __align(x)     /* no aligned */
+# define __align_max    /* no align_max */
+# define likely(x)      (x)
+# define unlikely(x)    (x)
+#endif
+
+#endif
+]]>
+			</text>
+		</p>
 	</language.aliases>
 </options>
