@@ -23221,4 +23221,2425 @@ extern struct net_device *snull_devs[];
 			</text>
 		</p>
 	</language.aliases>
+	<language.aliases n="language.java.aliases" version="1">
+		<p n="xj_myjavach02">
+			<text>import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+public class myjavach02
+{
+	public static void main(String[] args)
+	{
+		JFrame frame =new JFrame("TESTmyJava");
+		JFrame frame2 = new JFrame( "HelloJava2" );
+		JFrame frame3 = new JFrame( "mYtESTJava3" );
+		JLabel label = new JLabel("TESTmyJavaLabel!", JLabel.CENTER );
+		label.setBounds(20,80,100,40);
+		label.setText("LABEL");
+		frame.getContentPane().add( label );
+		frame.add(new TESTmyJavaComponent());
+		frame.setSize(500,500);
+		frame.setVisible(true);
+		//
+		
+		frame2.add( new HelloComponent2("Hello Java!") );
+		frame2.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+		frame2.setSize( 300, 300 );
+		frame2.setVisible( true );
+		//
+		frame3.add( new HelloComponent3("Javaframe3!") );
+		frame3.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+		frame3.setSize( 300, 300 );
+		frame3.setVisible( true );
+		//
+		JFrame frame4 = new JFrame( "jframe4" );
+		frame4.add( new HelloComponent4("TEST4!") );
+		frame4.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+		frame4.setSize( 600, 600 );
+		frame4.setVisible( true );
+		//
+	}
+}
+class TESTmyJavaComponent extends JComponent
+{
+	public void paintComponent(java.awt.Graphics g)
+	{
+		g.drawString("TestMYjava",300,200);
+	}
+}
+
+class HelloComponent2 extends JComponent
+	implements MouseMotionListener
+{
+  String theMessage;
+  int messageX = 125, messageY = 95; // Coordinates of the message
+
+  public HelloComponent2( String message ) {
+    theMessage = message;
+    addMouseMotionListener(this);
+  }
+
+  public void paintComponent( Graphics g ) {
+    g.drawString(theMessage, messageX, messageY);
+  }
+
+  public void mouseDragged(MouseEvent e) {
+    // Save the mouse coordinates and paint the message.
+    messageX = e.getX();
+    messageY = e.getY();
+    repaint();
+  }
+
+  public void mouseMoved(MouseEvent e) { }
+}
+
+class HelloComponent3 extends JComponent
+	implements MouseMotionListener, ActionListener
+{
+  String theMessage;
+  int messageX = 125, messageY = 95;  // Coordinates of the message
+
+  JButton theButton;
+
+  int colorIndex;  // Current index into someColors
+  static Color[] someColors = {
+	Color.black, Color.red, Color.green, Color.blue, Color.magenta };
+
+  public HelloComponent3( String message ) {
+    theMessage = message;
+    theButton = new JButton("Change Color");
+    setLayout( new FlowLayout() );
+    add( theButton );
+    theButton.addActionListener( this );
+    addMouseMotionListener( this );
+  }
+
+  public void paintComponent( Graphics g ) {
+    g.drawString(theMessage, messageX, messageY);
+  }
+
+  public void mouseDragged( MouseEvent e ) {
+    messageX = e.getX();
+    messageY = e.getY();
+    repaint();
+  }
+
+  public void mouseMoved( MouseEvent e ) {}
+
+  public void actionPerformed( ActionEvent e ) {
+    // Did somebody push our button?
+    if (e.getSource() == theButton)
+      changeColor();
+  }
+
+  synchronized private void changeColor() {
+    // Change the index to the next color, awkwardly.
+    if (++colorIndex == someColors.length)
+      colorIndex = 0;
+    setForeground(currentColor(  )); // Use the new color.
+    repaint(  ); // Paint again so we can see the change.
+  }
+
+  synchronized private Color currentColor() {
+    return someColors[colorIndex];
+  }
+}
+
+class HelloComponent4 extends JComponent
+    implements MouseMotionListener, ActionListener, Runnable
+{
+  String theMessage;
+  int messageX = 125, messageY = 95; // Coordinates of the message
+
+  JButton theButton;
+
+  int colorIndex; // Current index into someColors.
+  static Color[] someColors = {
+	Color.black, Color.red, Color.green, Color.blue, Color.magenta };
+
+  boolean blinkState;
+
+  public HelloComponent4( String message ) 
+  {
+    theMessage = message;
+    theButton = new JButton("Change Color");
+    setLayout( new FlowLayout() );
+    add( theButton );
+    theButton.addActionListener( this );
+    addMouseMotionListener( this );
+    Thread t = new Thread( this );
+    t.start();
+  }
+
+  public void paintComponent( Graphics g ) {
+    g.setColor(blinkState ? getBackground() : currentColor(  ));
+    g.drawString(theMessage, messageX, messageY);
+  }
+
+  public void mouseDragged(MouseEvent e) {
+    messageX = e.getX();
+    messageY = e.getY();
+    repaint();
+  }
+
+  public void mouseMoved(MouseEvent e) { }
+
+  public void actionPerformed( ActionEvent e ) {
+    if ( e.getSource() == theButton )
+      changeColor();
+  }
+
+  synchronized private void changeColor() {
+    if (++colorIndex == someColors.length)
+      colorIndex = 0;
+    setForeground( currentColor() );
+    repaint();
+  }
+
+  synchronized private Color currentColor(  ) {
+    return someColors[colorIndex];
+  }
+
+  public void run(  ) {
+    try {
+      while(true) {
+        blinkState = !blinkState; // Toggle blinkState.
+        repaint(); // Show the change.
+        Thread.sleep(300);
+      }
+    } catch (InterruptedException ie) { }
+  }
+}
+			</text>
+		</p>
+		<p n="xj_socket">
+			<text>import java.net.*;
+
+public class seprj {
+	public static void main(String args[]) throws Exception
+	{
+		try 
+		{
+			Socket s = new Socket("192.168.1.102", 80);
+			System.out.println("Connected!");
+		}
+		catch (SecurityException e) 
+		{
+		  System.out.println("SecurityException: could not connect.");
+		}
+	}
+}
+			</text>
+		</p>
+		<p n="xj_genericreflect">
+			<text>
+				<![CDATA[import java.util.*;
+import java.util.HashMap; 
+import java.lang.reflect.*;
+//import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+
+class Sheep implements Cloneable { 
+    HashMap flock = new HashMap( ); 
+ 
+    public Sheep clone( ) { 
+        try { 
+            return (Sheep)super.clone( ); 
+        } catch (CloneNotSupportedException e ) {  
+            throw new Error("This should never happen!"); 
+        } 
+    } 
+}
+
+class TESTmyJavaComponent extends JComponent
+{
+	public void paintComponent(java.awt.Graphics g)
+	{
+		g.drawString("TestMYjava",300,200);
+	}
+}
+
+
+public class seprj 
+{
+	public static void mymethod()
+	{
+		//int i=0;
+		JFrame frame =new JFrame("TESTmymethod");
+		JLabel label = new JLabel("TESTmyJavaLabel!", JLabel.CENTER );
+		label.setBounds(20,80,100,40);
+		label.setText("LABEL");
+		frame.getContentPane().add( label );
+		frame.add(new TESTmyJavaComponent());
+		frame.setSize(500,500);
+		frame.setVisible(true);
+		//return 0;
+	}
+	public static void main(String args[]) 
+	{
+		TypeVariable []	tv = List.class.getTypeParameters();
+		System.out.println( tv[0].getName() ); // E
+
+		class StringList extends ArrayList<String> { }
+
+		Type type = StringList.class.getGenericSuperclass();
+		System.out.println( type );  //java.util.ArrayList<java.lang.String>
+		ParameterizedType pt = (ParameterizedType)type;
+		System.out.println( pt.getActualTypeArguments()[0] );
+		System.out.println("\n"+args[0]);
+		System.out.println("\n" + args[1]);
+		try
+		{
+
+		  Class c = Class.forName( args[0] );
+		  Method m = c.getMethod( args[1] );
+		  //Object arg=null;
+		  //Object ret =  m.invoke( new seprj(),arg);
+		  //Object ret =  m.invoke( new seprj(),args);
+		  Object ret =  m.invoke( null);
+		  System.out.println("\n"+args[0]);
+		  System.out.println("\n"+args[1]);
+		  System.out.println(
+			  "Invoked static method: " + args[1]
+			  + " of class: " + args[0]
+			  + " with no args\nResults: ");
+		}
+		catch ( ClassNotFoundException e )
+		{
+			System.out.println( e );
+		  // Class.forName(  ) can't find the class
+		}
+		catch ( NoSuchMethodException e2 )
+		{
+			System.out.println("\nTEST\n");
+			System.out.println( e2 );
+		  // that method doesn't exist
+		}
+		catch ( IllegalAccessException e3 )
+		{
+			System.out.println( e3 );
+		  // we don't have permission to invoke that method
+		}
+		catch ( InvocationTargetException e )
+		{
+			System.out.println( e );
+			// an exception ocurred while invoking that method
+			System.out.println("Method threw an: " + e.getTargetException(  ) );
+		}
+		Sheep one = new Sheep();
+		Sheep two = one.clone();
+	}
+	
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xj_reflect">
+			<text>import java.util.*;
+import java.lang.reflect.*;
+
+public class Reflect 
+{
+
+	public static void main( String [] args )throws Exception
+	{
+		Method method = Object.class.getDeclaredMethod( "clone" );
+		System.out.println( Modifier.isProtected(method.getModifiers()) );
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_typeinference">
+			<text>
+				<![CDATA[class Base { }
+class Sub1 extends Base implements Runnable { public void run() { } }
+class Sub2 extends Base implements Runnable { public void run() { } }
+
+public class TypeInference 
+{
+	static <T extends Base> T infer( T t1, T t2 ) { return null; }
+
+	public static void main( String [] args )
+	{
+		Base base = infer( new Sub1(), new Sub2() );
+		// Note: Eclipse 3.1 says this is an error, but it's not
+		Runnable runnable = infer( new Sub1(), new Sub2() );
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_variant">
+			<text>import java.util.*;
+
+public class Variant 
+{
+	Object get() { return null; }
+}
+
+class Variant2 extends Variant
+{
+	Date get() { return (Date)super.get(); }
+}
+
+class Variant3 {
+	public static void main(String [] args) {
+		Date d = new Variant2().get();
+	}
+}
+			</text>
+		</p>
+		<p n="xj_weekday">
+			<text>
+public enum Weekday {
+
+    Sunday(8), Monday(0), Tuesday(1), Wednesday(2), Thursday(4), 
+      Friday(6), Saturday(10) { };
+
+	enum Sub { A, B }
+	
+    int fun;
+
+    Weekday( int fun ) { this.fun = fun; }
+
+    public int getFun() { return fun; }
+
+}
+
+			</text>
+		</p>
+		<p n="xj_cast2">
+			<text>
+				<![CDATA[import java.util.*;
+
+interface A { static int FOO=1; String getFoo(); }
+interface B { static int FOO=2; Date getDoo(); }
+
+public class Cast2<T extends A & B>
+{
+	public void foo( T t )
+	{
+		System.out.println( t.FOO );
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_type1">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class Type1<T>
+{
+	static T t;
+
+	public static void main( String [] args )
+	{
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_typeinference2">
+			<text>
+				<![CDATA[//package .export.home.space.pat.lj5.generics;
+/** @author Pat Niemeyer (pat@pat.net) */
+import java.util.*;
+
+public class TypeInference2
+{
+	static <T> T infer( T t1, T t2 ) { return null; }
+
+	public static void main( String [] args )
+	{
+		infer( "foo", new Date() );
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_a">
+			<text>
+				<![CDATA[import java.util.*;
+
+class DateList extends ArrayList<Date> { }
+
+class A {
+	//ok public <T,S extends T> void foo( T t, S s ) { }
+	//illegal forward ref public <S extends T, T> void foo( T t, S s ) { }
+	//no public void foo( ? extends Date s ) { }
+	//no public void foo( <? extends Date> s ) { }
+	//no public void foo( <?> s ) { }
+
+
+	//<T> T writeAll(Collection<T> coll, Collection<? super T> snk) { return null; }
+	//<T, S extends T> S writeAll(Collection<T> coll, Collection<S> snk) { return null; }
+
+	// generic method 
+	<T> void take( T t ) { }
+
+	void foo() {
+		// for public <T,S extends T> T foo( S arg ) { return arg; }
+		//ok Date date = foo( new MyDate() );
+		//ok Date date = foo( new Date() );
+		//no MyDate myDate = foo( new Date() );
+		//ok MyDate myDate = foo( new MyDate() );
+
+		//Set<?> s = new HashSet();
+		//s.put("foo");
+		//s.put(new Date());
+
+		//Collection<?> [] ca = new Collection<?> [5];
+
+		//List<? extends Date> list = new ArrayList<Date>(); // ok
+		//new ArrayList<? extends Date>(); // error
+		//List<Date>[] ldates = new List<Date>[5]; // error, array creation
+
+		// List<?> list = new ArrayList<?>(); // err
+
+		// can't use generic in instanceof
+		// boolean b = null instanceof List<String>;
+		
+		//<String>take( "foo" ); // old syntax in spec doesn't work, no
+		//explicit generic method types
+			
+		//List<Date> dl = new DateList();
+		//List l = new ArrayList(); //ok
+		//l.add("foo"); // warn
+
+		//new ArrayHolder<List<Date>>();
+		//ArrayHolder<?> ah = new ArrayHolder<?>();
+		//ah.take( new ArrayList<?> [5] ); //err
+
+		// List<?>[] la = new ArrayList<?>[10]; // ok
+		// List<?>[] la = new ArrayList<? extends Date>[10]; // err
+
+		//List<Object> lo = new ArrayList<Object>();
+		//List<? extends Date> ld = new ArrayList<Date>();
+
+		List l = new ArrayList();
+		List<Date> ldfo = (List<Date>)l; // unchecked warning, ineffective
+		Date d = ldfo.get(0); // unsafe at runtime
+
+
+		//List<?> lany = new ArrayList<Date>();
+		//lany.put( new Object() );
+		//String s = (String)lany.get(0);
+
+		//List<Date> ld = (List<Date>)lany; ok
+
+		//Collection<Integer> ci = new ArrayList<Integer>();
+		//List<Integer> li = new ArrayList<Integer>();
+		//ci = li;
+		
+		//Collection<Object> co = new ArrayList<Object>();
+		//Collection<Integer> ci = new ArrayList<Integer>();
+		//co=(Collection<Object>)ci; //err
+	}
+
+	//void throwme() throws Exception<E> { } err
+
+	static <T extends Comparable> T compare( T t1, T t2 ) { return null; }
+
+	void bar() { 
+		int i = compare( 1, 2 );
+	}
+
+}
+
+	
+class ArrayHolder<T> {
+	T[] ta;
+	void take( T [] ta ) { 
+		this.ta = ta;
+	}
+}
+
+/*
+class B<?>//no {
+	//public <T> T foo() { return null; }
+}
+
+*/
+]]>
+			</text>
+		</p>
+		<p n="xj_ar">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class AR 
+{
+	public static void main( String [] args )
+	{
+		List<Date> [] la = new ArrayList[5]; // unchecked warning
+
+
+
+
+
+		List<Date> ld = la[0];
+		
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_arrays">
+			<text>
+				<![CDATA[//package bsh.util;
+/** @author Pat Niemeyer (pat@pat.net) */
+import java.util.*;
+
+public class Arrays 
+{
+	public static void main( String [] args )
+	{
+		// List<?>[] la = new ArrayList<?>[10]; // ok
+		// List<?>[] la = new ArrayList<? extends Date>[10]; // err
+
+		//List<? extends Date>[] la = new ArrayList[5];
+		//Date d = la[0].get(0);
+
+		List<Date>[] lda = new ArrayList[5];
+		Object [] foo = lda;
+		foo[0] = "foo";
+		List<Date> ld = lda[0];
+
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_b">
+			<text>
+				<![CDATA[import java.util.*;
+
+/*
+	When subclassing in Java the best we 
+*/
+/*
+	Start with extending an arbitrary type
+
+	go through subclassing exercise
+class B <E extends Date> 
+{
+	void take( E element ) { }
+
+}
+
+// this is ok, but unchecked warnings on all methods
+//class C extends B { }
+// when extending must limit the bounds again, else compiler warning that E is
+// not within its bounds
+class C<E extends Date> extends B<E> { }
+
+class Main {
+	public static void main( String[] args ) 
+	{
+		System.out.println("main");
+
+		// unchecked warning
+		// new C().take( new Date() );
+		new C<Date>().take( new Date() );
+
+		// a B<Date> is a B
+		System.out.println( new B<Date>() instanceof B ); // true
+		System.out.println( new B<Date>() instanceof B<Date> ); // error
+
+		System.out.println("done");
+	}
+}
+
+*/
+
+/*
+	Now have it extend itself
+
+class B <E extends B> 
+{
+	void take( E element ) { }
+
+}
+
+class C<E extends B> extends B<E> { }
+
+class Main {
+	public static void main( String[] args ) 
+	{
+		System.out.println("main");
+
+		// plain extends B all ok
+		new B<B>();
+		// here's the problem, any B works
+		// A B<anything> is a still a B
+		new B<B>().take( new B() ); 
+		new B<B>().take( new B<B>() );
+		new C<B>().take( new C<B>() );
+		new C<B>().take( new B<B>() );
+		new C<C>().take( new C<C>() );
+
+
+		System.out.println("done");
+	}
+}
+
+*/
+
+/*
+	Now try to limit param type to a specific paramaterization of B
+*/
+class B <E extends B<E>> 
+{
+	void take( E element ) { }
+
+}
+
+class C<E extends C<E>> extends B<E> { }
+
+class Main {
+	public static void main( String[] args ) 
+	{
+		System.out.println("main");
+
+		//new C<C>(); // no
+		//new C<B>();
+		//new B<B>();
+
+		System.out.println("done");
+	}
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_bounds1">
+			<text>
+				<![CDATA[import java.util.*;
+
+
+public class Bounds1 < T extends java.io.Serializable & Runnable >
+{
+	Runnable r;
+
+	public void take( T t ) { 
+		this.r = t;
+	}
+
+	public T get() { return null; }
+}
+/*
+
+class MyDate extends Date { }
+
+class Main {
+
+	public static void main( String [] args ) 
+	{
+		Bounds1<MyDate> bd = new Bounds1<MyDate>();
+		bd.take( new MyDate() );
+		MyDate md = bd.get();
+	}
+}
+*/
+]]>
+			</text>
+		</p>
+		<p n="xj_c">
+			<text>
+				<![CDATA[import java.util.*;
+
+/*
+public class C<E extends C<E>> 
+{
+	void take( E element ) { }
+}
+*/
+
+//class D extends C<D> { }
+//class D<E> extends C<D<E>> { }
+
+class Main {
+	public static void main( String [] args ) {
+		enum Foo { A, B }
+
+	}
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_cat">
+			<text>
+enum Cat { Persian, Himalayan, ShortHair };
+			</text>
+		</p>
+		<p n="xj_df">
+			<text>import java.util.*;
+
+public class DF 
+{
+	private int x=5;
+	public int y =6;
+
+	public static void main( String [] args )
+	{
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_e">
+			<text>
+				<![CDATA[
+public class E< T extends Throwable >
+{
+	void test( Class<T> type ) throws T { 
+		throw type.newInstance();
+	}
+
+	static void foo() {
+		new E<ClassNotFoundException>().test( Exception.class );
+	}
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_e3">
+			<text>import java.util.*;
+import static java.util.concurrent.TimeUnit.*;
+
+public class E3 
+{
+
+	public static void main( String [] args ) throws Exception
+	{
+		SECONDS.sleep(3);
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_enumexample">
+			<text>
+import java.util.*;
+
+public class EnumExample
+{
+	public static void main( String [] args )
+	{
+		System.out.println( Cat.values());
+		System.out.println( Cat.Persian.ordinal() ); // 0
+		System.out.println( Cat.Himalayan.ordinal() ); // 1
+
+		System.out.println( Cat.Persian.compareTo( Cat.ShortHair ) ); // -2
+		System.out.println( Cat.Persian.compareTo( Cat.Himalayan) ); // -1
+		System.out.println( Cat.ShortHair.compareTo( Cat.Persian ) ); // 2
+		//System.out.println( Cat.Persian.compareTo("foo") );  // no!
+
+
+		// to string and back within type
+		System.out.println( Cat.Persian.name() ); // "Persian"
+		System.out.println( Cat.Persian ); // "Persian"
+		Cat cat = Enum.valueOf( Cat.class, "Persian" );
+		System.out.println( "class = "+cat );
+
+		System.out.println( Cat.Persian.getDeclaringClass() );  // Cat
+
+		Weekdays.Saturday.foo();
+
+		switch ( cat ) {
+			case Persian: System.out.println("here");
+		}
+
+		//Cat cat = Cat.Simon;
+		//System.out.println( Cat.Simon.getClass() );
+		//new HashMap().put( Cat.Simon, "foo" );
+
+	}
+
+	private static void print( Object o ) { System.out.println(o); }
+	private static void print( long o ) { System.out.println(o); }
+	private static void print( double o ) { System.out.println(o); }
+	private static long time() { return System.currentTimeMillis(); }
+}
+			</text>
+		</p>
+		<p n="xj_GenericMethods">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class GenericMethods
+{
+
+	static <A,B> A doit( B b ) { return null; }
+
+
+	public static void main( String [] args ) 
+	{
+		String s = doit( 42 );
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_GenericMethod2">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class GenericMethods2 
+{
+	/*
+	static <T> List<T> arrayToList( Object [] oa ) {
+		List<T> lt = new ArrayList<T>();
+		for( Object o : oa )
+			lt.add( o );
+		return lt;
+	}
+	*/
+
+	static <T> T foo() { }
+
+	public static void main( String [] args )
+	{
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_genericMethod3">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class GenericMethods3 
+{
+	/*
+	no...
+	static <T> List<T> arrayToList( Object [] oa ) {
+		List<T> lt = new ArrayList<T>();
+		for( Object o : oa )
+			lt.add( o );
+		return lt;
+	}
+	*/
+
+	static <T> T foo() 
+	{ 
+		Number num = new Integer(42);
+		T t = num;
+		return t ;
+	}
+
+	public static void main( String [] args )
+	{
+		Number n = foo();
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_GM">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class GM 
+{
+	static void foo( List<String> ls ) { }
+	static <T> void bar( T t ) { }
+
+	public static void main( String [] args )
+	{
+		foo( new ArrayList<String>() );
+		bar( new ArrayList<String>() );
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_lower">
+			<text>
+				<![CDATA[import java.util.*;
+
+class MyDate extends Date { }
+
+public class Lower 
+{
+
+	public static void main( String [] args )
+	{
+		List< ? extends Date super MyDate > lsd = new ArrayList<Date>();
+		//lsd.add( new Date() );
+		lsd.add( new MyDate() );
+		Object o = lsd.get( 0 );
+
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_M">
+			<text>
+				<![CDATA[
+interface Foo {
+	public static int FOO = 1;
+}
+
+public class M< T extends Foo >
+{
+	public void main( String [] args )
+	{
+		int i = T.FOO;
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_mathutils">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class MathUtils {
+
+    public static <T> T max( T x, T y ) { 
+		if ( x > y )
+			return x;
+		else
+			return y;
+	}    
+
+	public static void main( String [] args )
+	{
+		Long l = MathUtils.<Long>max( 42L, 42L );
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_operation">
+			<text>
+public enum Operation {
+  PLUS   { double eval(double x, double y) { return x + y; } },
+  MINUS  { double eval(double x, double y) { return x - y; } },
+  TIMES  { double eval(double x, double y) { return x * y; } },
+  DIVIDE { double eval(double x, double y) { return x / y; } };
+
+  // Do arithmetic op represented by this constant
+  abstract double eval(double x, double y);
+}
+
+			</text>
+		</p>
+		<p n="xj_q">
+			<text>
+public final class Q 
+{
+	public static final int A=1;
+	public static final int B=2;
+}
+			</text>
+		</p>
+		<p n="xj_q2">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class Q2 
+{
+	public static void main( String [] args )
+	{
+		new Q1<Date>();
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_raw">
+			<text>import java.util.*;
+
+public class Raw 
+{
+
+	@SuppressWarnings(value={"unchecked"})
+	public static void main( String [] args )
+	{
+		List list = new ArrayList();
+		list.add("foo");
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_rt">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class RT 
+{
+	List<? extends Date> foo() { return new ArrayList<Date>(); }
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_sc">
+			<text>import java.util.*;
+
+public class SC 
+{
+
+	public static void main( String [] args ) throws Exception
+	{
+		String s = String.class.newInstance();
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_staticimport">
+			<text>import java.util.*;
+import Q;
+import static Q.*;
+
+public class StaticImport 
+{
+
+	public static void main( String [] args )
+	{
+		System.out.println( Q.class );
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_swap">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class Swap
+{
+	List<?> swap( List<?> list ) {
+		return swap( list );
+	}
+
+	<T> List<T> swap( List<T> list ) {
+		T tmp = list.get( 0 );
+		list.set( 0, list.get(1) );
+		list.set( 1, tmp );
+		return list;
+	}
+
+	public static void main( String [] args )
+	{
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_t">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class T1 < 
+{
+	private static void print( Object o ) { System.out.println(o); }
+	private static void print( long o ) { System.out.println(o); }
+	private static void print( double o ) { System.out.println(o); }
+	private static long time() { return System.currentTimeMillis(); }
+
+	public static void main( String [] args )
+	{
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_t1">
+			<text>
+				<![CDATA[import java.util.*;
+public class T1<T extends Date>
+{
+	
+	List<? extends Date & Runnable> l1;
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_t2">
+			<text>
+				<![CDATA[class T2<K,V> { } 
+class T3<K,V> extends T2<K,V> { void foo() { } }
+class T4<K,V> extends T2<K,V> { void foo() { } }
+class T5<K,V> extends T3<K,V> { }
+
+class Main  {
+	void foo() {
+		T2<String, Number> t2 = null;
+		T3 t3 = (T3<String, Number>)t2;
+	}
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_t3">
+			<text>
+				<![CDATA[public class T3 
+{
+	<?> void foo( T t ) { }
+
+	public static void main( String [] args )
+	{
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_assert">
+			<text>
+/**
+*/
+public class Test 
+{
+	public static void main( String [] args )
+	{
+		assert true;
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_unbounded">
+			<text>
+				<![CDATA[
+import java.util.*;
+/** @author Pat Niemeyer (pat@pat.net) */
+
+public class Unbounded 
+{
+	void hasNulls( Collection<?> c ) {
+		for( Object o : c ) { }
+	}
+
+	void foo() {
+		hasNulls( new ArrayList<String>() );
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_a2">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class A<E extends Date>
+{
+	E get() { return null; }
+}
+
+class B 
+{ 
+	<T extends Date> void take( T date ) { }
+
+	void go() 
+	{
+		A<String> a = new A<String>();
+		String s = a.get();
+		//List<?> wordlist = new ArrayList<?>();
+		Vector [] v = new Vector<?>[10];
+	}
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_array2">
+			<text>
+				<![CDATA[import java.util.*;
+
+/**
+	
+	@author Pat Niemeyer (pat@pat.net)
+*/
+public class Arrays 
+{
+	public static void main( String [] args )
+	{
+		List<?>[] lsa = new ArrayList[10];
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_b2">
+			<text>
+				<![CDATA[import java.util.*;
+/**
+	
+	@author Pat Niemeyer (pat@pat.net)
+*/
+public class B 
+{
+	public static void main( String [] args )
+	{
+		List<E extends Date> dl = new ArrayList<E extends Date>();
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_bound2">
+			<text>
+				<![CDATA[import java.util.*;
+
+interface Foo {
+	public int X=42;
+	void foo();
+}
+interface Bar {
+	public int X=43;
+	void bar();
+}
+/**
+	
+	@author Pat Niemeyer (pat@pat.net)
+*/
+public class Bounds<E extends Runnable & Foo & Bar>
+{
+	void go(E e) {
+		int i = e.X;
+	}
+
+	public static void main( String [] args )
+	{
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_c2">
+			<text>import java.util.*;
+
+public class C 
+{
+	void printCollection( Collection c ) {
+		for( Object e: c )
+			System.out.println(e);
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_classtest">
+			<text>
+				<![CDATA[
+import java.util.*;
+/**
+	
+	@author Pat Niemeyer (pat@pat.net)
+*/
+public class ClassTest 
+{
+	public static void main( String [] args )
+	{
+		Class<String> cs = String.class;
+		// error
+		//Class<String> cs2 = Integer.class;
+		Map<String,String> ms;
+	}
+
+	private static void print( Object o ) { System.out.println(o); }
+	private static void print( long o ) { System.out.println(o); }
+	private static void print( double o ) { System.out.println(o); }
+	private static long time() { return System.currentTimeMillis(); }
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_extending">
+			<text>
+				<![CDATA[import java.util.*;
+
+/**
+	
+	@author Pat Niemeyer (pat@pat.net)
+*/
+interface Extending extends List<String>
+{
+
+}
+
+interface ThreadList extends List<Thread>
+{
+}
+
+class A {
+	void go() { 
+		ThreadList tl = null;
+		Thread t = tl.get(1);
+	}
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_generics1">
+			<text>
+				<![CDATA[/**
+	
+	@author Pat Niemeyer (pat@pat.net)
+*/
+import java.util.*;
+
+public class Generics1 
+{
+	public static void main( String [] args )
+	{
+		ArrayList<String> als = new ArrayList();
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_mixed">
+			<text>
+				<![CDATA[import java.util.*;
+
+/**
+	
+	@author Pat Niemeyer (pat@pat.net)
+*/
+public class Mixed
+{
+	public static void main( String [] args )
+	{
+		Map m = new HashMap();
+		Map m2 = new HashMap<String,String>();
+		Map<String,String> ms = new HashMap<String,String>();
+
+		//unchecked warning
+		// why? obviously compiler knows the var type and can enforce, but it
+		// can't guarantee safety of unchecked map assigned to it...
+		//Map<String,String> ms2 = new HashMap();
+	}
+
+	private static void print( Object o ) { System.out.println(o); }
+	private static void print( long o ) { System.out.println(o); }
+	private static void print( double o ) { System.out.println(o); }
+	private static long time() { return System.currentTimeMillis(); }
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_parammethod">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class ParamMethod
+{
+	<T,U extends T> void add2(List<T> to, List<U> from) {
+	  //for (Iterator<U extends T> i = from.iterator(); i.hasNext(); )
+	      //to.add(i.next());
+	}
+
+	<T,U,V> void tuv() { }
+	<T,U super T,V> void tuv2() { }
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xj_clock">
+			<text>//file: Clock.java
+public class Clock extends UpdateApplet {
+    public void paint( java.awt.Graphics graphics ) {
+        graphics.drawString( new java.util.Date().toString(), 10, 25 );
+    }
+}
+			</text>
+		</p>
+		<p n="xj_consumer">
+			<text>//file: Consumer.java
+import java.util.Vector;
+
+public class Consumer implements Runnable 
+{
+    Producer producer;
+
+    Consumer( Producer producer ) {
+        this.producer = producer;
+    }
+
+    public void run() {
+        while ( true ) {
+            String message = producer.getMessage();
+            System.out.println("Got message: " + message);
+			try { 
+				Thread.sleep( 2000 ); 
+			} catch ( InterruptedException e ) { }
+        }
+    }
+
+    public static void main(String args[]) {
+        Producer producer = new Producer();
+        new Thread( producer ).start();
+        Consumer consumer = new Consumer( producer );
+        new Thread( consumer ).start();
+    }
+}
+			</text>
+		</p>
+		<p n="xj_executorhttpd">
+			<text>
+				<![CDATA[import java.net.*;
+import java.io.*;
+import java.util.regex.*;
+import java.util.concurrent.*;
+
+public class ExecutorHttpd 
+{
+  ExecutorService executor = Executors.newFixedThreadPool(3);
+
+  public void start( int port ) throws IOException
+  {
+    final ServerSocket ss = new ServerSocket( port );
+    while ( !executor.isShutdown() )
+      executor.submit( new TinyHttpdConnection( ss.accept() ) );
+  }
+
+  public void shutdown() throws InterruptedException {
+    executor.shutdown();
+    executor.awaitTermination( 30, TimeUnit.SECONDS );
+    executor.shutdownNow();
+  }
+
+  public static void main( String argv[] ) throws Exception 
+  {
+    new ExecutorHttpd().start( Integer.parseInt(argv[0]) );
+  }
+}
+
+/*
+  This class is copied from the TinyHttpd example in Chapter 13.
+class TinyHttpdConnection implements Runnable {
+  Socket client;
+  TinyHttpdConnection ( Socket client ) throws SocketException {
+    this.client = client;
+  }
+  public void run() {
+    try {
+      BufferedReader in = new BufferedReader(
+        new InputStreamReader(client.getInputStream(), "8859_1" ) );
+      OutputStream out = client.getOutputStream();
+      PrintWriter pout = new PrintWriter(
+        new OutputStreamWriter(out, "8859_1"), true );
+      String request = in.readLine();
+      System.out.println( "Request: "+request);
+
+    Matcher get = Pattern.compile("GET /?(\\S*).*").matcher( request );
+    if ( get.matches() ) {
+    request = get.group(1);
+        if ( request.endsWith("/") || request.equals("") )
+          request = request + "index.html";
+        try {
+          FileInputStream fis = new FileInputStream ( request );
+          byte [] data = new byte [ 64*1024 ];
+      for(int read; (read = fis.read( data )) > -1; )
+        out.write( data, 0, read );
+          out.flush();
+        } catch ( FileNotFoundException e ) {
+          pout.println( "404 Object Not Found" ); }
+      } else
+        pout.println( "400 Bad Request" );
+      client.close();
+    } catch ( IOException e ) {
+      System.out.println( "I/O error " + e ); }
+  }
+}
+*/
+
+]]>
+			</text>
+		</p>
+		<p n="xj_mandelbrot">
+			<text>
+				<![CDATA[import java.awt.*;
+import javax.swing.*;
+import java.awt.image.*;
+import java.util.concurrent.*;
+
+public class Mandelbrot extends JFrame
+{
+    @Override public void paint( Graphics g ) {
+        BufferedImage image = new BufferedImage( getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB );
+        ForkJoinPool pool = new ForkJoinPool(); // defaults thread per processor
+        pool.invoke( new MandelbrotTask( image, 0, image.getWidth()-1, 0, image.getHeight()-1 ) );
+        g.drawImage( image, 0, 0, null );
+    }
+
+    public static void main( String[] args ) {
+        Mandelbrot mandy = new Mandelbrot();
+        mandy.setSize( 768, 768 );
+        mandy.setVisible( true );
+    }
+}
+
+class MandelbrotTask extends RecursiveAction
+{
+    private static double size = 3.0, offsetX = -0.7, thresholdSq = 100;
+    private static int maxIterations = 30;
+    private BufferedImage image;
+    private int xStart, xEnd, yStart, yEnd;
+    private static int taskSplitThreshold = 1024;
+
+    MandelbrotTask( BufferedImage image, int xStart, int xEnd, int yStart, int yEnd ) {
+        this.image = image;
+        this.xStart = xStart; this.xEnd = xEnd; this.yStart = yStart; this.yEnd = yEnd;
+    }
+
+    public void renderFull()
+    {
+        for ( int x = xStart; x <= xEnd; x++ ) {
+            for ( int y = yStart; y <= yEnd; y++ )  {
+                double r = x * size / image.getWidth() -size/2 + offsetX;
+                double i = y * size / image.getHeight() -size/2;
+                double zr=0, zi=0;
+                int iter;
+                for ( iter = 0; iter < maxIterations; iter++ ) {
+                    double nzr = zr*zr - zi*zi + r;
+                    double nzi = 2*zr*zi + i;
+                    if ( nzr*nzr + nzi*nzi > thresholdSq ) { break; }
+                    zr = nzr; zi=nzi;
+                }
+                image.setRGB( x, y, Color.HSBtoRGB( 0.5f * iter / maxIterations, 1.0f, 1.0f) );
+            }
+        }
+    }
+
+    @Override protected void compute()
+    {
+        int width = xEnd-xStart,  height = yEnd-yStart;
+        if ( width*height < taskSplitThreshold ) {
+            renderFull();
+        } else {
+            invokeAll(
+                new MandelbrotTask( image, xStart, xStart+width/2, yStart, yStart+height/2 ),
+                new MandelbrotTask( image, xStart+width/2+1, xEnd, yStart, yStart+height/2 ),
+                new MandelbrotTask( image, xStart, xStart+width/2, yStart+height/2+1, yEnd ),
+                new MandelbrotTask( image, xStart+width/2+1, xEnd, yStart+height/2+1, yEnd )
+            );
+        }
+    }
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xj_namedconsumer">
+			<text>//file: NamedConsumer.java
+
+public class NamedConsumer implements Runnable 
+{
+    Producer producer;
+    String name;
+
+    NamedConsumer(String name, Producer producer) {
+        this.producer = producer;
+        this.name = name;
+    }
+
+    public void run() {
+        while ( true ) {
+            String message = producer.getMessage();
+            System.out.println(name + " got message: " + message);
+			try { 
+				Thread.sleep( 2000 ); 
+			} catch ( InterruptedException e ) { }
+        }
+    }
+
+    public static void main(String args[]) {
+        Producer producer = new Producer();
+        new Thread( producer ).start();
+
+        NamedConsumer consumer = new NamedConsumer( "One", producer );
+        new Thread( consumer ).start();
+        consumer = new NamedConsumer( "Two", producer );
+        new Thread( consumer ).start();
+    }
+}
+			</text>
+		</p>
+		<p n="xj_producer">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class Producer implements Runnable
+{
+    static final int MAXQUEUE = 5;
+    private List messages = new ArrayList();
+
+    public void run() {
+		while ( true ) {
+			putMessage();
+            try { 
+				Thread.sleep( 1000 ); 
+			} catch ( InterruptedException e ) { }
+		}
+    }
+
+    private synchronized void putMessage() 
+	{
+        while ( messages.size() >= MAXQUEUE )
+			try {
+				wait();
+			} catch( InterruptedException e ) { }
+
+        messages.add( new java.util.Date().toString() );
+        notify();
+    }
+
+    // called by Consumer
+    public synchronized String getMessage()
+	{
+        while ( messages.size() == 0 )
+			try {
+				notify();
+				wait();
+			} catch( InterruptedException e ) { }
+        String message = (String)messages.remove(0);
+		notify();
+        return message;
+    }
+} 
+
+]]>
+			</text>
+		</p>
+		<p n="xj_showstates">
+			<text>
+				<![CDATA[import java.util.*;
+import java.net.*;
+import java.io.*;
+
+public class ShowStates 
+{
+
+	public static void main( String [] args ) throws Exception
+	{
+		new Thread() {
+			public void run() {
+				try {
+				new ServerSocket(1234).accept();
+				} catch ( IOException e ) { }
+			}
+		}.start();
+		Thread.sleep(2000);
+
+		while( true ) 
+		{
+		Thread [] threads = new Thread [ 10 ]; // max threads
+		int num = Thread.enumerate( threads );
+		for( int i = 0; i < num; i++ )
+		{
+			System.out.println( threads[i] );
+			System.out.println( threads[i].getState() );
+		}
+		Thread.sleep(1000);
+		}
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_sitetimer">
+			<text>
+				<![CDATA[import java.util.*;
+import java.util.concurrent.*;
+import java.net.*;
+import java.io.IOException;
+
+public class SiteTimer 
+{
+	CyclicBarrier barrier;
+	List<Result> results = new ArrayList<Result>();
+
+	private class Result implements Comparable<Result> {
+		Long time;
+		String site;
+		Result( Long time, String site ) { 
+			this.time = time; 
+			this.site = site;
+		}
+		public int compareTo( Result r ) { return time.compareTo( r.time ); }
+	}
+
+	static long timeConnect( String site )
+	{
+		long start = System.currentTimeMillis();
+		try { 
+			new URL( site ).openConnection().connect(); 
+		} catch ( IOException e ) { 
+			return -1;
+		}
+		return System.currentTimeMillis() - start;
+	}
+	
+	void showResults() {
+		Collections.sort( results );
+		for( Result result : results )
+			System.out.printf( "%%-30.30s : %%d\n", result.site, result.time );
+		System.out.println("------------------");
+	}
+
+	public void start( String [] args )
+	{
+		Runnable showResultsAction = new Runnable() { 
+			public void run() { 
+				showResults(); 
+				results.clear();
+			} };
+		barrier = new CyclicBarrier( args.length, showResultsAction );
+
+		for ( final String site : args )
+			new Thread() {
+				public void run() {
+					while( true ) {
+						long time = timeConnect( site );
+						results.add( new Result( time, site ) );
+						try {
+							barrier.await();
+						} catch ( BrokenBarrierException e ) { return; 
+						} catch ( InterruptedException e ) { return; }
+					}
+				}
+			}.start();
+	}
+
+	public static void main( String [] args ) throws IOException {
+		new SiteTimer().start( args );
+	}
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_thready">
+			<text>public class Thready {
+    public static void main( String args [] ) {
+        Thread foo = new ShowThread("Foo");
+		foo.setPriority( Thread.NORM_PRIORITY);
+		foo.start();
+
+        Thread bar = new ShowThread("Bar");
+		bar.setPriority( Thread.NORM_PRIORITY+1 );
+        bar.start();
+    }
+
+	static class ShowThread extends Thread {
+		String message;
+
+		ShowThread( String message ) {
+			this.message = message;
+		}
+		public void run(  ) {
+			while ( true )
+				System.out.println( message );
+		}
+	}
+}
+			</text>
+		</p>
+		<p n="xj_uncaught">
+			<text>import java.util.*;
+
+public class Uncaught implements Runnable
+{
+
+	public static void main( String [] args )
+	{
+		Thread thread = new Thread( new Uncaught() );
+		thread.setUncaughtExceptionHandler( 
+			new Thread.UncaughtExceptionHandler() {
+				public void uncaughtException( Thread t, Throwable e ) {
+					System.err.println( t + " threw exception: " + e );
+				}
+		} );
+		thread.start();
+	}
+
+	public void run() {
+		throw new ArithmeticException();
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_updateapplet">
+			<text>public class UpdateApplet extends java.applet.Applet
+    implements Runnable 
+{
+	Thread thread;
+    boolean running;
+    int updateInterval = 1000;
+
+    public void run() {
+        while ( running ) 
+		{
+            repaint();
+            try {
+                Thread.sleep( updateInterval );
+            } catch ( InterruptedException e ) {
+				System.out.println("interrupted...");
+                return;
+            }
+        }
+    }
+
+    public void start() {
+		System.out.println("starting...");
+        if ( !running ) // naive approach
+		{
+			running = true;
+            thread = new Thread(this);
+            thread.start();
+		}
+    }
+
+    public void stop() {
+		System.out.println("stopping...");
+		thread.interrupt();
+		running = false;
+    }
+}
+			</text>
+		</p>
+		<p n="xj_call">
+			<text>
+				<![CDATA[import java.util.*;
+import java.util.concurrent.*;
+
+public class Call 
+{
+
+	public static void main( String [] args )
+	{
+		new Callable<Integer>() {
+			public Integer call() { return 2+2; }
+		};
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_executorhttpd2">
+			<text>
+				<![CDATA[import java.net.*;
+import java.io.*;
+import java.util.regex.*;
+import java.util.concurrent.*;
+
+public class ExecutorHttpd2
+{
+  ExecutorService executor = Executors.newFixedThreadPool(3);
+
+  public void start( int port ) throws IOException
+  {
+    final ServerSocket ss = new ServerSocket( port );
+
+    executor.submit( new Runnable() {
+      public void run() {
+        while ( !executor.isShutdown() )
+          try {
+            executor.submit( new TinyHttpdConnection( ss.accept() ) );
+          } catch ( IOException e ) { }
+      }
+    } );
+  }
+
+  public void shutdown() throws InterruptedException {
+    executor.shutdown();
+    executor.awaitTermination( 30, TimeUnit.SECONDS );
+    executor.shutdownNow();
+  }
+
+  public static void main( String argv[] ) throws Exception 
+  {
+    new ExecutorHttpd().start( Integer.parseInt(argv[0]) );
+  }
+}
+
+/*
+  This class is copied from the TinyHttpd example in Chapter 13.
+*/
+class TinyHttpdConnection implements Runnable {
+  Socket client;
+  TinyHttpdConnection ( Socket client ) throws SocketException {
+    this.client = client;
+  }
+  public void run() {
+    try {
+      BufferedReader in = new BufferedReader(
+        new InputStreamReader(client.getInputStream(), "8859_1" ) );
+      OutputStream out = client.getOutputStream();
+      PrintWriter pout = new PrintWriter(
+        new OutputStreamWriter(out, "8859_1"), true );
+      String request = in.readLine();
+      System.out.println( "Request: "+request);
+
+    Matcher get = Pattern.compile("GET /?(\\S*).*").matcher( request );
+    if ( get.matches() ) {
+    request = get.group(1);
+        if ( request.endsWith("/") || request.equals("") )
+          request = request + "index.html";
+        try {
+          FileInputStream fis = new FileInputStream ( request );
+          byte [] data = new byte [ 64*1024 ];
+      for(int read; (read = fis.read( data )) > -1; )
+        out.write( data, 0, read );
+          out.flush();
+        } catch ( FileNotFoundException e ) {
+          pout.println( "404 Object Not Found" ); }
+      } else
+        pout.println( "400 Bad Request" );
+      client.close();
+    } catch ( IOException e ) {
+      System.out.println( "I/O error " + e ); }
+  }
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_rwlock">
+			<text>import java.util.*;
+import java.util.concurrent.locks.*;
+
+public class RWLock 
+{
+
+	public static void main( String [] args )
+	{
+		ReadWriteLock rwlock = new ReentrantReadWriteLock();
+		rwlock.readLock().lock();
+		System.out.println("here1");
+		rwlock.writeLock().lock();
+		System.out.println("here2");
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_testcondition">
+			<text>import java.util.*;
+import java.util.concurrent.locks.*;
+import java.util.concurrent.*;
+
+public class TestCondition 
+{
+
+	public static void main( String [] args ) throws Exception
+	{
+		Lock lock = new ReentrantLock();
+		Condition cond = lock.newCondition();
+		lock.lock();
+		cond.await( 1, TimeUnit.SECONDS );
+		lock.unlock();
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_testsemaphore">
+			<text>import java.util.*;
+import java.util.concurrent.*;
+
+public class TestSemaphore 
+{
+	int concurrentUsers = 5;
+	boolean fair = true;
+	Semaphore sem = new Semaphore( concurrentUsers, fair );
+
+	Data readData() throws InterruptedException {
+		sem.acquire();
+		// read data ...
+		sem.release();
+
+		return null /*data*/;
+	}
+
+	public static void main( String [] args )
+	{
+	}
+
+	class Data { }
+}
+			</text>
+		</p>
+		<p n="xj_resourcebundle">
+			<text>//file: Hello.java
+import java.util.*;
+
+public class Hello {
+  public static void main(String[] args) {
+    ResourceBundle bun;
+    bun = ResourceBundle.getBundle("Message", Locale.ITALY);
+    System.out.println(bun.getString("HelloMessage"));
+    bun = ResourceBundle.getBundle("Message", Locale.US);
+    System.out.println(bun.getString("HelloMessage"));
+  }
+}
+			</text>
+		</p>
+		<p n="xj_printf">
+			<text>import java.util.*;
+import static java.lang.System.*;
+
+public class PrintfExamples
+{
+	public static void main( String [] args )
+	{
+		System.out.printf("a %%1$s is a %%1$s is a %%1$s...", "rose" );
+		System.out.printf("bool is %%b\n", "a" );
+
+		//char value is a
+		System.out.printf("char value is %%c\n", 'a' );
+		// why doesn't this work?
+		//System.out.printf("char value is %%1$c, %%1$C\n", 'a' );
+
+		Date date = new Date(1099629120657L);
+
+		//The date is Wed Oct 20 01:45:17 CDT 2004
+		System.out.printf("The date is %%s\n", date );
+		//The date is Wed Oct 20 01:45:17 CDT 2004
+		System.out.printf("The date is %%tc\n", date );
+		//The DATE is WED OCT 20 01:45:17 CDT 2004
+		System.out.printf("The DATE is %%Tc\n", date );
+
+		System.out.printf("The DATE is %%tD\n", date );
+		System.out.printf("The DATE is %%tF\n", date );
+		System.out.printf("The DATE is %%tr\n", date );
+		System.out.printf("The DATE is %%tR\n", date );
+		System.out.printf("The DATE is %%tT\n", date );
+
+		System.out.printf( Locale.ITALIAN, "The date is %%tc\n", date );
+		System.out.printf( Locale.CHINA, "The date is %%tc\n", date );
+		System.out.printf( Locale.FRENCH, "The date is %%tc\n", date );
+		System.out.printf( Locale.GERMAN, "The date is %%tc\n", date );
+
+		System.out.printf("The DATE is %%tC\n", date );
+		System.out.printf("The DATE is %%tz\n", date );
+
+		System.out.printf("String is '%%5s'\n", "A");
+		System.out.printf("String is '%%-5s'\n", "A");
+		System.out.printf("String is '%%.5s'\n", "Happy Birthday!");
+
+		String [] words = 
+			new String [] { "abalone", "ape", "antidisestablishmentarianism" };
+		System.out.printf( "%%-10s %%s\n", "Word", "Length" );
+		for ( String word : words )
+			System.out.printf( "%%-10.10s %%s\n", word, word.length() );
+
+		out.printf("num is %%s\n", 5);
+		out.printf("char is %%s\n", 'a');
+		out.printf("char is %%S\n", 'a');
+		out.printf("bool is %%s\n", true );
+
+		//My name is Joe
+		System.out.printf("My name is %%s\n", "Joe");
+		//http://host/path
+		System.out.printf("%%s://%%s/%%s\n", "http", "host", "path");
+		//http://host/path
+		System.out.printf("%%1$s://%%2$s/%%3$s\n", "http", "host", "path");
+
+		// num is 3.141593
+		out.printf("num is %%f\n", Math.PI );
+		// num is 3.14
+		out.printf("num is %%.2f\n", Math.PI );
+
+		//num is 005
+		out.printf("num is %%03d\n", 5 );
+
+		out.printf("num is %%03f\n", 3.14159265 );
+		out.printf("num is {%%07.3f}\n", 3.14 );
+		out.printf("06.3 num is %%06.3f\n", 3.14159265 );
+		out.printf(".3 num is %%.3f\n", 3.14159265 );
+		out.printf("9.99 num is %%4.2f\n", 9.999999999 );
+
+		out.printf("1.0 5f num is %%5f\n", 1.0 );
+		out.printf("1.0 4f num is %%4f\n", 1.0 );
+
+		out.printf("sci not num is %%e\n", 3.14159265*10000 );
+		out.printf("sci not num is %%g\n", 3.14159265*10000 );
+		out.printf("sci not num is %%e\n", 0.123456789 );
+		out.printf("sci not num is %%g\n", 0.123456789 );
+		out.printf("sci not num is %%e\n", 3000000.0 );
+		out.printf("hex num is %%h\n", 1.0 );
+		out.printf("num is %%h\n", 0xCAFE );
+
+
+		//boolean value is true, TRUE
+		System.out.printf("boolean value is %%1$b, %%1$B\n", true );
+
+		//hex value is b5151397, B5151397
+		System.out.printf("hex value is %%1$h, %%1$H\n", new Date() );
+		//hex value 
+		System.out.printf("hex value is %%1$h, %%1$H\n", 0xCAFE );
+		//hex value 
+		System.out.printf("hex value is %%1$x, %%1$X\n", 0xCAFE );
+		System.out.printf("hex value is %%1$#x, %%1$#X\n", 0xCAFE );
+
+		System.out.printf( Locale.ITALIAN, "value: %%f\n", 3.14 );
+
+		// flags
+		out.printf("num is %%d\n", 5000000);
+
+		out.printf("float is %%f\n", 1.23456789);
+		out.printf("float is %%.3f\n", 1.23456789);
+		out.printf("float is %%.1f\n", 1.23456789);
+		out.printf("float is %%.0f\n", 1.23456789);
+
+		out.printf("float is %%-20f!\n", 1.23456789);
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_template">
+			<text>
+				<![CDATA[import java.util.*;
+import java.util.regex.*;
+
+public class Template 
+{
+	Properties values = new Properties();
+	Pattern templateComment = 
+		Pattern.compile("(?si)<!--\\s*TEMPLATE:(\\w+).*?-->");
+
+	public void set( String name, String value	) {
+		values.setProperty( name, value );
+	}
+
+	public String fillIn( String text ) {
+		Matcher matcher = templateComment.matcher( text );
+
+		StringBuffer buffer = new StringBuffer();
+		while( matcher.find() ) {
+			String name = matcher.group(1);
+			String value = values.getProperty( name );
+			matcher.appendReplacement( buffer, value );
+		}
+		matcher.appendTail( buffer );
+		return buffer.toString();
+	}
+
+	public static void main( String	[] args	) 
+	{
+		String templateText = 
+			"<html><head>\n"+
+			"<body>\n"+
+			"This is some text.\n"+
+			"<!-- TEMPLATE:foo  -->\n"+
+			"Some more text.\n"+
+			"\n"+
+			"<!--template:bar This is text -->\n"+
+			"More text.\n"+
+			"<!-- TEMPLATE:bar \n"+
+			"-->\n"+
+			"</body></html>\n";
+			
+		Template template = new Template();
+		template.set( "foo", "FooTemplate");
+		template.set( "bar", "BarTemplate");
+		System.out.println( templateText );
+		System.out.println( template.fillIn(templateText) );
+	}
+
+}
+
+
+]]>
+			</text>
+		</p>
+		<p n="xj_loglistener">
+			<text>
+import java.io.*;
+import java.net.*;
+import java.util.logging.*;
+
+public class LogListener {
+        public static void main( String [] args ) throws IOException
+        {
+                int port = Integer.parseInt( args[0] );
+                ServerSocket server = new ServerSocket( port );
+                Socket client = server.accept();
+                BufferedReader in = new BufferedReader( 
+                        new InputStreamReader( client.getInputStream() ) );
+
+                String line;
+                while ( (line = in.readLine() ) != null )
+                        System.out.println( line );
+        }
+
+}
+
+			</text>
+		</p>
+		<p n="xj_logtest">
+			<text>
+import java.util.logging.*;
+
+public class LogTest {
+    public static void main(String argv[]) {
+        Logger logger = Logger.getLogger("com.oreilly.LogTest");
+
+        logger.severe("Power lost - running on backup!");
+        logger.warning("Database connection lost, retrying...");
+        logger.info("Startup complete.");
+        logger.config("Server configuration: standalone, JVM version 1.4");
+        logger.fine("Loading graphing package.");
+        logger.finer("Doing pie chart");
+        logger.finest("Starting bubble sort: value ="+42);
+    }
+}
+
+			</text>
+		</p>
+		<p n="xj_logtest2">
+			<text>
+				<![CDATA[
+import java.util.logging.*;
+
+public class LogTest2 
+{
+    public static void main(String argv[]) {
+        Logger logger = Logger.getLogger("DeviceLog");
+
+        logger.info("<Device id=\"99\"/>");
+    }
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xj_messageboard">
+			<text>//file: MessageBoard.java
+import java.util.*;
+
+public class MessageBoard extends Observable {
+    private String message;
+
+    public String getMessage(  ) {
+        return message;
+    }
+    public void changeMessage( String message ) {
+        this.message = message;
+        setChanged(  );
+        notifyObservers( message );
+    }
+    public static void main( String [] args ) {
+        MessageBoard board = new MessageBoard(  );
+        Student bob = new Student(  );
+        Student joe = new Student(  );
+        board.addObserver( bob );
+        board.addObserver( joe );
+        board.changeMessage("More Homework!");
+    }
+} // end of class MessageBoard
+
+class Student implements Observer {
+    public void update(Observable o, Object arg) {
+        System.out.println( "Message board changed: " + arg );
+    }
+}
+			</text>
+		</p>
+		<p n="xj_wordsort">
+			<text>
+				<![CDATA[import java.io.*;
+import java.util.*;
+
+public class WordSort 
+{
+  public static void main(String[] args) throws IOException 
+  {
+    if ( args.length < 2 ) {
+      System.out.println("Usage: WordSort inputfile outputfile");
+      return;
+    }
+    String inputfile = args[0];
+    String outputfile = args[1];
+
+
+    /*  Create the word map. Each key is a word and each value is an
+        Integer that represents the number of times the word occurs
+        in the input file.
+    */
+    Map<String,Integer> map = new TreeMap<String,Integer>();
+
+    Scanner scanner = new Scanner( new File(inputfile) );
+    while ( scanner.hasNext() ) {
+        String word = scanner.next();
+        Integer count = map.get( word );
+        count = ( count == null ? 1 : count +1 );
+        map.put( word, count );
+    }
+    scanner.close();
+
+    // get the map's keys 
+    List<String> keys = new ArrayList<String>( map.keySet() );
+	//Collections.sort( keys );
+
+    // write the results to the output file
+    PrintWriter out = new PrintWriter( new FileWriter(outputfile) );
+    for ( String key : keys )
+      out.println( key + " : " + map.get(key) );
+    out.close();
+  }
+}
+]]>
+			</text>
+		</p>
+	</language.aliases>
+	<language.aliases n="language.fundamental.aliases" version="1">
+		<p n="xj_aliases">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class GM 
+{
+	static void foo( List<String> ls ) { }
+	static <T> void bar( T t ) { }
+
+	public static void main( String [] args )
+	{
+		foo( new ArrayList<String>() );
+		bar( new ArrayList<String>() );
+	}
+
+}
+]]>
+			</text>
+		</p>
+	</language.aliases>
 </options>
