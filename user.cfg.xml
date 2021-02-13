@@ -33139,6 +33139,564 @@ public class TestWrite extends JApplet
 
 			</text>
 		</p>
+		<p n="xj_address">
+			<text>
+public class Address {
+	public String city, street;
+	public int number, zip;
+}
+			</text>
+		</p>
+		<p n="xj_animal">
+			<text>
+import javax.xml.bind.annotation.XmlAttribute;
+
+//@XmlRootElement
+//@XmlRootElement(name = "myanimal")
+//@XmlType(propOrder = {"species", "name"}) // if used must specify all
+public class Animal
+{
+    public static enum AnimalClass { mammal, reptile, bird, fish, amphibian, invertebrate }
+
+    @XmlAttribute
+    //@XmlAttribute(name = "class")
+    public AnimalClass animalClass;
+
+	public String name, species, habitat, food, temperament;
+    public Double weight;
+	public FoodRecipe foodRecipe;
+
+    public Animal() { }
+
+    public Animal(
+        AnimalClass animalClass, String name, String species, String habitat,
+        String temperament, Double weight, String food )
+    {
+        this.animalClass = animalClass;
+        this.name = name;
+        this.species = species;
+        this.habitat = habitat;
+        this.food = food;
+        this.temperament = temperament;
+        this.weight = weight;
+    }
+
+    public Animal(
+        AnimalClass animalClass, String name, String species, String habitat,
+        String temperament, Double weight, FoodRecipe foodRecipe )
+    {
+        this.animalClass = animalClass;
+        this.name = name;
+        this.species = species;
+        this.habitat = habitat;
+        this.temperament = temperament;
+        this.weight = weight;
+        this.foodRecipe = foodRecipe;
+    }
+
+    public String toString() { return name +"("+animalClass+", "+species+")"; }
+
+}
+
+			</text>
+		</p>
+		<p n="xj_foodrecipe">
+			<text>
+				<![CDATA[import java.util.*;
+
+public class FoodRecipe
+{
+	public String name;
+	public List<String> ingredient = new ArrayList<String>();
+
+	public String toString() { return name + ": "+ ingredient.toString(); }
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_inventory">
+			<text>
+				<![CDATA[import javax.xml.bind.annotation.*;
+import java.util.*;
+
+@XmlRootElement
+public class Inventory {
+
+    //@XmlElementRef // take name from Gorilla, works if we pass Gorilla class to newInstance
+    //@XmlElementRefs(value = @XmlElementRef(type=Gorilla.class)) // take name from Gorilla, works without passing class to newin
+    //@XmlElements(value = @XmlElement(name = "mygorxx", type=Gorilla.class)) // names Gorillas right here
+    //@XmlElementWrapper
+    //@XmlElement(name="animal")
+	public List<Animal> animal = new ArrayList<>();
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_jaxbexeriments">
+			<text>import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+
+public class JAXBExperiments
+{
+	public static void main( String [] args ) throws JAXBException
+    {
+		Inventory inventory = new Inventory();
+
+		Animal animal = new Gorilla();
+        animal.animalClass= Animal.AnimalClass.mammal;
+		animal.name = "Song Fang";
+		animal.species = "Giant Panda";
+		animal.habitat = "China";
+		animal.food = "Bamboo";
+		animal.temperament = "Friendly";
+		animal.weight = 45.0;
+        FoodRecipe recipe = new FoodRecipe();
+        recipe.name = "Gorilla Chow";
+        recipe.ingredient.add( "leaves" );
+        recipe.ingredient.add( "insects" );
+        recipe.ingredient.add( "fruit" );
+        animal.foodRecipe = recipe;
+
+		inventory.animal.add( animal );
+
+        JAXBContext context = JAXBContext.newInstance( Inventory.class );
+        Marshaller marshaller = context.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        marshaller.marshal(inventory, System.out);
+	}
+
+}
+			</text>
+		</p>
+		<p n="xj_person">
+			<text>import javax.xml.bind.JAXBException;
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
+public class Person {
+    public String name;
+    public Address address;
+    public int age;
+
+    public static void main( String[] args ) throws JAXBException
+    {
+        Person person = new Person();
+        person.name="Pat Niemeyer";
+        person.address = new Address();
+		person.address.city = "St. Louis";
+        person.address.street = "Java St.";
+        person.address.number = 1234;
+        person.address.zip = 54321;
+        person.age = 42;
+
+        TestJAXBMarshall.marshall( person );
+    }
+}
+			</text>
+		</p>
+		<p n="xj_printdom">
+			<text>import javax.xml.parsers.*;
+import org.xml.sax.InputSource;
+import org.w3c.dom.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+public class PrintDOM {
+	public static void main( String [] args ) throws Exception 
+	{
+		DocumentBuilder parser =  DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		Document document = parser.parse( new InputSource("zooinventory.xml") );
+		Transformer transformer =  TransformerFactory.newInstance().newTransformer();
+		Source source = new DOMSource( document );
+		Result output = new StreamResult( System.out );
+		transformer.transform( source, output );
+	}
+}
+			</text>
+		</p>
+		<p n="xj_printxinclude">
+			<text>import javax.xml.parsers.*;
+import org.w3c.dom.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+public class PrintXInclude {
+	public static void main( String [] args ) throws Exception 
+	{
+		DocumentBuilderFactory factory = 
+			DocumentBuilderFactory.newInstance();
+		factory.setNamespaceAware( true );
+		factory.setXIncludeAware( true );
+		DocumentBuilder parser = factory.newDocumentBuilder();
+		System.out.println( "aware: "+parser.isXIncludeAware() );
+		Document document = parser.parse( "chapter.xml" );
+		Transformer transformer = 
+			TransformerFactory.newInstance().newTransformer();
+		Source source = new DOMSource( document );
+		Result output = new StreamResult( System.out );
+		transformer.transform( source, output );
+	}
+}
+			</text>
+		</p>
+		<p n="xj_saxmodelbuilder">
+			<text>
+				<![CDATA[import org.xml.sax.*;
+import org.xml.sax.helpers.*;
+import java.util.*;
+import java.lang.reflect.*;
+
+public class SAXModelBuilder extends DefaultHandler
+{
+    Stack<Object> stack = new Stack<>();
+
+    public void startElement(
+        String namespace, String localname, String qname, Attributes atts ) throws SAXException
+	{
+        // Construct the new element and set any attributes on it
+		Object element;
+        try {
+            String className = Character.toUpperCase( qname.charAt( 0 ) ) + qname.substring( 1 );
+            element = Class.forName( className ).newInstance();
+        } catch ( Exception e ) {
+            element = new StringBuffer();
+        }
+
+		for( int i=0; i<atts.getLength(); i++) {
+            try {
+                setProperty( atts.getQName( i ), element, atts.getValue( i ) );
+            } catch ( Exception e ) { throw new SAXException( "Error: ", e ); }
+        }
+
+        stack.push( element );
+    }
+
+	public void endElement( String namespace, String localname, String qname )
+		throws SAXException
+	{
+        // Add the element to its parent
+        if ( stack.size() > 1) {
+            Object element = stack.pop();
+            try {
+                setProperty( qname, stack.peek(), element );
+            } catch ( Exception e ) { throw new SAXException( "Error: ", e ); }
+        }
+	}
+
+	public void characters(char[] ch, int start, int len )
+    {
+        // Receive element content text
+		String text = new String( ch, start, len );
+        if ( text.trim().length() == 0 ) { return; }
+		((StringBuffer)stack.peek()).append( text );
+	}
+
+    void setProperty( String name, Object target, Object value )
+        throws SAXException, IllegalAccessException, NoSuchFieldException
+    {
+        Field field = target.getClass().getField( name );
+
+        // Convert values to field type
+        if ( value instanceof StringBuffer ) {
+            value = value.toString();
+        }
+        if ( field.getType() == Double.class ) {
+            value = Double.parseDouble( value.toString() );
+        }
+        if ( Enum.class.isAssignableFrom( field.getType() ) ) {
+            value = Enum.valueOf( (Class<Enum>)field.getType(), value.toString() );
+        }
+
+        // Apply to field
+        if ( field.getType() == value.getClass() ) {
+            field.set( target, value );
+        } else
+        if ( Collection.class.isAssignableFrom( field.getType() ) ) {
+            Collection collection = (Collection)field.get( target );
+            collection.add( value );
+        } else {
+            throw new RuntimeException( "Unable to set property..." );
+        }
+	}
+
+	public Object getModel() { return stack.pop(); }
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_testdom">
+			<text>
+				<![CDATA[import javax.xml.parsers.*;
+import org.w3c.dom.*;
+
+public class TestDOM
+{
+	public static void main( String [] args ) throws Exception
+	{
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder parser = factory.newDocumentBuilder();
+		Document document = parser.parse( "zooinventory.xml" );
+
+		Element inventory = document.getDocumentElement();
+		NodeList animals = inventory.getElementsByTagName("animal");
+		System.out.println("Animals = ");
+		for( int i=0; i<animals.getLength(); i++ ) {
+            Element item = (Element)animals.item( i );
+            String name = item.getElementsByTagName( "name" ).item( 0 ).getTextContent();
+            String species = item.getElementsByTagName( "species" ).item( 0 ).getTextContent();
+            String animalClass = item.getAttribute( "animalClass" );
+			System.out.println( "  "+ name +" ("+animalClass+", "+species+")" );
+		}
+
+        Element cocoa = (Element)animals.item( 1 );
+        Element recipe = (Element)cocoa.getElementsByTagName( "foodRecipe" ).item( 0 );
+        String recipeName = recipe.getElementsByTagName( "name" ).item( 0 ).getTextContent();
+		System.out.println("Recipe = " + recipeName );
+		NodeList ingredients = recipe.getElementsByTagName("ingredient");
+		for(int i=0; i<ingredients.getLength(); i++) {
+			System.out.println( "  " + ingredients.item( i ).getTextContent() );
+        }
+	}
+}
+
+]]>
+			</text>
+		</p>
+		<p n="xj_testjaxbmarshall">
+			<text>import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import java.util.Arrays;
+
+public class TestJAXBMarshall
+{
+	public static void main( String [] args ) throws JAXBException
+    {
+		Inventory inventory = new Inventory();
+        Animal animal = new Animal( Animal.AnimalClass.mammal,
+            "Song Fang", "Giant Panda", "China", "Friendly", 45.0, "Bamboo" );
+        inventory.animal.add( animal );
+        FoodRecipe recipe = new FoodRecipe();
+        recipe.name = "Gorilla Chow";
+        recipe.ingredient.addAll( Arrays.asList( "fruit", "shoots", "leaves" ) );
+		animal = new Animal( Animal.AnimalClass.mammal,
+            "Cocoa", "Gorilla", "Ceneral Africa", "Know-it-all", 45.0, recipe );
+		inventory.animal.add( animal );
+
+        marshall( inventory );
+	}
+
+    public static void marshall( Object jaxbObject ) throws JAXBException
+    {
+        JAXBContext context = JAXBContext.newInstance( jaxbObject.getClass() );
+        Marshaller marshaller = context.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        marshaller.marshal(jaxbObject, System.out);
+    }
+}
+			</text>
+		</p>
+		<p n="xj_testjaxbunmarshall">
+			<text>
+				<![CDATA[import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import java.io.File;
+import java.util.*;
+
+public class TestJAXBUnmarshall
+{
+
+	public static void main( String [] args ) throws JAXBException
+    {
+        JAXBContext context = JAXBContext.newInstance( Inventory.class );
+        Unmarshaller unmarshaller = context.createUnmarshaller();
+        unmarshaller.setSchema(null);   //No Schema
+         unmarshaller.setValidating(true);
+
+        Inventory inventory = (Inventory)unmarshaller.unmarshal( new File("zooinventory.xml") );
+
+		System.out.println( "Animals = " );
+		List<Animal> animals = inventory.animal;
+		for( Animal animal : animals )
+			System.out.println( "\t"+animal.name );
+		Animal fang = inventory.animal.get(1);
+		FoodRecipe recipe = fang.foodRecipe;
+		System.out.println( "Recipe = " + recipe.name );
+		for( String ingredient : recipe.ingredient )
+			System.out.println( "\t"+ingredient );
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_testsaxmodelbuilder">
+			<text>import org.xml.sax.*;
+import javax.xml.parsers.*;
+import java.beans.XMLEncoder;
+
+public class TestSAXModelBuilder
+{
+	public static void main( String [] args ) throws Exception
+	{
+		SAXParserFactory factory = SAXParserFactory.newInstance();
+
+        factory.setValidating( true ); // Use DTD if present
+
+		SAXParser saxParser = factory.newSAXParser();
+		XMLReader parser = saxParser.getXMLReader();
+		SAXModelBuilder mb = new SAXModelBuilder();
+		parser.setContentHandler( mb );
+
+		parser.parse( new InputSource("zooinventory.xml") );
+		Inventory inventory = (Inventory)mb.getModel();
+		System.out.println("Animals = "+inventory.animal);
+		Animal cocoa = (Animal)(inventory.animal.get(1));
+		FoodRecipe recipe = cocoa.foodRecipe;
+		System.out.println( "Recipe = "+recipe );
+
+        XMLEncoder xmle = new XMLEncoder( System.out );
+        xmle.writeObject( inventory );
+        xmle.close();
+	}
+}
+
+			</text>
+		</p>
+		<p n="xj_validate">
+			<text>import javax.xml.XMLConstants;
+import javax.xml.validation.*;
+import org.xml.sax.*;
+import javax.xml.transform.sax.SAXSource;
+import javax.xml.transform.stream.StreamSource;
+
+public class Validate 
+{
+	public static void main( String [] args ) throws Exception
+	{
+        /*
+		if ( args.length != 2 ) {
+			System.err.println("usage: Validate xmlfile.xml xsdfile.xsd");
+			System.exit(1);
+		}
+		String xmlFile = args[0], schemaFile = args[1];
+		*/
+        String xmlFile = "zooinventory.xml";
+        String schemaFile = "zooinventory.xsd";
+
+        //String schemaFile = "zooinventory.dtd";
+	/*
+		DTD type isn't supported out of the box
+		String schemaType =
+			( schemaFile.toLowerCase().endsWith("dtd") ?
+			XMLConstants.XML_DTD_NS_URI : XMLConstants.W3C_XML_SCHEMA_NS_URI );
+	*/
+
+		SchemaFactory factory =  SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
+		Schema schema = factory.newSchema( new StreamSource( schemaFile) );
+		Validator validator = schema.newValidator();
+
+		ErrorHandler errHandler = new ErrorHandler() {
+			public void error( SAXParseException e ) { System.out.println(e); }
+			public void fatalError( SAXParseException e ) { System.out.println(e); }
+			public void warning( SAXParseException e ) { System.out.println(e); }
+		};
+		validator.setErrorHandler( errHandler );
+
+		try {
+			 validator.validate( new SAXSource( new InputSource(xmlFile) ) );
+		} catch ( SAXException e ) {
+			System.out.println(e); // Invalid Document
+		}
+	}
+}
+			</text>
+		</p>
+		<p n="xj_xmlgrep">
+			<text>
+				<![CDATA[import org.w3c.dom.*;
+import org.xml.sax.InputSource;
+import javax.xml.xpath.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+public class XMLGrep {
+
+	public static void printXML( Element element ) throws TransformerException
+	{
+		Transformer transformer = 
+			TransformerFactory.newInstance().newTransformer();
+		transformer.setOutputProperty( OutputKeys.OMIT_XML_DECLARATION, "yes" );
+		Source source = new DOMSource( element );
+		Result output = new StreamResult( System.out );
+		transformer.transform( source, output );
+		System.out.println();
+	}
+
+	public static void main( String [] args ) throws Exception
+	{
+        /*
+		if ( args.length != 2 ) { 
+			System.out.println( "usage: PrintXPath expression file.xml" );
+			System.exit(1);
+		}
+		String expression = args[0], filename = args[1];
+		*/
+
+        String expression = "//animal[starts-with(name,'C')]";
+        String filename = "zooinventory.xml";
+
+		XPath xpath = XPathFactory.newInstance().newXPath();
+		InputSource inputSource = new InputSource( filename );
+
+		NodeList elements = (NodeList)xpath.evaluate( 
+			expression, inputSource, XPathConstants.NODESET );
+
+		for( int i=0; i<elements.getLength(); i++ )
+			if ( elements.item(i) instanceof Element ) {
+				printXML( (Element)elements.item(i) );
+			} else
+				System.out.println( elements.item(i) );
+	}
+
+}
+]]>
+			</text>
+		</p>
+		<p n="xj_xsltransform">
+			<text>
+				<![CDATA[import javax.xml.transform.*;
+import javax.xml.transform.stream.*;
+
+public class XSLTransform 
+{
+	public static void main( String [] args ) throws Exception
+	{
+		if ( args.length < 2 || !args[0].endsWith(".xsl") ) {
+			System.err.println("usage: XSLTransform file.xsl file.xml");
+			System.exit(1);
+		}
+        String xslFile = args[0], xmlFile = args[1];
+        //String xslFile = "zooinventory.xsl", xmlFile = "zooinventory.xml";
+
+		TransformerFactory factory = TransformerFactory.newInstance();
+		Transformer transformer = 
+			factory.newTransformer( new StreamSource( xslFile ) );
+		StreamSource xmlsource = new StreamSource( xmlFile );
+		StreamResult output = new StreamResult( System.out );
+		transformer.transform( xmlsource, output );
+	}
+}
+
+
+]]>
+			</text>
+		</p>
 	</language.aliases>
 	<language.aliases n="language.fundamental.aliases" version="1">
 		<p n="xj_aliases">
