@@ -559,6 +559,13 @@
 					<u/>
 					<projectname v="D:\vcplusplus\vcplusplus\lisbox\lisbox\testlistbox.vpj"/>
 				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\verilog_vs\verilogvs.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\verilog_vs\verilogvs.vpj"/>
+				</class.WORKSPACE_LIST>
 			</array>
 		</p>
 		<p n="def_open_style" v="0"/>
@@ -619,6 +626,7 @@
 		<p n="def_vcproj_debug_prefs" v="2"/>
 		<p n="def_mfsearch_init_flags" v="0xA"/>
 		<p n="def_active_java_config" v="JDK 14.0.1"/>
+		<p n="def_pip_on" v="0"/>
 	</misc.def_vars>
 	<misc.tag_file_list_all n="misc.tag_file_list_all" version="1" configs="win">
 		<p n="cs" v="%SLICKEDITCONFIGVERSION%tagfiles\dotnet.vtg;%SLICKEDITCONFIGVERSION%tagfiles\unity.vtg"/>
@@ -33716,6 +33724,2698 @@ public class GM
 
 }
 ]]>
+			</text>
+		</p>
+	</language.aliases>
+	<language.aliases n="language.verilog.aliases" version="1">
+		<p n="xv_lab1_addsub_4bit">
+			<text>`ifndef ADDSUB_4BIT
+`define ADDSUB_4BIT
+    `include "fadder_1bit.v"
+    module addSub_4bit(
+        output [3:0] sum,
+        output cout,
+        input [3:0] a,
+        input [3:0] b,
+        input cin,
+        input sel
+    );
+
+        wire [2:0] tmpCout;
+        wire [3:0] xorbs;
+        %\S
+        assign xorbs[0] = b[0] ^ sel;
+        assign xorbs[1] = b[1] ^ sel;
+        assign xorbs[2] = b[2] ^ sel;
+        assign xorbs[3] = b[3] ^ sel;
+
+        fadder_1bit f1( .cout(tmpCout[0]), .sum(sum[0]), .a(a[0]), .b(xorbs[0]), .cin(cin) );
+        fadder_1bit f2( .cout(tmpCout[1]), .sum(sum[1]), .a(a[1]), .b(xorbs[1]), .cin(tmpCout[0]) );
+        fadder_1bit f3( .cout(tmpCout[2]), .sum(sum[2]), .a(a[2]), .b(xorbs[2]), .cin(tmpCout[1]) );
+        fadder_1bit f4( .cout(cout), .sum(sum[3]), .a(a[3]), .b(xorbs[3]), .cin(tmpCout[2]) );
+
+    endmodule
+`endif</text>
+		</p>
+		<p n="xv_lab1_bcd2gray">
+			<text>// BCD to gray conversion
+
+module bcd2gray_gate(a, b);
+	// gate level
+	input [3:0]a;
+	output [3:0]b;
+	// Assignment statement
+	xor x0(b[3], 0, a[3]);
+	xor x1(b[2], a[3], a[2]);
+	xor x2(b[1], a[2], a[1]);
+	xor x3(b[0], a[1], a[0]);
+endmodule
+
+module bcd2gray_df(a, b);
+	// dataflow model
+	input [3:0]a;
+	output [3:0]b;
+	
+	assign b[3] = a[3];
+	assign b[2] = a[3] ^ a[2];
+	assign b[1] = a[2] ^ a[1];
+	assign b[0] = a[1] ^ a[0];
+	
+endmodule
+
+module testbench;
+	reg [3:0]a;
+	wire [3:0]b;
+	
+	bcd2gray_df bcd2gray(a, b);
+	initial
+		begin
+			$monitor(, $time, " a=%%4b, b=%%4b", a, b);
+			#0 a=4'b0000;
+			
+			// repeat(n): repeats the statement below n times
+			repeat(16)
+				// updates 'a' 16 times at an interval of 10 time units
+				#10 a=a+4'b0001;
+			
+			#180 $finish;
+		end
+		
+endmodule</text>
+		</p>
+		<p n="xv_lab1_fadder_1bit">
+			<text>
+				<![CDATA[`ifndef FADDER_1BIT
+`define FADDER_1BIT
+    module fadder_1bit(
+        output sum,
+        output cout,
+        input a,
+        input b,
+        input cin);
+
+        assign sum = a ^ b ^ cin;
+        assign cout = a&b | (a|b)&cin;
+
+    endmodule
+`endif]]>
+			</text>
+		</p>
+		<p n="xv_lab1_fadder_4bit">
+			<text>`include "fadder_1bit.v"
+module fadder_4bit(
+    output [3:0] sum,
+    output cout,
+    input [3:0]  a,
+    input [3:0]  b,
+    input cin
+);
+
+    wire [2:0] tmpCout;
+
+    fadder_1bit f1( .cout(tmpCout[0]), .sum(sum[0]), .a(a[0]), .b(b[0]), .cin(cin) );
+    fadder_1bit f2( .cout(tmpCout[1]), .sum(sum[1]), .a(a[1]), .b(b[1]), .cin(tmpCout[0]) );
+    fadder_1bit f3( .cout(tmpCout[2]), .sum(sum[2]), .a(a[2]), .b(b[2]), .cin(tmpCout[1]) );
+    fadder_1bit f4( .cout(cout), .sum(sum[3]), .a(a[3]), .b(b[3]), .cin(tmpCout[2]) );
+
+endmodule</text>
+		</p>
+		<p n="xv_lab1_magcomp">
+			<text>
+				<![CDATA[// Magnitude comparator
+
+module mag_beh(a, b, c);
+
+	input [3:0] a, b;
+	output [2:0]c;
+	reg c;
+	always@ (a or b)
+		begin
+			if(a==b) c=3'b100;
+			else if(a>b)	c=3'b010;
+			else if(a<b)	c=3'b001;
+		end
+endmodule
+
+module mag_df(a, b, c);
+
+    input [3:0] a, b;
+    output [2:0] c;
+    wire [3:0] x;
+
+    assign x = ~(((~a) & b) | (a & (~b)));
+    assign c[2] = x[0] & x[1] & x[2] & x[3];
+    assign c[1] = (a[3] & ~b[3]) | (x[3] & a[2] & ~b[2]) | (x[3] & x[2] & a[1] & ~b[1]) | (x[3] & x[2] & x[1] & a[0] & ~b[0]);
+    assign c[0] = !(c[1] | c[2]);
+
+endmodule
+
+module testbench;
+	reg [3:0]a, b;
+	wire [2:0]c;
+	mag_df mag_com(a, b, c);
+	initial
+		begin
+			$monitor(, $time, " a=%%4b, b=%%4b, c=%%3b", a, b, c);
+			#0 a=4'b0000; b=4'b0000;
+			#5 a=4'b0001; b=4'b0000;
+			#10 a=4'b0000; b=4'b0001;
+			#100 $finish;
+		end
+		
+endmodule]]>
+			</text>
+		</p>
+		<p n="xv_mux2to1_beh">
+			<text>module mux2to1_beh(f,a,b,s);
+
+	input a,b,s;
+	output f;
+	reg f;
+	
+	always@ (s or a or b)
+		if(s == 1)
+			f = a;
+		else
+			f = b;
+
+endmodule</text>
+		</p>
+		<p n="xv_mux2to1_df">
+			<text>
+				<![CDATA[module mux2to1_df(f,a,b,s);
+	input a,b,s;
+	output f;
+	
+	assign f = s ? a : b;
+	//Also we can write f = ((s&a)|((~s&a)))
+endmodule]]>
+			</text>
+		</p>
+		<p n="xv_lab1_mux2to1_gate">
+			<text>module mux2to1_gate(a,b,s,f);
+	input a,b,s;
+	output f;
+	
+	wire c,d,e;
+	not(c,s);
+	and(d,a,s);
+	and(e,b,e);
+	
+	or(f,d,e);
+endmodule</text>
+		</p>
+		<p n="xv_lab1_mux_2to1">
+			<text>// Gate model
+// Dataflow model
+// Behavioral model
+
+module mux2tol_gate (a, b, s, f);
+	input a, b, s;
+	output f;
+	wire c, d, e;
+	
+	not n1(e, s); // e=~s
+	and a1(c, a, s);
+	and a2(d, b, e);
+	or o1(f, c, d);
+endmodule
+
+module mux2tol_df (a, b, s, f);
+	input a, b, s;
+	output f;
+	assign f = s?a:b;
+endmodule
+
+module mux2tol_beh(a, b, s, f);
+	input a, b, s;
+	output f;
+	reg f;
+	always@ (s or a or b)
+		if(s==1) f=1;
+		else f=b;
+endmodule
+
+// testbench is the driver program
+module testbench;
+	// no variable list is needed in testbench declaration
+	reg a, b, s; // in testbench inputs are registers
+	wire f; // in testbench output is a wire
+	
+	
+	mux2tol_gate mux_df (a, b, s, f);
+	// mux_df is an instance of mux2tol_df
+	// registers are don't cares (x) until assigned
+	initial
+		begin
+			$monitor(, $time, " a=%%b, b=%%b, s=%%b, f=%%b", a, b, s, f);
+			// $monitor outputs to screen
+			// new output is displayed on every input state change
+			#0 a=1'b0; b=1'b0;
+			#2 s=1'b1;
+			#5 s=1'b0;
+			#10 a=1'b1; b=1'b0;
+			#15 s=1'b1;
+			#20 s=1'b0;
+			#50 $finish;
+		end
+	
+    initial
+		begin
+			$dumpfile("filename.vcd");
+			$dumpvars;
+		end
+
+endmodule</text>
+		</p>
+		<p n="xv_lab1_nand_from_and_n_not">
+			<text>`timescale 1ns / 1ps
+module NAND_from_AND_n_NOT (c,a,b);
+
+//declare port signals
+	output c;
+	input a,b;
+
+//declare internal wire
+	wire d;
+
+//instantiate structural logic gates
+//d = output, a and b = input
+	and a1(d,a,b);
+// c = output, d = input
+	not(c,d);
+endmodule</text>
+		</p>
+		<p n="xv_tb_addsub_4bit">
+			<text>`include "addSub_4bit.v"
+module tb_addSub_4bit();
+    %\S
+    wire [3:0] sum;
+    wire cout;
+    reg [3:0] a,b;
+    reg cin;
+    reg sel;
+
+    addSub_4bit addsub(.sum(sum), .cout(cout), .a(a), .b(b), .cin(cin), .sel(sel));
+
+    initial begin
+        $dumpfile("tb_addSub_4bit.vcd");
+        $dumpvars;
+    end
+
+    initial begin
+            a = 4'b0101; b = 4'b1000; cin = 0; sel = 0;
+        #5  a = 4'b0101; b = 4'b1000; cin = 0; sel = 1;
+        #5  a = 4'b0101; b = 4'b1000; cin = 1; sel = 0;
+        #5  a = 4'b0101; b = 4'b1000; cin = 1; sel = 1;
+        #5  a = 4'b1101; b = 4'b1001; cin = 0; sel = 0;
+        #5  a = 4'b1101; b = 4'b1001; cin = 0; sel = 1;
+        #5  a = 4'b1101; b = 4'b1001; cin = 1; sel = 0;
+        #5  a = 4'b1101; b = 4'b1001; cin = 1; sel = 1;
+    end
+
+endmodule</text>
+		</p>
+		<p n="xv_lab_tb_fadder_1bit">
+			<text>`include "fadder_1bit.v"
+
+module tb_fadder_1bit();    %\S
+
+    wire sum, cout;
+    reg a,b,cin;
+
+    fadder_1bit fadd(.sum(sum), .cout(cout), .a(a), .b(b), .cin(cin) );
+
+    initial begin
+            a = 0; b = 0; cin = 0;
+        #5  a = 0; b = 0; cin = 1;
+        #5  a = 0; b = 1; cin = 0;
+        #5  a = 0; b = 1; cin = 1;
+        #5  a = 1; b = 0; cin = 0;
+        #5  a = 1; b = 0; cin = 1;
+        #5  a = 1; b = 1; cin = 0;
+        #5  a = 1; b = 1; cin = 1;
+    end
+
+    initial %\S
+        $monitor("a = %%b, b = %%b, cin = %%b, cout = %%b, sum = %%b", a, b, cin, cout, sum);
+
+    initial begin
+        $dumpfile("tb_fadder_1bit.vcd");
+        $dumpvars;
+    end
+    %\S
+endmodule</text>
+		</p>
+		<p n="xv_lab1_tb_fadder_4bit">
+			<text>`include "fadder_4bit.v"
+module tb_fadder_4bit();
+
+    wire [3:0] sum;
+    wire cout;
+    reg [3:0] a,b;
+    reg cin;
+
+    fadder_4bit faddr(.sum(sum), .cout(cout), .a(a), .b(b), .cin(cin));
+
+    initial begin
+        $dumpfile("tb_fadder_4bit.vcd");
+        $dumpvars;
+    end
+
+    initial begin
+            a = 4'b0101; b = 4'b1000; cin = 0;
+        #5  a = 4'b0101; b = 4'b1000; cin = 1;
+        #5  a = 4'b1101; b = 4'b1001; cin = 0;
+        #5  a = 4'b1101; b = 4'b1001; cin = 1;
+    end
+
+endmodule</text>
+		</p>
+		<p n="xv_lab1_test">
+			<text>%\l
+    %\S
+      // timescale 1ns/1ps
+module mux_2_to_1(a,b,s,f);
+    input a,b,s;
+    output f;
+    reg f;
+    always@(s or a or b)
+        if(s==1) f=a;
+        else f=b;
+endmodule
+module testbench;
+    reg a,b,s;
+    wire f;
+    mux_2_to_1 mux(a,b,s,f);
+    initial
+        begin
+            $monitor(,$time," a=%%b, b=%%b, s=%%b f=%%b",a,b,s,f);
+            #0 a=1'b0;b=1'b0;
+            #1 a=1'b0;b=1'b1;
+            #2 a=1'b1;b=1'b0;
+            #3 a=1'b1;b=1'b1;
+            #10 s=1'b1;
+            #15 s=1'b0;
+            #100 $finish;
+        end
+endmodule
+%\l</text>
+		</p>
+		<p n="xv_lab1_testbench_mux2to1_gate">
+			<text>%\l
+`include "mux2to1_gate.v"
+
+module testbench_mux2to1_gate;
+	
+	reg a;
+	reg b;
+	reg s;
+	
+	wire f;
+	
+	mux2to1_gate mux_gate (a,b,s,f);
+	initial
+		begin
+			$monitor($time," a = %%b, b = %%b, s = %%b, f = %%b",a,b,s,f);
+			#0 a=1'b0; b=1'b1;
+			#2 s=1'b1;
+			#5 s=1'b0;
+			#10 a=1'b1;b=1'b0;
+			#15 s=1'b1;
+			#20 s=1'b0;
+			#100 $finish;
+		end
+	
+	initial
+		begin
+			$dumpfile("filename.vcd");
+			$dumpvars;
+		end
+endmodule</text>
+		</p>
+		<p n="xv_lab2_adder_32bit">
+			<text>`include "ADDER_8bit.v"
+
+module adder_32bit(cfinal,sum,num1,num2,cin);
+	input [31:0] num1,num2;
+	input cin;
+	output [31:0] sum;
+	output cfinal;
+	wire cout[3:0];
+	
+	ADDER_8bit add1(cout[0],sum[7:0],num1[7:0],num2[7:0],cin);
+	ADDER_8bit add2(cout[1],sum[15:8],num1[15:8],num2[15:8],cout[0]);
+	ADDER_8bit add3(cout[2],sum[23:16],num1[23:16],num2[23:16],cout[1]);
+	ADDER_8bit add4(cout[3],sum[31:24],num1[31:24],num2[31:24],cout[2]);
+	
+	assign cfinal = cout[2];
+	
+endmodule</text>
+		</p>
+		<p n="xv_lab2_adder_8bit">
+			<text>`include "FADDER.v"
+module ADDER_8bit(cfinal,sum,num1,num2,cin);
+	
+	input [7:0] num1,num2;
+	output [7:0] sum;
+	wire [7:0] cout;
+	input cin;
+	output cfinal;
+	
+		FADDER add0(sum[0],cout[0],num1[0],num2[0],cin);
+		FADDER add1(sum[1],cout[1],num1[1],num2[1],cout[0]);
+		FADDER add2(sum[2],cout[2],num1[2],num2[2],cout[1]);
+		FADDER add3(sum[3],cout[3],num1[3],num2[3],cout[2]);
+		FADDER add4(sum[4],cout[4],num1[4],num2[4],cout[3]);
+		FADDER add5(sum[5],cout[5],num1[5],num2[5],cout[4]);
+		FADDER add6(sum[6],cout[6],num1[6],num2[6],cout[5]);
+		FADDER add7(sum[7],cout[7],num1[7],num2[7],cout[6]);
+		
+	assign cfinal = cout[7];
+endmodule</text>
+		</p>
+		<p n="xv_lab2_comparator_4bit">
+			<text>
+				<![CDATA[`ifndef COMPARATOR_4BIT
+`define COMPARATOR_4BIT
+
+	module sign(
+		output sign,
+		input [3:0] num
+	);
+		reg sign;
+
+		always @* begin
+			if( num[3] == 1)
+				sign = 1;
+			else
+				sign = 0;
+		end
+
+	endmodule
+
+	module comparator_4bit(
+		output agtb,
+		output altb,
+		output aeqb,
+		input [3:0] a,
+		input [3:0] b
+	);
+		
+	wire signa, signb;
+	reg agtb, altb, aeqb;
+
+	sign sa(signa, a);
+	sign sb(signb, b);
+
+	always @(a or b or signa or signb) begin
+
+		if( (signa == 1) && (signb == 0) ) begin
+
+			agtb = 0;
+			altb = 1;
+			aeqb = 0;
+
+		end
+
+		else if( (signa == 0) && (signb == 1) ) begin
+
+			// $display("hi");
+			agtb = 1;
+			altb = 0;
+			aeqb = 0;
+			
+		end
+
+		else begin
+
+			if( a > b ) begin
+			
+				agtb = 1;
+				altb = 0;
+				aeqb = 0;
+
+			end
+
+			else if( a < b) begin
+			
+				agtb = 0;
+				altb = 1;
+				aeqb = 0;
+
+			end
+
+			else begin
+
+				agtb = 0;
+				altb = 0;
+				aeqb = 1;
+
+			end
+
+		end
+	end
+		
+	endmodule
+`endif]]>
+			</text>
+		</p>
+		<p n="xv_lab2_decoder">
+			<text>module DECODER(d0,d1,d2,d3,d4,d5,d6,d7,x,y,z);
+	input x,y,z;
+	output d0,d1,d2,d3,d4,d5,d6,d7;
+	wire x0,y0,z0;
+	not n1(x0,x);
+	not n2(y0,y);
+	not n3(z0,z);
+	and a0(d0,x0,y0,z0);
+	and a1(d1,x0,y0,z);
+	and a2(d2,x0,y,z0);
+	and a3(d3,x0,y,z);
+	and a4(d4,x,y0,z0);
+	and a5(d5,x,y0,z);
+	and a6(d6,x,y,z0);
+	and a7(d7,x,y,z);
+endmodule</text>
+		</p>
+		<p n="xv_lab_decoder_3to1">
+			<text>`ifndef DECODER_3TO1
+`define DECODE_3TO1
+module decoder_3to1(
+output [7:0] outp,
+input a,
+input b,
+input c
+);
+wire abar,bbar,cbar;
+not(abar,a);
+not(bbar,b);
+not(cbar,c);
+and(outp[0], abar,bbar,cbar);
+and(outp[1], abar,bbar,c);
+and(outp[2], abar,b,cbar);
+and(outp[3], abar,b,c);
+and(outp[4], a,bbar,cbar);
+and(outp[5], a,bbar,c);
+and(outp[6], a,b,cbar);
+and(outp[7], a,b,c);
+endmodule
+`endif</text>
+		</p>
+		<p n="xv_lab2_fadder">
+			<text>`include "DECODER.v"
+module FADDER(s,c,x,y,z);
+	input x,y,z;
+	wire d0,d1,d2,d3,d4,d5,d6,d7;
+	output s,c;
+	DECODER dec(d0,d1,d2,d3,d4,d5,d6,d7,x,y,z);
+	assign s = d1 | d2 | d4 | d7,
+	c = d3 | d5 | d6 | d7;
+endmodule</text>
+		</p>
+		<p n="xv_lab2_fadder_bhvrl">
+			<text>`ifndef FADDER_BHVRL
+`define FADDER_BHVRL
+module fadder_bhvrl(
+    output [3:0] sum,
+    output cout,
+    output ovrflow,
+    input m,
+    input [3:0] a,
+    input [3:0] b
+);
+
+    always @( a or b or m) begin
+
+        if(m == 0) begin
+
+            %\S
+
+        end
+        else begin
+        end
+
+    end
+
+endmodule</text>
+		</p>
+		<p n="xv_lab2_fadder_dec">
+			<text>`include "decoder_3to1.v"
+module fadder_dec(
+	output sum,
+	output cout,
+	input a,
+	input b,
+	input cin
+);
+		
+	wire [7:0] dec_out;
+	
+	decoder_3to1 dec(.outp(dec_out), .a(a), .b(b), .c(cin) );
+	
+	assign sum = dec_out[1] | dec_out[2] | dec_out[4] | dec_out[7] ; %\S
+	assign cout = dec_out[3] | dec_out[5] | dec_out[6] | dec_out[7] ; %\S
+	
+endmodule</text>
+		</p>
+		<p n="xv_lab2_mux16to1_glvl">
+			<text>
+				<![CDATA[`ifndef MUX16TO1
+`define MUX16TO1
+`include "mux4to1_glvl.v"
+
+    module mux16to1_glvl(
+        output outp,
+        input [15:0] inp,
+        input [3:0] sel
+    );
+
+    genvar i;
+
+    wire [3:0] muxOuts;
+
+    generate for(i = 0; i < 4; i = i+1) begin : mux4to1
+
+        mux4to1_glvl mux(.outp(muxOuts[i]), .inp(inp[(4*(i+1)-1)-:4]), .sel(sel[1-:2]));
+
+    end
+    endgenerate
+
+    mux4to1_glvl endMux(.outp(outp), .inp(muxOuts), .sel(sel[3-:2]));
+
+    endmodule
+
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab2_mux4to1_gate">
+			<text>module mux4to1_gate(out,in,sel);
+	input [0:3] in;
+	input [0:1] sel;
+	output out;
+	wire a,b,c,d,n1,n2,a1,a2,a3,a4;
+	not n(n1,sel[1]);
+	not nn(n2,sel[0]);
+	and (a1,in[0],n1,n2);
+	and (a2,in[1],n2,sel[1]);
+	and (a3,in[2],sel[0],n1);
+	and (a4,in[3],sel[0],sel[1]);
+	or or1(out,a1,a2,a3,a4);
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab2_mux4to1_glvl">
+			<text>`ifndef MUX_4TO1
+`define MUX_4TO1
+
+    module mux4to1_glvl(
+        output outp,
+        input [3:0] inp,
+        input [1:0] sel
+    );
+
+        wire [1:0] selBar;
+        not(selBar[0], sel[0]);
+        not(selBar[1], sel[1]);
+
+        wire case1, case2, case3, case4;
+        and (case1, selBar[0], selBar[1], inp[0]);
+        and (case2, sel[0], selBar[1], inp[1]);
+        and (case3, selBar[0], sel[1], inp[2]);
+        and (case4, sel[0], sel[1], inp[3]);
+
+        or(outp, case1, case2, case3, case4);
+
+    endmodule
+
+`endif
+			</text>
+		</p>
+		<p n="xv_lab2_tb_comparator_4bit">
+			<text>`include "comparator_4bit.v"
+module tb_comparator_4bit();
+	
+	reg [3:0] a;
+	reg [3:0] b;
+	wire agtb, altb, aeqb;
+	
+	comparator_4bit comp(.agtb(agtb), .altb(altb), .aeqb(aeqb), .a(a), .b(b));
+	
+	initial begin
+		$dumpfile("tb_comparator_4bit.vcd");
+		$dumpvars(0,tb_comparator_4bit);
+	end
+	
+	initial begin
+	   a=4'b0000; b=4'b0000;
+	#5 a=4'b1000; b=4'b1011;
+	#5 a=4'b0010; b=4'b0111;
+	#5 a=4'b0101; b=4'b1111;
+	#5 $finish();
+	end
+	
+	initial 
+		$monitor("a = %%b, b = %%b,signa = %%b, signb = %%b, agtb = %%b, altb = %%b, aeqb = %%b",a, b,comp.signa, comp.signb, agtb, altb, aeqb);
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab2_tb_fadder_dec">
+			<text>`include "fadder_dec.v"
+module tb_fadder_dec();
+	
+	reg a, b, cin;
+	wire sum, cout;
+	
+	fadder_dec addr(.cout(cout), .sum(sum), .cin(cin), .a(a), .b(b));
+	
+	initial begin 
+		$dumpfile("tb_fadder_dec.vcd");
+		$dumpvars;
+	end
+	
+	initial 
+		$monitor(" a = %%b, b = %%b, cin = %%b, sum = %%b, cout = %%b",a,b,cin,sum,cout);
+		
+	initial begin
+		
+			a = 0; b = 0; cin = 0;
+        #5  a = 0; b = 0; cin = 1;
+        #5  a = 0; b = 1; cin = 0;
+        #5  a = 0; b = 1; cin = 1;
+        #5  a = 1; b = 0; cin = 0;
+        #5  a = 1; b = 0; cin = 1;
+        #5  a = 1; b = 1; cin = 0;
+        #5  a = 1; b = 1; cin = 1;
+		
+	end
+	
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab2_tb_mux16to1_glvl">
+			<text>`include "mux16to1_glvl.v"
+module tb_mux16to1_glvl();
+
+    reg [15:0] inp;
+    reg [3:0] sel;
+    wire outp;
+
+    mux16to1_glvl mux(.outp(outp), .sel(sel), .inp(inp));
+
+    initial begin
+        $dumpfile("tb_mux16to1_glvl.vcd");
+        $dumpvars;
+    end
+	
+	initial begin
+		
+		$monitor("inp = %%b, sel = %%b, outp = %%b", inp, sel, outp);
+		
+	end
+	
+	
+    initial begin
+
+         inp = 16'b0000_0101_1111_1010; sel = 4'b0000;
+                                    #5  sel = 4'b0001;
+                                    #5  sel = 4'b0010;
+                                    #5  sel = 4'b0011;
+                                    #5  sel = 4'b0100;
+                                    #5  sel = 4'b0101;
+                                    #5  sel = 4'b0110;
+                                    #5  sel = 4'b0111;
+
+                                    #5  sel = 4'b1000;
+                                    #5  sel = 4'b1001;
+                                    #5  sel = 4'b1010;
+                                    #5  sel = 4'b1011;
+
+                                    #5  sel = 4'b1100;
+                                    #5  sel = 4'b1101;
+                                    #5  sel = 4'b1110;
+                                    #5  sel = 4'b1111;
+        #5  $finish;
+
+    end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab2_tb_mux4to1_glvl">
+			<text>`include "mux4to1_glvl.v"
+module tb_mux4to1_glvl();
+
+    wire outp;
+    reg [3:0] inp;
+    reg [1:0] sel;
+
+    mux4to1_glvl mux(.outp(outp), .inp(inp), .sel(sel));
+
+    initial begin
+        $dumpfile("tb_mux4to1_glvl.vcd");
+        $dumpvars;
+    end
+
+    initial begin
+            inp = 4'b0101; sel = 2'b00;
+        #5  sel = 2'b01;
+        #5  sel = 2'b10;
+        #5  sel = 2'b11;
+    end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab2_test">
+			<text>module  binary_encoder
+(
+input wire [1:0] x,
+input wire enable,
+output reg  [3:0] y 
+);
+ 
+always  @(enable, x[1],x[0])
+begin
+    if (enable == 1'b0) 
+        y=4'b0000;
+    else if (x == 0)
+        y = 4'b0001;
+    else if (x == 1)
+        y = 4'b0010;
+    else if (x == 2'b10)
+        y = 4'b0100;
+    else if (x == 2'b11)
+    	y = 4'b1000;
+end
+endmodule
+
+module tb_test();
+    reg [1:0] x;
+    reg enable;
+    wire [3:0] y;
+    binary_encoder t1(x, enable, y);
+    initial
+        begin
+            #0 enable = 1'b0;
+            #5 enable = 1'b1; x = 2'b00;
+            #10 x = 2'b01;
+            #15 x = 2'b10;
+            #20 x = 2'b11;
+            #25 $finish;
+        end
+    
+    initial
+        $monitor("enable = %%b, x = %%b, y = %%b", enable, x, y);
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab2_testbench_adder_32bit">
+			<text>`include "adder_32bit.v"
+
+module testbench_adder_32bit;
+	 reg [31:0] num1,num2;
+	 wire [31:0] sum;
+	 wire cfinal;
+	 wire cin;
+	 
+	 assign cin = 0;
+	 
+	 adder_32bit add1(cfinal,sum,num1,num2,cin);
+	 initial
+		$monitor(,$time,"sum=%%b, cfinal = %%b, num1=%%b, num2=%%b, cin = %%b",sum,cfinal,num1,num2,cin);
+	 
+	 initial
+		 begin
+			#0  num1=32'b00000001000000010000000100000001;num2=32'b11111111111111111111111111111111;
+			#10 num1=32'b00000000000000000000000000000000;num2=32'b11111110111111101111111011111110;
+			#20 num1=32'b00000000000000000000000000000000;num2=32'b11111101111111011111110111111101;
+			#30 num1=32'b00000000000000000000000000000000;num2=32'b11111011111110111111101111111011;
+			#40 num1=32'b00000000000000000000000000000000;num2=32'b11110111111101111111011111110111;
+		 end
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab2_testbench_adder_8bit">
+			<text>`include "ADDER_8bit.v"
+module testbench_adder_8bit;
+	 reg [7:0] num1,num2;
+	 wire [7:0] sum;
+	 wire cfinal;
+	 wire cin;
+	 
+	 assign cin = 0;
+	 
+	 ADDER_8bit fl(cfinal,sum,num1,num2,cin);
+	 initial
+		$monitor(,$time,"sum=%%b, cfinal = %%b, num1=%%b, num2=%%b, cin = %%b",sum,cfinal,num1,num2,cin);
+	 
+	 initial
+		 begin
+			#0 num1=8'b00000001;num2=8'b11111111;
+			#10 num1=8'b00000000;num2=8'b11111110;
+			#20 num1=8'b00000000;num2=8'b11111101;
+			#30 num1=8'b00000000;num2=8'b11111011;
+			#40 num1=8'b00000000;num2=8'b11110111;
+		 end
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab2_testbench_fadder">
+			<text>`include "FADDER.v"
+module testbench_fadder;
+	 reg x,y,z;
+	 wire s,c;
+	 FADDER fl(s,c,x,y,z);
+	 initial
+	 $monitor(,$time,"x=%%b,y=%%b,z=%%b,s=%%b,c=%%b",x,y,z,s,c);
+	 initial
+	 begin
+	 #0 x=1'b0;y=1'b0;z=1'b0;
+	 #4 x=1'b1;y=1'b0;z=1'b0;
+	 #4 x=1'b0;y=1'b1;z=1'b0;
+	 #4 x=1'b1;y=1'b1;z=1'b0;
+	 #4 x=1'b0;y=1'b0;z=1'b1;
+	 #4 x=1'b1;y=1'b0;z=1'b1;
+	 #4 x=1'b0;y=1'b1;z=1'b1;
+	 #4 x=1'b1;y=1'b1;z=1'b1;
+	 end
+endmodule
+			</text>
+		</p>
+		<p n="xj_lab3_counter4bit">
+			<text>
+				<![CDATA[`ifndef COUNTER_4BIT
+    `define COUNTER_4BIT
+    module jkFlipFlop(
+        output q, 
+        input J, 
+        input K, 
+        input clk,
+        input reset);
+
+        reg q;
+        always @(posedge clk) begin
+            if(reset)
+                q <= 1'b0;
+            else begin
+                case({J,K})
+                    2'b0_0:     q <= q;
+                    2'b0_1:     q <= 0;
+                    2'b1_0:     q <= 1;
+                    2'b1_1:     q <= ~q;
+                endcase
+            end
+        end
+    endmodule
+
+    module counter4bit( 
+        output [3:0] q, 
+        input clk,
+        input reset);
+
+        wire q0q1;
+        assign q0q1 = q[0] & q[1];
+
+        wire q0q1q2;
+        assign q0q1q2 = q0q1 & q[2];
+
+        jkFlipFlop f0(q[0], 1'b1, 1'b1, clk, reset);
+        jkFlipFlop f1(q[1], q[0], q[0], clk, reset);
+        jkFlipFlop f2(q[2], q0q1, q0q1, clk, reset);
+        jkFlipFlop f3(q[3], q0q1q2, q0q1q2, clk, reset);
+
+    endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab3_dff_async_clear">
+			<text>// module d flip flop with synchronus clear
+// clock is negative edge triggered and clear signal is active low
+`ifndef DFF_ASYNC_CLEAR
+`define DFF_ASYNC_CLEAR
+	module dff_async_clear(d,clearb, clock, q);
+		input d, clearb, clock;
+		output q;
+		reg q;
+		
+		always @(posedge clock or negedge clearb)
+			begin
+				if(clearb)
+					q = d;
+				else
+					q = 1'b0;
+			end
+	endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab3_dff_sync_clear">
+			<text>`ifndef DFF_SYNC_CLEAR
+`define DFF_SYNC_CLEAR
+// module d flip flop with synchronus clear
+// clock is positive edge triggered
+	module dff_sync_clear(d,clearb, clock, q);
+		input d, clearb, clock;
+		output q;
+		reg q;
+		
+		always @(posedge clock)
+			begin
+				if(clearb)
+					q = d;
+				else
+					q = 1'b0;
+			end
+	endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lsb3_fulladder1bit">
+			<text>`ifndef FULLADDER_1BIT
+`define FULLADDER_1BIT
+    module fullAdder1bit(
+        input a,
+        input b,
+        input cin,
+        output sum,
+        output cout);
+
+        // initial
+        //     $display("FA_IP = ")
+
+        // initial
+        //     $monitor("fa i/p: ",cin,b,a," fa o/p: ",cout,sum);
+        
+        assign {cout,sum} = a+b+cin;
+
+
+    endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab3_mealy">
+			<text>
+				<![CDATA[module mealy(inp,rst,clk,outp);
+	input inp,rst,clk;
+	output outp;
+	reg outp;
+	reg [1:0] state;
+	
+	always @(posedge clk , posedge rst)
+	begin
+		if(rst)
+		begin
+			state <= 2'b00;
+			outp <= 0;
+		end
+		else
+		begin
+			case( state )
+			2'b00:
+				begin
+					if(inp)
+					begin
+						state <= 2'b01;
+						outp <= 0;
+					end
+					else
+					begin
+						state <= 2'b10;
+						outp <= 0;
+					end
+				end
+			2'b01:
+				begin
+					if(inp)
+					begin
+						state <= 2'b00;
+						outp <= 1;
+					end
+					else
+					begin
+						state <= 2'b10;
+						outp <= 0;
+					end
+				end
+			2'b10:
+				begin
+					if(inp)
+					begin
+						state <= 2'b01;
+						outp <= 0;
+					end
+					else
+					begin
+						state <= 2'b00;
+						outp <= 1;
+					end
+				end
+			default:
+				begin
+					state <= 2'b00;
+					outp <= 0;
+				end
+			endcase
+		end
+	end
+endmodule
+]]>
+			</text>
+		</p>
+		<p n="xv_lab3_mealy_test">
+			<text>
+				<![CDATA[`include "mealy.v"
+module mealy_test;
+	reg clk,rst,inp;
+	wire outp;
+	reg[15:0] sequence;
+	integer i;
+	
+	mealy duty(inp,rst,clk,outp);
+	
+	always @(posedge clk or posedge rst)
+	begin
+		$display(" State = ",duty.state," Input = ", inp, " Output = " , outp, " Clock = ", clk, " rst = ",rst ," time =",$time);
+	end
+
+	initial
+	begin
+		clk = 0;
+		rst = 1;
+		sequence = 16'b0101_0111_0111_0010;
+		#5 rst <= 0;
+		
+		for( i=0; i<=15; i = i+1)
+		begin
+			inp = sequence[i];
+			#2 clk = 1;
+			#2 clk = 0;
+		end
+		
+		testing;
+	end
+		
+		task testing;
+			for( i = 0; i <= 15; i = i + 1)
+			begin
+				inp = $random %% 2;
+				#2 clk = 1;
+				#2 clk = 0;
+			end	
+		endtask
+endmodule
+	
+	
+	
+]]>
+			</text>
+		</p>
+		<p n="xv_lab3_seqdetect">
+			<text>
+				<![CDATA[`ifndef SEQ_DETECT
+`define SEQ_DETECT
+module seqDetect( 
+    input inSeq,
+    input clk,
+    input reset);
+
+    parameter  s0 = 3'b000,
+               s1 = 3'b001,
+               s2 = 3'b010,
+               s3 = 3'b011,
+               s4 = 3'b100;
+    
+    reg [2:0] state;
+
+    always @(posedge clk or posedge reset) begin
+        if( reset )
+            state <= s0;
+        else begin
+            // $display("current state = %%b ",state);
+            // $display("input:= ", inSeq);
+            case (state)
+                s0 : begin
+                    // $display("State0");
+                    if (inSeq) 
+                        state <= s1;
+                    else
+                        state <= s0;
+                end
+                s1 : begin
+                    // $display("State1");
+                    if (inSeq) 
+                        state <= s1;
+                    else 
+                        state <= s2;
+                end
+                s2 : begin
+                    // $display("State2");
+                    if (inSeq) 
+                        state <= s3;
+                    else 
+                        state <= s0;
+                end
+                s3 : begin
+                    // $display("State3");
+                    if (inSeq) 
+                        state <= s4;
+                    else 
+                        state <= s2;
+                end
+                s4 : begin
+                    // $display("State4");
+                    $display("Sequence detected");
+                    if (inSeq) 
+                        state <= s1;
+                    else 
+                        state <= s2;
+                end
+                
+                default: begin
+                    $display("Default state");
+                    state <= s0;
+                end
+            endcase 
+        end
+    end
+endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab3_serialadder_4bit">
+			<text>
+				<![CDATA[`include "shift_reg_4bit_lab.v"     //in, en, q, clk
+`include "fullAdder1bit.v"
+`include "dff_async_clear.v"        //d, clear, clk, q
+
+module serialAdder_4bit( 
+    output [3:0] serOut1,
+    output sm,
+    input serInp,
+    input shiftCtrl,
+    input clear,
+    input clk);
+
+    wire cout, coutLatched, sm;
+    wire [3:0] serOut1, serOut2;
+
+    shift_reg_4bit_lab sreg1( sm, shiftCtrl, serOut1 , clk );
+    shift_reg_4bit_lab sreg2( serInp, shiftCtrl, serOut2 , clk );
+    
+    fullAdder1bit fa( serOut1[0] , serOut2[0] , coutLatched, sm, cout );
+    
+    dff_async_clear dff(cout, clear, shiftCtrl & clk, coutLatched);
+
+
+endmodule
+]]>
+			</text>
+		</p>
+		<p n="xv_lab3_shift_reg_4bit">
+			<text>`include "dff_sync_clear.v" //dff_sync_clear(d,clearb, clock, q)
+module shift_reg_4bit(d, clk, rst, q);
+
+    input d, clk, rst;
+    output [3:0] q;
+    wire rst;
+
+    dff_sync_clear df3( d ,rst ,clk , q[3] );
+    dff_sync_clear df2( q[3], rst, clk, q[2] );
+    dff_sync_clear df1( q[2], rst, clk, q[1] );
+    dff_sync_clear df0( q[1], rst, clk, q[0] );
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab3_shift_reg_4bit_lab">
+			<text>`ifndef SHIFT_REG_4BIT_L
+`define SHIFT_REG_4BIT_L
+module shift_reg_4bit_lab( in, en, Q, clk );
+
+    parameter n = 4;
+    input in, en, clk;
+    output [n-1:0] Q;
+    reg [n-1:0] Q;
+
+    initial 
+        Q = 4'b0;
+    
+    always @(posedge clk) begin
+        if(en)
+        begin
+            Q = {in, Q[n-1:1]};
+        end
+    end
+endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab3_tb_counter4bit">
+			<text>`include "counter4bit.v"    //q,clk
+
+module tb_counter4bit();
+
+    wire [3:0] q;
+    reg clk, reset;
+
+    initial
+        clk = 0;
+    
+    always 
+    #2 clk = ~clk;
+
+    initial begin
+        $monitor("q = %%b ", q, " clk = %%b ", clk," reset = %%b ", reset);
+    end
+    
+    counter4bit ctr(q, clk, reset);
+
+    initial begin
+        reset = 1'b1;
+        #4 reset = 1'b0;
+        // #10 reset = 1'b1;
+        #64 $finish;
+    end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab3_tb_serialadder4bit">
+			<text>
+				<![CDATA[`include "serialAdder_4bit.v"       //Acc, SI, ShftCtrl, clr, clk
+module tb_serialAdder4bit();
+    
+    wire [3:0] Acc;
+    wire SI2;
+    reg SI;
+    reg clr, clk, ShftCtrl;
+    integer i;
+
+
+    serialAdder_4bit sa( Acc,SI2, SI, ShftCtrl, clr, clk );
+
+    always @(posedge clk)   begin
+        $display("ShftCtrl = %%b ", ShftCtrl, " SI = %%b ", SI," SI2:= ",SI2 ," Acc = %%b ", Acc, "Clk: = ",clk," dff_out = %%b ", sa.dff.q, "time = ", $time);
+    end
+
+    reg [19:0] sequence;
+
+    initial begin
+        
+        ShftCtrl = 1;
+        clk = 1'b0;
+        clr = 1'b0;
+        #2 clr = 1'b1;
+        sequence = 20'b0100_0011_0010_0001_0000;
+
+        for(i=0; i<24; i= i+1) begin
+                if( i<20 )
+                    SI = sequence[i];
+            #2  clk = 1'b1;
+            #2  clk = 1'b0;
+        end
+
+    end
+
+endmodule
+]]>
+			</text>
+		</p>
+		<p n="xv_lab3_test_dff_sync">
+			<text>`include "dff_sync_clear.v"
+module test_dff_sync;
+	reg d, clk, rst;
+	wire q;
+	
+	always @(posedge clk)
+		begin
+			$monitor("d = %%b, clk = %%b, rst = %%b, q = %%b", d,clk,rst,q);
+		end
+	
+	initial begin
+		forever begin
+				clk = 0;
+			#5	clk = 1;
+			#5	clk = 0;
+		end
+	end
+	initial begin
+		d = 0; rst = 1;
+		#4 d = 1; rst = 0;
+		#50 d = 1; rst = 1;
+		#20 d = 0; rst = 0;
+	end
+	
+	dff_sync_clear dff(d,rst,clk,q);
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab3_test_seqdetect">
+			<text>
+				<![CDATA[`include "seqDetect.v"
+
+module test_seqDetect();
+
+    reg inSeq, clk, reset;
+    wire [2:0] state;
+    integer i;
+
+    always @(posedge clk)
+        $display("inSeq = ", inSeq, " reset = ", reset);
+
+    seqDetect sq(inSeq, clk, reset);
+
+    reg [0:15] sequence;
+
+    initial begin
+        clk = 1'b0;
+        reset = 1'b0;
+        reset = 1'b1;
+        sequence = 16'b1011_0000_1011_0000;
+        #5 reset = 1'b0;
+
+        for (i = 0; i < 16 ; i = i+1 ) begin
+             inSeq = sequence[i];
+            #2 clk = 1'b1;
+            #2 clk = 1'b0;
+        end
+    end
+
+endmodule
+]]>
+			</text>
+		</p>
+		<p n="xv_lab3_test_shift_reg_4bit">
+			<text>
+				<![CDATA[`include "shift_reg_4bit.v"     //shift_reg_4bit(d, clk, rst, q);
+
+module test_shift_reg_4bit();
+
+    reg clk, d, rst;
+    reg [0:15] sequence;
+    wire [3:0] outp;
+    integer i;
+
+    shift_reg_4bit shr( d, clk, rst, outp );
+
+    initial 
+        begin
+
+            d = 0;
+            rst = 0;
+            sequence = 16'b0101_0001_1111_1011;
+
+            for (i = 0; i <= 15 ; i = i + 1 ) begin
+                 d = sequence[i];
+                 #2 clk = 1;
+                 #2 clk = 0;
+            end
+        end
+
+    always @(posedge clk  or negedge rst) begin
+        $display( "d = ",d," clk =  ", clk, " outp = %%b ",outp , " time = ", $time);
+    end
+endmodule
+]]>
+			</text>
+		</p>
+		<p n="xv_lab3_test_shift_reg_4bit_lab">
+			<text>`include "shift_reg_4bit_lab.v"     //shift_reg_4bit_lab( in, en, Q, clk );
+module test_shift_reg_4bit_lab();
+
+    reg en, in , clk; 
+    wire [3:0] Q;
+
+    shift_reg_4bit_lab shr(in, en, Q, clk);
+
+    initial 
+        clk = 0;
+    
+    always
+        #2 clk = ~clk;
+    
+    initial 
+        $monitor(" in = ", in ," en = ", en,  " clk = ",clk, " Q = %%b", Q);
+    
+    initial 
+        begin
+            in = 0;     en = 0;
+           #4 in = 1;     en = 1;
+           #4 in = 1;     en = 0;
+           #4 in = 0;     en = 1;
+           #5 $finish;
+        end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_alu">
+			<text>`ifndef ALU
+`define ALU
+    `include "fulladder_32bit.v"       //(sum,cout,num1, num2,cin );
+    `include "module_32bitAND.v"        //module_32bitAND( outp, in1, in2 );
+    `include "module_32bitOR.v"         //module_32bitOR( outp, in1, in2 );
+    `include "mux_2to1_32bit.v"     //mux_2to1_32bit( outp, inp1, inp2, sel );
+    `include "mux_3to1_32bit.v"     //mux_3to1_32bit( outp, inp1, inp2, inp3, sel );
+
+    module alu( input [31:0] a, input [31:0] b, input cin, input binv, input [1:0] oper, output [31:0] result, output cout );
+
+        wire [31:0] bbar, b_sel_bbar, a_and_b, a_or_b, a_addsub_b;
+
+        assign bbar = ~b;
+
+        mux_2to1_32bit mux2to1_op(b_sel_bbar, b, bbar, binv );
+        module_32bitAND and_op( a_and_b, a, b_sel_bbar );
+        module_32bitOR or_op( a_or_b, a, b_sel_bbar );
+        fulladder_32bit fa_outp( a_addsub_b, cout, a, b_sel_bbar, cin );
+        mux_3to1_32bit mux3to1_op( result, a_and_b, a_or_b, a_addsub_b, oper );
+
+    endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab4_alucu">
+			<text>
+				<![CDATA[module aluCU( oper, aluOp, funcfield );
+    
+    input [1:0] aluOp;
+    input [3:0] funcfield;
+    output [2:0] oper;
+
+    assign oper[0] = (funcfield[0] | funcfield[3]) & aluOp[1];
+    assign oper[1] = ((~aluOp[1]) | (~funcfield[2]));
+    assign oper[2] = (aluOp[0] | ( aluOp[1] & funcfield[1] ));
+
+endmodule
+]]>
+			</text>
+		</p>
+		<p n="xv_lab4_fulladder_32bit">
+			<text>module fulladder_32bit( output[31:0] sum, output cout, input [31:0] num1, input [31:0] num2, input cin );
+
+    assign {cout,sum} = num1+num2+cin;
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_maincu">
+			<text>
+				<![CDATA[`ifndef MAIN_CU
+`define MAIN_CU
+    module mainCU ( RegDest, ALUSrc, MemToReg, RegWrite, MemRead, MemWrite, Branch, ALUOp0, ALUOp1, op );
+
+        input [5:0] op;
+        output RegDest, ALUSrc, MemToReg, RegWrite, MemRead, MemWrite, Branch, ALUOp0, ALUOp1;
+
+        wire rformat, lw, sw, beq;
+
+        assign rformat = ~(op[0] | op[1] | op[2] | op[3] | op[4] | op[5]);
+        assign lw = (op[0] & op[1] & (~op[2]) & (~op[3]) & (~op[4]) & op[5]);
+        assign sw = (op[0] & op[1] & (~op[2]) & op[3] & (~op[4]) & op[5]);
+        assign beq = ((~op[0]) & (~op[1]) & op[2] & (~op[3]) & (~op[4]) & (~op[5]));
+
+        assign RegDest = rformat;
+        assign ALUSrc = lw | sw;
+        assign MemToReg = lw;
+        assign RegWrite = rformat | lw;
+        assign MemRead = lw;
+        assign MemWrite = sw;
+        assign Branch = beq;
+        assign ALUOp0 = rformat;
+        assign ALUOp1 = beq;
+
+    endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab4_module_32bitand">
+			<text>
+				<![CDATA[module module_32bitAND( outp, in1, in2 );
+    
+    input [31:0] in1, in2;
+    output [31:0] outp;
+    assign outp = in1 & in2;
+
+endmodule
+]]>
+			</text>
+		</p>
+		<p n="xv_lab4_module32bitor">
+			<text>module module_32bitOR( outp, in1, in2 );
+    
+    input [31:0] in1, in2;
+    output [31:0] outp;
+    assign outp = in1 | in2;
+
+endmodule
+
+			</text>
+		</p>
+		<p n="xv_lab4_mux_2to1">
+			<text>
+				<![CDATA[`ifndef MUX_2to1
+`define MUX_2to1
+module mux_2to1( out, sel, in1, in2 );
+    
+    output out;
+    input in1, in2;
+    input sel;
+    wire not_sel, and1, and2;
+
+    // out = (~sel & in1) | (sel & in2);
+    not( not_sel, sel);
+    and( and1, not_sel, in1);
+    and( and2, sel, in2);
+    or( out, and1, and2);
+
+endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab4_mux_2to1_32bit">
+			<text>
+				<![CDATA[`ifndef MUX_32bit
+`define MUX_32bit
+    `include "mux_2to1_8bit.v"          //mux_2to1_8bit( outp, inp1, inp2, sel );
+    module mux_2to1_32bit( outp, inp1, inp2, sel );
+
+        input [31:0] inp1, inp2;
+        output [31:0] outp;
+        input sel;
+
+        genvar j;
+
+        generate for(j = 0; j < 4; j = j+1) begin: mux_loop
+                mux_2to1_8bit mx ( outp[ 8*j+7 : 8*j] , inp1[ 8*j+7 : 8*j], inp2[ 8*j+7 : 8*j], sel);
+            end
+        endgenerate
+
+    endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab4_mux_2to1_8bit">
+			<text>
+				<![CDATA[`ifndef MUX_8bit
+`define MUX_8bit
+`include "mux_2to1.v"           //mux2to1( out, sel, in1, in2 );
+    module mux_2to1_8bit( outp, inp1, inp2, sel );
+        input [7:0] inp1, inp2;
+        input sel;
+        output [7:0] outp;
+
+        genvar j;
+
+        generate for (j = 0; j<=7; j = j+1) begin: mux_loop
+            mux_2to1 m1(outp[j], sel, inp1[j], inp2[j]);
+        end
+        endgenerate
+    endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab4_mux_3to1_32bit">
+			<text>`include "mux_2to1_32bit.v"             //mux_2to1_32bit( outp, inp1, inp2, sel );
+module mux_3to1_32bit( outp, inp1, inp2, inp3, sel );
+    
+    input [31:0] inp1,inp2,inp3;
+    output [31:0] outp;
+    wire [31:0] temp1, temp2;
+    input [1:0] sel;
+
+    mux_2to1_32bit m1( temp1, inp1, inp2, sel[0] );
+    mux_2to1_32bit m2( temp2, inp3, 32'b0, sel[0] );
+    mux_2to1_32bit m3( outp, temp1, temp2, sel[1] );
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_tb_alucu">
+			<text>`include "aluCU.v"          //( oper, aluOp, funcfield );
+module tb_aluCU();
+
+    reg [1:0] aluOp;
+    reg [3:0] funcField;
+    wire [2:0] oper;
+
+    initial 
+        $monitor("oper = %%b ", oper, "aluOp = %%b ",aluOp, "funcField = %%b ", funcField);
+
+    aluCU acu(oper, aluOp, funcField);
+
+    initial begin
+             aluOp = 2'b00;
+             funcField = 4'b0000;
+        #100 aluOp = 2'b01;
+        #200 aluOp = 2'b10;
+        #300 funcField = 4'b0000;
+        #400 funcField = 4'b0010;
+        #500 funcField = 4'b0100;
+        #600 funcField = 4'b0101;
+        #700 funcField = 4'b1010;
+    end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_tbalu">
+			<text>`include "alu.v"
+module tbALU();
+    reg Binvert, Carryin;
+    reg [1:0] Operation;
+    reg [31:0] a,b;
+    wire [31:0] Result;
+    wire CarryOut;
+    alu al (a,b,Carryin,Binvert,Operation,Result,CarryOut);
+
+    initial 
+        $monitor("a: %%b ",a, " b: %%b ", b," op: %%b ", Operation,"Binvert: %%b ",Binvert, "Res: %%b ", Result);
+
+    initial begin
+        a=32'ha5a5a5a5;
+        b=32'h5a5a5a5a;
+        Operation=2'b00;
+        Binvert=1'b0;
+        Carryin=1'b0; //must perform AND resulting in zero
+        #100 Operation=2'b01; //OR
+        #100 Operation=2'b10; //ADD
+        #100 Binvert=1'b1; //SUB
+        #200 $finish;
+    end
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_test_32bitadder">
+			<text>`include "fulladder_32bit.v"
+module test_32bitadder();
+
+    reg [31:0] in1, in2;
+    reg cin;
+
+    wire [31:0] sm;
+    wire cout;
+
+    fulladder_32bit fa1( sm, cout, in1, in2, cin );
+
+    initial
+        $monitor(" in1 %%b ", in1, "in2: %%b ", in2, "sm: %%b ", sm, "cout: ", cout);
+
+    initial begin
+        in1 = 32'hFFFFFF8E;
+        in2 = 32'hFFFFFF56;
+        cin = 0;
+    end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_test_32bitand">
+			<text>`include "module_32bitAND.v"
+module test_32bitAND();
+    
+    reg [31:0] inp1, inp2;
+    wire [31:0] out;
+    module_32bitAND and32bit( out, inp1, inp2 );
+
+    initial
+        $monitor("in1 - %%b",inp1," in2 - %%b ", inp2 ," out - %%b ",out);
+
+    initial begin
+        inp1 = 32'h3FFFFFFF;
+        inp2 = 32'h5A000000;
+
+        #100 inp1 = 32'hFFFFFFFF;
+        #1000 $finish;
+    end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_test_32bitor">
+			<text>`include "module_32bitOR.v"
+module test_32bitOR();
+    
+    reg [31:0] inp1, inp2;
+    wire [31:0] out;
+    module_32bitOR or32bit( out, inp1, inp2 );
+
+    initial
+        $monitor("in1 - %%b",inp1," in2 - %%b ", inp2 ," out - %%b ",out);
+
+    initial begin
+        inp1 = 32'h3FFFFFFF;
+        inp2 = 32'h5A000000;
+
+        #100 inp1 = 32'hFFFFFFFF;
+        #1000 $finish;
+    end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_test_maincu">
+			<text>`include "mainCU.v"
+module test_mainCU();
+    
+    reg [5:0] opcode;
+    wire RegDest, ALUSrc, MemToReg, RegWrite, MemRead, MemWrite, Branch, ALUOp0, ALUOp1;
+    mainCU mcu(RegDest, ALUSrc, MemToReg, RegWrite, MemRead, MemWrite, Branch, ALUOp0, ALUOp1, opcode);
+
+    initial
+    $monitor("Opcode: %%b ",opcode," RegDest = %%b ",RegDest," ALUSrc = %%b ",ALUSrc," MemToReg = %%b ",MemToReg, " RegWrite = %%b ",RegWrite," MemRead = %%b ",MemRead," MemWrite = %%b ",MemWrite," Branch = %%b ",Branch," ALUOp0 = %%b ",ALUOp0," ALUOp1 = %%b",  ALUOp1);
+
+    always @(opcode) begin
+        $display("Active Signals : ");
+        if(RegDest)
+            $display("RegDest");
+        if(ALUSrc)
+            $display("ALUSrc");
+        if(MemToReg)
+            $display("MemToReg");
+        if(RegWrite)
+            $display("RegWrite");
+        if(MemRead)
+            $display("MemRead");
+        if(MemWrite)
+            $display("MemWrite");
+        if(Branch)
+            $display("Branch");
+        if(ALUOp0)
+            $display("ALUOp0");
+        if(ALUOp1)
+            $display("ALUOp1");
+    end
+
+
+    initial begin
+             opcode = 6'b000000;
+        #500 opcode = 6'b100011;
+        #1000 opcode = 6'b101011;
+        #1500 opcode = 6'b000100;
+        #2000 $finish;
+    end
+
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_test_mux_2to1_32bit">
+			<text>`include "mux_2to1_32bit.v"           //mux_2to1_32bit( outp, inp1, inp2, sel )
+module test_mux_2to1_32bit();
+
+    reg [31:0] inp1, inp2;
+    reg sel;
+    wire [31:0] outp;
+
+    mux_2to1_32bit mx(outp, inp1, inp2, sel);
+
+    initial begin
+        $monitor(" inp1: %%b ", inp1, " inp2: %%b ", inp2," sel: ",sel, " outp: %%b ",outp);
+    end
+    
+    initial begin
+        inp1 = 32'b00000000000000000000000000000000;
+        inp2 = 32'b11111111111111111111111111111111;
+        
+        sel = 1'b0;
+        #100 sel = 1'b1;
+        #1000 $finish;
+    end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_test_mux_2to1_8bit">
+			<text>`include "mux_2to1_8bit.v"            //mux_2to1_8bit( outp, inp1, inp2, sel );
+module test_mux_2to1_8bit();
+    reg [7:0] inp1, inp2;
+    reg sel;
+    wire [7:0] outp;
+
+    mux_2to1_8bit mx(outp, inp1, inp2, sel);
+
+    initial begin
+        inp1=8'b10101010;
+        inp2=8'b01010101;
+        sel=1'b0;
+        #100 sel=1'b1;
+        #1000 $finish;
+    end
+
+    initial 
+        $monitor(" inp1 = %%b ", inp1, " inp2 = %%b ", inp2, " sel = ", sel, " outp = %%b", outp);
+        
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab4_test_mux_3to1_32bit">
+			<text>`include "mux_3to1_32bit.v"         //mux3to1_32bit( outp, inp1, inp2, inp3, sel )
+module test_mux_3to1_32bit();
+
+    reg [31:0] in1, in2, in3;
+    reg [1:0] sel;
+    wire [31:0] outp;
+
+    mux_3to1_32bit mx( outp, in1, in2, in3, sel );
+    
+    initial begin
+        $monitor(" in1: %%b",in1," in2: %%b", in2," in3: %%b", in3," sel: %%b", sel," out: %%b", outp);
+    end
+    
+    initial begin
+        in1 = 32'b0;
+        in2 = 32'b11111111111111111111111111111111;
+        in3 = {16'b0, 16'b1111111111111111};
+
+        sel = 2'b00;
+        #10 sel = 2'b01;
+        #100 sel = 2'b10;
+        #500 sel = 2'b11;
+
+        #1000 $finish;
+
+    end
+
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab5_decoder_2to4">
+			<text>`ifndef DECODER_2TO4
+`define DECODER_2TO4
+    module decoder_2to4(
+        output reg [3:0] register,
+        input [1:0] regNo);
+
+        always @(regNo) begin
+            case (regNo)
+                2'b00 : 
+                    register = 4'b0001;
+                2'b01 : 
+                    register = 4'b0010;
+                2'b10 : 
+                    register = 4'b0100;
+                2'b11 : 
+                    register = 4'b1000;
+            endcase
+        end
+        
+    endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab5_mux_4to1">
+			<text>`ifndef MUX_4to1
+`define MUX_4to1
+    module mux_4to1(
+        output [31:0] regData,
+        input [31:0] q0,
+        input [31:0] q1,
+        input [31:0] q2,
+        input [31:0] q3,
+        input [1:0] regNo);
+
+        reg regData;
+
+        always @(regNo) begin
+            case (regNo)
+                2'b00: 
+                    regData = q0;
+                2'b01: 
+                    regData = q1;
+                2'b10: 
+                    regData = q2;
+                2'b11: 
+                    regData = q3;
+            endcase
+        end
+    endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab5_reg_32bit">
+			<text>
+				<![CDATA[`ifndef REG_32BIT
+`define REG_32BIT
+`include "../Lab3/dff_sync_clear.v"         // d, clr, clk ,q
+    module reg_32bit(
+        output [31:0] q,
+        input [31:0] d,
+        input clk,
+        input reset);
+
+        genvar num;
+
+        generate for (num = 0 ; num < 32 ; num = num + 1) begin: ffs
+                dff_sync_clear dff( d[num], reset, clk, q[num] );
+            end
+        endgenerate
+    endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab5_regfile">
+			<text>
+				<![CDATA[`ifndef REGFILE
+`define REGFILE
+`include "reg_32bit.v"      //q,d,clk,reset
+`include "mux_4to1.v"       //regData,q0,q1,q2,q3,regNo
+`include "decoder_2to4.v"   //register, regNo
+
+    module regFile(
+        input clk,
+        input reset,
+        input [1:0] readReg1,
+        input [1:0] readReg2,
+        input [31:0] writeData,
+        input regWrite,
+        input  [1:0] writeReg,
+        output [31:0] readData1,
+        output [31:0] readData2);
+        genvar j;
+
+        wire [3:0][31:0] regOut;
+        reg [31:0] regIn;
+        wire [3:0] decoderOut;
+        wire [3:0] regClk;
+
+        assign regClk[0] = (clk & regWrite & decoderOut[0]);
+        assign regClk[1] = (clk & regWrite & decoderOut[1]);
+        assign regClk[2] = (clk & regWrite & decoderOut[2]);
+        assign regClk[3] = (clk & regWrite & decoderOut[3]);
+
+        reg_32bit r0( regOut[0], regIn, regClk[0], reset );
+        reg_32bit r1( regOut[1], regIn, regClk[1], reset );
+        reg_32bit r2( regOut[2], regIn, regClk[2], reset );
+        reg_32bit r3( regOut[3], regIn, regClk[3], reset );
+
+        mux_4to1 m1( readData1, regOut[0] , regOut[1] , regOut[2], regOut[3], readReg1 );
+        mux_4to1 m2( readData2, regOut[0] , regOut[1] , regOut[2] , regOut[3], readReg2 );
+        decoder_2to4 dec1( decoderOut, writeReg );        
+
+    endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab5_tb_reg32bit">
+			<text>
+				<![CDATA[`include "reg_32bit.v"
+module tb_reg32bit();
+
+    wire [31:0] q;
+    reg [31:0] d;
+    reg clk, reset;
+    reg_32bit register( q, d, clk, reset);
+
+    always @(clk)
+        #5 clk <= ~clk;
+    
+    initial
+        $monitor("clk: ",clk," Reset = ", reset, " D = %%b ", d, "Q = %%b ",q," time = ", $time);
+
+    initial begin
+        clk = 1'b1;
+        reset = 1'b0;
+        #20 reset = 1'b1;
+        #20 d = 32'hAFAFAFAF;
+        #200 $finish;
+    end
+
+endmodule
+]]>
+			</text>
+		</p>
+		<p n="xv_lab6_adder_32bit">
+			<text>`include "ADDER_8bit.v"
+
+module adder_32bit(cfinal,sum,num1,num2,cin);
+	input [31:0] num1,num2;
+	input cin;
+	output [31:0] sum;
+	output cfinal;
+	wire cout[3:0];
+	
+	ADDER_8bit add1(cout[0],sum[7:0],num1[7:0],num2[7:0],cin);
+	ADDER_8bit add2(cout[1],sum[15:8],num1[15:8],num2[15:8],cout[0]);
+	ADDER_8bit add3(cout[2],sum[23:16],num1[23:16],num2[23:16],cout[1]);
+	ADDER_8bit add4(cout[3],sum[31:24],num1[31:24],num2[31:24],cout[2]);
+	
+	assign cfinal = cout[2];
+	
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab6_adder_8bit">
+			<text>`include "FADDER.v"
+module ADDER_8bit(cfinal,sum,num1,num2,cin);
+	
+	input [7:0] num1,num2;
+	output [7:0] sum;
+	wire [7:0] cout;
+	input cin;
+	output cfinal;
+	
+		FADDER add0(sum[0],cout[0],num1[0],num2[0],cin);
+		FADDER add1(sum[1],cout[1],num1[1],num2[1],cout[0]);
+		FADDER add2(sum[2],cout[2],num1[2],num2[2],cout[1]);
+		FADDER add3(sum[3],cout[3],num1[3],num2[3],cout[2]);
+		FADDER add4(sum[4],cout[4],num1[4],num2[4],cout[3]);
+		FADDER add5(sum[5],cout[5],num1[5],num2[5],cout[4]);
+		FADDER add6(sum[6],cout[6],num1[6],num2[6],cout[5]);
+		FADDER add7(sum[7],cout[7],num1[7],num2[7],cout[6]);
+		
+	assign cfinal = cout[7];
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab6_alu">
+			<text>`ifndef ALU
+`define ALU
+    `include "fulladder_32bit.v"       //(sum,cout,num1, num2,cin );
+    `include "module_32bitAND.v"        //module_32bitAND( outp, in1, in2 );
+    `include "module_32bitOR.v"         //module_32bitOR( outp, in1, in2 );
+    `include "mux_2to1_32bit.v"     //mux_2to1_32bit( outp, inp1, inp2, sel );
+    `include "mux_3to1_32bit.v"     //mux_3to1_32bit( outp, inp1, inp2, inp3, sel );
+
+    module alu( input [31:0] a, input [31:0] b, input cin, input binv,input reset, input [1:0] oper, output [31:0] result, output cout );
+
+        wire [31:0] bbar, b_sel_bbar, a_and_b, a_or_b, a_addsub_b;
+
+        assign bbar = ~b;
+
+        mux_2to1_32bit mux2to1_op(b_sel_bbar, b, bbar, binv );
+        module_32bitAND and_op( a_and_b, a, b_sel_bbar );
+        module_32bitOR or_op( a_or_b, a, b_sel_bbar );
+        fulladder_32bit fa_outp( a_addsub_b, cout, a, b_sel_bbar, cin );
+        mux_3to1_32bit mux3to1_op( result, a_and_b, a_or_b, a_addsub_b, oper );
+
+    endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab6_alucu">
+			<text>
+				<![CDATA[module aluCU( oper, aluOp, funcfield );
+    
+    input [1:0] aluOp;
+    input [3:0] funcfield;
+    output [2:0] oper;
+
+    assign oper[0] = (funcfield[0] | funcfield[3]) & aluOp[1];
+    assign oper[1] = ((~aluOp[1]) | (~funcfield[2]));
+    assign oper[2] = (aluOp[0] | ( aluOp[1] & funcfield[1] ));
+
+endmodule
+]]>
+			</text>
+		</p>
+		<p n="xv_lab6_dm">
+			<text>
+				<![CDATA[`ifndef DM
+`define DM	
+	module DM(
+	input [4:0] addr,
+	input [31:0] data,
+	input reset,
+	input memWrite,
+	input memRead,
+	output [31:0] readData);
+		
+		reg [31:0] mem [0:31];
+		
+		always @(memWrite)
+			if(~memRead)
+				mem[addr] = data;
+			
+		always @(memRead)
+			readData = mem[addr];
+		
+		always @(reset) begin
+			if(reset) begin
+				for( j=0; j<32; j = j+1) begin
+					data[j] = 32'd0;
+				end
+			end
+		end
+		
+	endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab6_im">
+			<text>`ifndef IM
+`define IM
+	module im(
+		input [4:0] pc,
+		input reset,
+		output [31:0] instr);
+		
+		reg [31:0] mem[0:31];		//32 mem locns each 32 bit wide
+		
+		always @(pc)
+			instr = mem[pc];
+			
+		always @(reset) begin
+			if(reset) begin
+				
+				//initialization
+				mem[0] = 32'h00000200;
+				mem[1] = 32'h00000201;
+				mem[2] = 32'h00000204;
+				mem[3] = 32'h00000108;
+				
+			end
+		end	
+		
+	endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab6_reg_32bit">
+			<text>
+				<![CDATA[`ifndef REG_32BIT
+`define REG_32BIT
+`include "dff_sync_clear.v"         // d, clr, clk ,q
+    module reg_32bit(
+        output [31:0] q,
+        input [31:0] d,
+        input clk,
+        input reset);
+
+        genvar num;
+
+        generate for (num = 0 ; num < 32 ; num = num + 1) begin: ffs
+                dff_sync_clear dff( d[num], reset, clk, q[num] );
+            end
+        endgenerate
+    endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab6_regfile">
+			<text>
+				<![CDATA[`ifndef REGFILE
+`define REGFILE
+`include "reg_32bit.v"      //q,d,clk,reset
+`include "mux_4to1.v"       //regData,q0,q1,q2,q3,regNo
+`include "decoder_2to4.v"   //register, regNo
+
+    module regFile(
+        input clk,
+        input reset,
+        input [1:0] readReg1,
+        input [1:0] readReg2,
+        input [31:0] writeData,
+        input regWrite,
+        input  [1:0] writeReg,
+        output [31:0] readData1,
+        output [31:0] readData2);
+		
+        genvar j;
+
+        wire [3:0][31:0] regOut;
+        reg [31:0] regIn;
+        wire [3:0] decoderOut;
+        wire [3:0] regClk;
+
+        assign regClk[0] = (clk & regWrite & decoderOut[0]);
+        assign regClk[1] = (clk & regWrite & decoderOut[1]);
+        assign regClk[2] = (clk & regWrite & decoderOut[2]);
+        assign regClk[3] = (clk & regWrite & decoderOut[3]);
+
+        reg_32bit r0( regOut[0], regIn, regClk[0], reset );
+        reg_32bit r1( regOut[1], regIn, regClk[1], reset );
+        reg_32bit r2( regOut[2], regIn, regClk[2], reset );
+        reg_32bit r3( regOut[3], regIn, regClk[3], reset );
+
+        mux_4to1 m1( readData1, regOut[0] , regOut[1] , regOut[2], regOut[3], readReg1 );
+        mux_4to1 m2( readData2, regOut[0] , regOut[1] , regOut[2] , regOut[3], readReg2 );
+        decoder_2to4 dec1( decoderOut, writeReg );        
+
+    endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab6_scdatapath">
+			<text>`ifndef SC_DATAPATH
+`define SC_DATAPATH
+`include "im.v"
+`include "dm.v"
+`include "regFile.v"
+`include "alu.v"
+`include "aluCU.v"
+`include "mainCU.v"
+`include "signExt.v"
+`include "shifter.v"
+`include "fulladder_32bit.v"
+`include "mux_2to1_32bit.v"
+`include "reg_32bit.v"
+
+
+	module SCDatapath(
+		input reset,
+	);
+		
+		//PC with address 0
+		reg clk;
+		reg [4:0] pcOut;
+		reg5bit pc( 5'b0, clk, pcOut );
+		
+		//instr memory
+		im instrMem( pc, reset , instr );
+		
+	
+	endmodule
+	
+	module reg5bit(
+	input [4:0] inp,
+	input clk,
+	output [4:0] outp);
+		
+		always @(posedge clk)	
+			outp = inp;
+		
+	endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab6_shifter">
+			<text>`ifndef SHIFTER
+`define SHIFTER
+	module shifter(
+		input [31:0] inp,
+		output [31:0] outp);
+		
+		assign outp = {inp[29:0],2'b00};
+		
+	endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab6_signext">
+			<text>`ifndef SIGN_EXT
+`define SIGN_EXT
+		
+	module signExt(
+		input [15:0] inp,
+		output [31:0] seOutp);	
+		
+		assign seOutp = {16{inp[15]},inp[15:0]};
+		
+	endmodule
+`endif
+			</text>
+		</p>
+		<p n="xv_lab7_maincontroller">
+			<text>
+				<![CDATA[`ifndef MC
+`define MC
+	module mainController(
+		input [5:0] opcode ,
+		input [3:0] state,
+		output PCWrite ,
+		output PCWriteCond,
+		output IorD,
+		output MemRead,
+		output MemWrite,
+		output IRWrite,
+		output MemToReg,
+		output PCSource1,
+		output PCSource0,
+		output ALUOp1,
+		output ALUOp0,
+		output ALUSrcB1,
+		output ALUSrcB0,
+		output ALUSrcA,
+		output RegWrite,
+		output RegDst,
+		output [3:0] NS);
+		
+		wire [16:0] ands;
+		
+		assign ands[0] = ((~state[0]) & (~state[1]) & (~state[2]) & (~state[3]) );
+		assign ands[1] = ((state[0]) & (~state[1]) & (~state[2]) & (~state[3]) );
+		assign ands[2] = ((~state[0]) & (state[1]) & (~state[2]) & (~state[3]) );
+		assign ands[3] = ((state[0]) & (state[1]) & (~state[2]) & (~state[3]) );
+		assign ands[4] = ((~state[0]) & (~state[1]) & (state[2]) & (~state[3]) );
+		assign ands[5] = ((state[0]) & (~state[1]) & (state[2]) & (~state[3]) );
+		assign ands[6] = ((~state[0]) & (state[1]) & (state[2]) & (~state[3]) );
+		assign ands[7] = ((state[0]) & (state[1]) & (state[2]) & (~state[3]) );
+		assign ands[8] = ((~state[0]) & (~state[1]) & (~state[2]) & (state[3]) );
+		assign ands[9] = ((state[0]) & (~state[1]) & (~state[2]) & (state[3]) );
+		assign ands[10] = ((state[0]) & (~state[1]) & (~state[2]) & (~state[3]) & (~opcode[0]) & (opcode[1]) & (~opcode[2]) & (~opcode[3]) & (~opcode[4]) & (~opcode[5]) );
+		assign ands[11] = ((state[0]) & (~state[1]) & (~state[2]) & (~state[3]) & (~opcode[0]) & (~opcode[1]) & (opcode[2]) & (~opcode[3]) & (~opcode[4]) & (~opcode[5]) );
+		assign ands[12] = ((state[0]) & (~state[1]) & (~state[2]) & (~state[3]) & (~opcode[0]) & (~opcode[1]) & (~opcode[2]) & (~opcode[3]) & (~opcode[4]) & (~opcode[5]) );
+		assign ands[13] = ((~state[0]) & (state[1]) & (~state[2]) & (~state[3]) & (opcode[0]) & (opcode[1]) & (~opcode[2]) & (opcode[3]) & (~opcode[4]) & (opcode[5]) );
+		assign ands[14] = ((state[0]) & (~state[1]) & (~state[2]) & (~state[3]) & (opcode[0]) & (opcode[1]) & (~opcode[2]) & (~opcode[3]) & (~opcode[4]) & (opcode[5]) );
+		assign ands[15] = ((state[0]) & (~state[1]) & (~state[2]) & (~state[3]) & (opcode[0]) & (opcode[1]) & (~opcode[2]) & (opcode[3]) & (~opcode[4]) & (opcode[5]) );
+		assign ands[16] = ((~state[0]) & (state[1]) & (~state[2]) & (~state[3]) & (opcode[0]) & (opcode[1]) & (~opcode[2]) & (~opcode[3]) & (~opcode[4]) & (opcode[5]) );
+		
+		
+		assign PCWrite = ands[0] | ands[9];
+		assign PCWriteCond = ands[8];
+		assign IorD = ands[3] | ands[5];
+		assign MemRead = ands[0] | ands[3];
+		assign MemWrite = ands[5];
+		assign IRWrite = ands[0];
+		assign MemToReg = ands[4];
+		assign PCSource1 = ands[9] ;
+		assign PCSource0 = ands[8];
+		assign ALUOp1 = ands[6];
+		assign ALUOp0 = ands[8];
+		assign ALUSrcB1 = ands[1] | ands[2];
+		assign ALUSrcB0 = ands[0] | ands[1]; 
+		assign ALUSrcA = ands[2] | ands[6] | ands[8] ;
+		assign RegWrite = ands[4] | ands[7] ;
+		assign RegDst = ands[7] ;
+		
+		assign NS[3] = ands[10] | ands[11] ;
+		assign NS[2] = ands[12] | ands[13] | ands[3] | ands[6] ;
+		assign NS[1] = ands[12] | ands[14] | ands[15] | ands[16] | ands[6] ;
+		assign NS[0] = ands[16] | ands[13] | ands[10] | ands[6] | ands[0] ;
+		
+		
+	endmodule
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab7_tb_mc">
+			<text>`include "mainController.v"
+module tb_mc();
+
+	reg [5:0] opcode;
+	reg [3:0] state;
+	wire PCWrite ;
+	wire PCWriteCond;
+	wire IorD;
+	wire MemRead;
+	wire MemWrite;
+	wire IRWrite;
+	wire MemToReg;
+	wire PCSource1;
+	wire PCSource0;
+	wire ALUOp1;
+	wire ALUOp0;
+	wire ALUSrcB1;
+	wire ALUSrcB0;
+	wire ALUSrcA;
+	wire RegWrite;
+	wire RegDst;
+	wire [3:0] NS;
+
+	mainController mc(opcode, state, PCWrite , PCWriteCond, IorD, MemRead, MemWrite, IRWrite, MemToReg, PCSource1, PCSource0, ALUOp1, ALUOp0, ALUSrcB1, ALUSrcB0, ALUSrcA, RegWrite, RegDst, NS );
+	
+	initial 
+		$monitor("opcode: %%b ",opcode,"state: %%b ",state," PCWrite: %%b ", PCWrite ,"PCWriteCond : %%b ", PCWriteCond,"IorD: %%b ", IorD," MemRead: %%b ", MemRead," MemWrite: %%b ", MemWrite," IRWrite: %%b ", IRWrite," MemToReg: %%b ", MemToReg," PCSource1: %%b ", PCSource1," PCSource0: %%b ", PCSource0," ALUOp1: %%b ", ALUOp1," ALUOp0: %%b", ALUOp0, " ALUSrcB1: %%b ", ALUSrcB1," ALUSrcB0 : %%b ", ALUSrcB0," ALUSrcA: %%b ", ALUSrcA," RegWrite: %%b ", RegWrite," RegDst: %%b ", RegDst," NS: %%b", NS );
+	
+	initial begin
+		state = 4'b0000;
+		#5 state = 4'b0001;
+		#10 opcode = 6'h23;
+		#15 state = 4'b0010;
+	end
+endmodule
+			</text>
+		</p>
+		<p n="xv_lab8_pipelinealu">
+			<text>
+				<![CDATA[`ifndef PIPELINE_ALU
+`define PIPELINE_ALU
+`include "pipelineEnc.v"	
+
+	module pipelineAlu(
+		input [2:0] opcode,
+		input [3:0] srcA,
+		input [3:0] srcB,
+		output [3:0] aluOut
+	);
+	
+		wire [3:0] aluOut;
+		
+		assign aluOut = (opcode == `ADD) ? (srcA + srcB) :
+						(opcode == `SUB) ? (srcA - srcB) :
+						(opcode == `XOR) ? (srcA ^ srcB) :
+						(opcode == `OR) ? (srcA | srcB) :
+						(opcode == `AND) ? (srcA & srcB) :
+						(opcode == `NOR) ? ~(srcA | srcB) :
+						(opcode == `NAND) ? ~(srcA & srcB) :
+						(opcode == `XNOR) ? ~(srcA ^ srcB) : 4'b0;
+	
+	
+	endmodule
+	
+`endif
+]]>
+			</text>
+		</p>
+		<p n="xv_lab8_pipelinecircuit">
+			<text>`ifndef PIPELINE_CIRCUIT
+`define PIPELINE_CIRCUIT
+`include "pipelineParGen.v"
+`include "pipelineAlu.v"
+`include "pipelineEnc.v"
+		
+	module pipelineCircuit(
+		input [7:0] fncode,
+		input [3:0] srcA,
+		input [3:0] srcB,
+		output parity
+	);
+		/*
+			ToDo: Use these registers for implementation, Code not correct right now as per labsheet requirements.
+		*/
+		reg [10:0] IF_EXReg;
+		reg [3:0] EX_PARReg;
+		
+		wire [2:0] opcode;
+		wire [3:0] aluOut;
+		
+		pipelineEnc enc(fncode, opcode);
+		pipelineAlu alu(opcode, srcA, srcB, aluOut);
+		pipelineParGen pargen(aluOut, parity);
+		
+		
+	endmodule
+	
+	
+		
+`endif
+			</text>
+		</p>
+		<p n="xv_lab8_pipelineenc">
+			<text>`ifndef PIPELINE_ENC
+`define PIPELINE_ENC
+
+`define ADD 3'b000
+`define SUB 3'b001
+`define XOR 3'b010
+`define OR 3'b011
+`define AND 3'b100
+`define NOR 3'b101
+`define NAND 3'b110
+`define XNOR 3'b111
+
+	module pipelineEnc(
+		input [7:0] fncode,
+		output [2:0] opcode);
+		
+		reg [2:0] opcode;
+
+		always @(fncode) begin
+			case (fncode)
+				8'b00000001 : opcode = `ADD;
+				8'b00000010 : opcode = `SUB;
+				8'b00000100 : opcode = `XOR;
+				8'b00001000 : opcode = `OR;
+				8'b00010000 : opcode = `AND;
+				8'b00100000 : opcode = `NOR;
+				8'b01000000 : opcode = `NAND;
+				8'b10000000 : opcode = `XNOR;
+			endcase
+		end
+		
+		
+	endmodule
+	
+`endif
+			</text>
+		</p>
+		<p n="xv_lab8_pipelinepargen">
+			<text>`ifndef PIPELINE_PAR_GEN
+`define PIPELINE_PAR_GEN
+`include "pipelineAlu.v"
+`include "pipelineEnc.v"
+
+	module pipelineParGen(
+		input [3:0] aluOut,
+		output parity
+	);
+		
+		assign parity = aluOut[0] ^ aluOut[1] ^ aluOut[2] ^ aluOut[3];
+		
+	endmodule
+
+`endif
+			</text>
+		</p>
+		<p n="xv_lab8_tb_pipeline">
+			<text>`include "pipelineCircuit.v"
+	module tb_pipeline();
+		
+		reg [7:0] fncode;
+		reg [3:0] srcA, srcB;
+		
+		wire parity;
+		
+		pipelineCircuit pc(fncode, srcA, srcB, parity);
+		
+		initial begin
+			
+					fncode = 8'b00000001;
+					srcA   = 4'b0001;
+					srcB   = 4'b0001;
+			
+			#100	fncode = 8'b00000010;
+			#200	fncode = 8'b00000100;
+			#300	fncode = 8'b00001000;
+			#400	fncode = 8'b00010000;
+			#500	fncode = 8'b00100000;
+			#600	fncode = 8'b01000000;
+			#700	fncode = 8'b10000000;
+			
+			#10 	$display("");
+			
+			#100	fncode = 8'b00000001;
+					srcA   = 4'b0101;
+					srcB   = 4'b1010;
+			
+			#100	fncode = 8'b00000010;
+			#200	fncode = 8'b00000100;
+			#300	fncode = 8'b00001000;
+			#400	fncode = 8'b00010000;
+			#500	fncode = 8'b00100000;
+			#600	fncode = 8'b01000000;
+			#700	fncode = 8'b10000000;
+		end
+		
+		initial begin
+			$monitor( "fncode : %%b ",fncode, " srcA: %%b ", srcA," srcB: %%b ", srcB, " aluOut: %%b ",pc.aluOut, " parity: %%b ", parity  );
+		end
+		
+	endmodule
 			</text>
 		</p>
 	</language.aliases>
