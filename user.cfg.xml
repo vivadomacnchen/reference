@@ -566,6 +566,13 @@
 					<u/>
 					<projectname v="C:\W\verilog_vs\verilogvs.vpj"/>
 				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="C:\W\Algorithm\repo\aliasfor.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="C:\W\Algorithm\repo\aliasfor.vpj"/>
+				</class.WORKSPACE_LIST>
 			</array>
 		</p>
 		<p n="def_open_style" v="0"/>
@@ -2612,11 +2619,10 @@ int main()
 
     printf("Given a normal distribution with mean 0 and standard deviation 1,\n"
            "the probability that a random variable is within the range [0, 1.125]\n"
-           "is %%lf.\n", probability ); 
+           "is %%lf.\n", probability ); %\S
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_exit_ex">
@@ -2652,8 +2658,7 @@ int main( int argc, char *argv[])
     /* ... read, process, write, close files ... */
 
     exit( X_OK );           //  return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_exp2_ex">
@@ -2684,8 +2689,7 @@ int main()
              sum / 1000000.0L );           // A million grams per ton.
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_exp_ex">
@@ -2714,8 +2718,7 @@ int main()
            principal, rate*100.0, time, balance );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fclose_ex">
@@ -2751,8 +2754,7 @@ int main()
     }
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fdim_ex">
@@ -2782,8 +2784,7 @@ int main()
              copysign(argument, sign), result );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_deholdexcept_ex">
@@ -2859,8 +2860,7 @@ int main()
     printf("The hypotenuse of the right triangle is %%.10lG\n", sidec);
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_deraiseexcept_ex">
@@ -2898,10 +2898,9 @@ int main()
                  except_set, except_test );
     else
        printf( "Raised the floating-point exception FE_ALL_EXCEPT = %%X\n",
-                except_set );       
+                except_set );       %\S
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fflush_ex">
@@ -2942,8 +2941,7 @@ int main()
     fputs( "Gone.\n", fp );       // These three lines will never be executed.
     fclose( fp );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fgets_ex">
@@ -2976,8 +2974,7 @@ int main()
     }
     fclose( titlefile );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fgetwc_ex">
@@ -3024,8 +3021,7 @@ int main()
        fprintf( stderr, "Error writing to the file %%s\n", file_out);
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fgetws_ex">
@@ -3063,8 +3059,7 @@ int main()
           perror( "Writing to stdout" );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fma_ex">
@@ -3074,7 +3069,7 @@ int main()
 
 #include <math.h>   // double fma( double x, double y, double z );
                     // float fmaf( float x, float y, float z );
-                    // long double fmal( long double x, 
+                    // long double fmal( long double x, %\S
                     //             long double y, long double z );
 #include <stdio.h>
 
@@ -3103,8 +3098,7 @@ int main()
 
 // #endif // def FP_FAST_FMA
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fmax_ex">
@@ -3135,8 +3129,7 @@ int main()
        printf( "At least one value is too great.\n" );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fmod_ex">
@@ -3152,9 +3145,9 @@ int main()
 
 int main()
 {
-    double people = -2.25, 
-           apples = 3.3, 
-           eachgets = 0.0, 
+    double people = -2.25, %\S
+           apples = 3.3, %\S
+           eachgets = 0.0, %\S
            someleft = 0.0;
 
     int saverounding = fegetround();       // Save previous setting
@@ -3170,8 +3163,7 @@ int main()
     fesetround( saverounding );            // Restore previous setting
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fopen_ex">
@@ -3211,8 +3203,7 @@ int main( int argc, char *argv[])
 
     fclose(in), fclose(out);
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fpclassify_ex">
@@ -3229,7 +3220,7 @@ double minimum( double a, double b )
     register int bclass = fpclassify( b );
 
     if ( aclass == FP_NAN || bclass == FP_NAN )
-       return NAN; 
+       return NAN; %\S
 
     if ( aclass == FP_INFINITE )         // -Inf is less than anything;
        return ( signbit( a ) ? a : b );  // +inf is greater than anything.
@@ -3244,12 +3235,11 @@ int main()
 {
     double x = 0.0;
 
-    double min = minimum( x, -HUGE_VAL); 
+    double min = minimum( x, -HUGE_VAL); %\S
 
     printf( "min = %%G\n", min);
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fputws_ex">
@@ -3296,8 +3286,7 @@ int main()
        return -1;
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_freopen_s_ex">
@@ -3320,7 +3309,7 @@ int main()      // Redirect standard output to the file redirect.txt:
 
     errno_t err = freopen_s( &fp, filename, "w", stdout);
     if( err != 0)
-    { 
+    { %\S
        fprintf( stderr, "Unable to redirect stdout to %%s\n", filename);
        exit(err);
     }
@@ -3329,8 +3318,7 @@ int main()      // Redirect standard output to the file redirect.txt:
 
     fclose(stdout);
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_frexp_ex">
@@ -3368,8 +3356,7 @@ int main()
 
     printf( "The fourth root of %%f is %%G.\n", x, fourthrt(x) );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fscnf_ex">
@@ -3381,9 +3368,9 @@ int main()
 //    tony:x:1002:31:Tony Crawford,,:/home/tony:/bin/bash// -------------------------------------------------------------
 
 #define __STDC_WANT_LIB_EXT1__ 1   // for fscanf_s()
-#include <stdio.h> 
+#include <stdio.h> %\S
 // int fscanf( FILE * restrict fp, const char * restrict format, ... );
-// int fscanf_s( FILE * restrict fp, const char * restrict format, ... ); 
+// int fscanf_s( FILE * restrict fp, const char * restrict format, ... ); %\S
 
 #include <stdlib.h>
 #include <string.h>
@@ -3455,8 +3442,7 @@ int main()
              recptr->user, recptr->uid, recptr->realname );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fscanf_ex">
@@ -3468,9 +3454,9 @@ int main()
 //    tony:x:1002:31:Tony Crawford,,:/home/tony:/bin/bash// -------------------------------------------------------------
 
 #define __STDC_WANT_LIB_EXT1__ 1   // for fscanf_s()
-#include <stdio.h> 
+#include <stdio.h> %\S
 // int fscanf( FILE * restrict fp, const char * restrict format, ... );
-// int fscanf_s( FILE * restrict fp, const char * restrict format, ... ); 
+// int fscanf_s( FILE * restrict fp, const char * restrict format, ... ); %\S
 
 #include <stdlib.h>
 #include <string.h>
@@ -3542,8 +3528,7 @@ int main()
              recptr->user, recptr->uid, recptr->realname );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fseek_ex">
@@ -3585,7 +3570,7 @@ int main()
 
     if( cur_rec.id == seek_id )
         printf( "Record with ID %%ld found.\n", seek_id );
-   
+   %\S
     return 0;
 }
 /*
@@ -3597,15 +3582,14 @@ void writeRecords()
 
     if ((fp = fopen("records", "wb")) == NULL)
        perror( "Unable to open records file" );
-    else 
+    else %\S
     {
-       if( fwrite( someRecords, sizeof(record), n, fp) < n) 
+       if( fwrite( someRecords, sizeof(record), n, fp) < n) %\S
           perror( "Unable to write records" );
        fclose(fp);
     }
 }
-*/
-]]>
+*/]]>
 			</text>
 		</p>
 		<p n="xc_ftell_ex">
@@ -3665,8 +3649,7 @@ int main( int argc, char *argv[])
                                           // the line containing the keyword
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_fwprintf_ex">
@@ -3699,8 +3682,7 @@ int main()
               name_local, name_portable );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_getenv_s_ex">
@@ -3730,8 +3712,7 @@ int main()
         printf("PATH variable not found.\n");
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_gmtime_ex">
@@ -3766,8 +3747,7 @@ int main()
        puts( buffer );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_hypot_ex">
@@ -3799,8 +3779,7 @@ int main()
        printf( "Then you'll be %%4.2lf km from where you started.\n", h );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_ignore_handler_s_ex">
@@ -3810,7 +3789,7 @@ int main()
 
 #define __STDC_WANT_LIB_EXT1__ 1
 #include <stdlib.h>  // void ignore_handler_s( const char * restrict msg,
-                     //                        void * restrict ptr, 
+                     //                        void * restrict ptr, %\S
                      //                        errno_t error);
 #include <string.h>
 #include <stdio.h>
@@ -3827,8 +3806,8 @@ int main()
 
     printf("Please enter your name: ");
     if( gets_s( name, sizeof(name)) == NULL)
-    { 
-       puts("Error: You entered more than 19 characters."); 
+    { %\S
+       puts("Error: You entered more than 19 characters."); %\S
        // ...
     }
     else if( strcat_s( message, sizeof(message), name) != 0)
@@ -3842,8 +3821,7 @@ int main()
     // ...
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_ilogb_ex">
@@ -3873,8 +3851,7 @@ int main()
           x += 1.1, x *= 2.2e34 ;
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_imaxdiv_ex">
@@ -3882,7 +3859,7 @@ int main()
 				<![CDATA[// imaxdiv_ex.c : imaxdiv() example
 // -------------------------------------------------------------
 
-#include <inttypes.h>  // imaxdiv_t imaxdiv( intmax_t dividend, 
+#include <inttypes.h>  // imaxdiv_t imaxdiv( intmax_t dividend, %\S
                        //                    intmax_t divisor );
 #include <stdio.h>
 
@@ -3893,7 +3870,7 @@ int main()
 
     if ( people == 0 )       // Avoid dividing by zero.
     {
-       printf( "There's no one here to take the apples.\n" ); 
+       printf( "There's no one here to take the apples.\n" ); %\S
        return -1;
     }
     else
@@ -3904,8 +3881,7 @@ int main()
             people, apples, share.quot, share.rem );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_isfinite_ex">
@@ -3946,11 +3922,10 @@ int main()
 
     double x = DBL_MAX;
     printf( "2. Sum: %%lf\n", vsum( 2, x, x) );
-   
+   %\S
     return 0;
 }
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xc_isprintf_ex">
@@ -4002,8 +3977,7 @@ int main()
     }  // end of loop for each character value
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_iswalnum_ex">
@@ -4043,8 +4017,7 @@ int main()
     wprintf( L"-----------------------\n" );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_iswalpha_Ex">
@@ -4102,8 +4075,7 @@ int main()
     } // end of loop for each character value
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_iswctype_ex">
@@ -4128,8 +4100,7 @@ int main()
            wprintf( L"The character %%lc is uppercase.\n", wc );
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_localtime_s_ex">
@@ -4156,8 +4127,7 @@ int main()
             printf("A year from today: %%s", timeStr);
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_log1p_ex">
@@ -4185,8 +4155,7 @@ int main()
     }
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_log2_ex">
@@ -4213,14 +4182,13 @@ int main()
     }
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_log_ex">
 			<text>
 				<![CDATA[// log_ex.c : log() example
-// The following code prints some sample values for base 2, 
+// The following code prints some sample values for base 2, %\S
 // base e, and base 10 logarithms.
 // -------------------------------------------------------------
 
@@ -4241,8 +4209,7 @@ int main()
                 x[i], log2(x[i]), log(x[i]), log10(x[i]) );
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_logb_ex">
@@ -4272,8 +4239,7 @@ int main()
     }
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_malloc_ex">
@@ -4320,14 +4286,13 @@ int main()
          else          /* Chain already started; add another link ... */
          {
              puts( "Adding another link ...");
-             /* ... */ 
+             /* ... */ %\S
              break;
          }
     }
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_mblen_ex">
@@ -4416,8 +4381,7 @@ int main()
    puts( str1);
 
    return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_mbrtoc16_ex">
@@ -4427,7 +4391,7 @@ int main()
 
 #include <uchar.h>     // size_t mbrtoc16( char16_t * restrict pc16,
                        //                  const char * restrict s,
-                       //                  size_t n, 
+                       //                  size_t n, %\S
                        //                  mbstate_t * restrict state );
 //#include <stdlib.h>
 #include <string.h>
@@ -4491,8 +4455,7 @@ int main(void)
       // ...
    }
    return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_mbrtowc_ex">
@@ -4502,7 +4465,7 @@ int main(void)
 
 #include <wchar.h>    // size_t mbrtowc( wchar_t * restrict widebuffer,
                       //                 const char * restrict string,
-                      //                 size_t maxsize, 
+                      //                 size_t maxsize, %\S
                       //                 mbstate_t * restrict state );
 #include <wctype.h>
 #include <stdlib.h>
@@ -4595,8 +4558,7 @@ int main()
    puts( strout);
 
    return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_mbsrtowcs_ex">
@@ -4604,7 +4566,7 @@ int main()
 				<![CDATA[// mbsrtowcs_ex.c : mbsrtowcs() example
 // -------------------------------------------------------------
 
-#include <wchar.h>   // size_t mbsrtowcs( wchar_t * restrict dest, 
+#include <wchar.h>   // size_t mbsrtowcs( wchar_t * restrict dest, %\S
                      //                   const char ** restrict src,
                      //                   size_t n,
                      //                   mbstate_t * restrict state );
@@ -4638,8 +4600,7 @@ int main()
       printf( "%%ls", widestring );
    }
    return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_mbsrtowcs_s_ex">
@@ -4671,8 +4632,7 @@ int main()
        printf("The remaining characters: %%s\n", mbptr);
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_mbtowc_ex">
@@ -4704,8 +4664,7 @@ int main()
         i += n;
    }
    return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_mktime_ex">
@@ -4765,8 +4724,7 @@ int main()
 
     printf( "The structure now represents %%s", asctime( &sometime ));
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_mtx_timedlock_ex">
@@ -4815,8 +4773,7 @@ int func(void * thrd)
            puts("mtx_timedlock: error.");
     };
     return res;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_mtx_trylock_ex">
@@ -4859,7 +4816,7 @@ int main(void)
     for( int i = 0; i < NUM_THREADS; ++i)
     {
        th_arr[i].id = i;
-       if( thrd_create( &th_arr[i].th, func, &th_arr[i].id) 
+       if( thrd_create( &th_arr[i].th, func, &th_arr[i].id) %\S
            != thrd_success)
           return -2;
     }
@@ -4869,8 +4826,7 @@ int main(void)
 
     mtx_destroy( &mtx);
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_nearbyint_ex">
@@ -4898,8 +4854,7 @@ int main()
             round(1.9), round(-1.9) );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_perror_ex">
@@ -4925,8 +4880,7 @@ int main( int argc, char *argv[] )
        return errno;
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_printf_ex">
@@ -4958,8 +4912,7 @@ void print_line( double x)
     int n1, n2;
     printf("x = %%5.2f exp(x) = %%n%%10.5f%%n\n", x, &n1, exp(x), &n2);
     assert( n2-n1 <= 10);           // Did printf() stretch the field width?
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_putchar_ex">
@@ -4995,8 +4948,7 @@ int main()
     }
     puts( "Done." );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_qsort_ex">
@@ -5035,8 +4987,7 @@ int strptrcmp( const void *sp1, const void *sp2 )
     const char * s1 = *(char **)sp1;
     const char * s2 = *(char **)sp2;
     return strcmp( s1, s2 );
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_rand_ex">
@@ -5069,8 +5020,7 @@ int main()
     printf( "I give up.\n" );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="ex_realloc_ex">
@@ -5111,13 +5061,12 @@ int main()
        ...   */
        return -1;
     }
-      
+      %\S
     for ( int i = 0; i < daPtr->len; ++i )
         printf( "%%2d : %%8f\n", i, daPtr->array[i] );
-    
+    %\S
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_remainder_ex">
@@ -5146,10 +5095,9 @@ int main()
     printf( "If there are %%.1lf of us and %%.1lf apples, "
             "each of us gets %%.1lf of %%s, with %%.1lf left over.\n",
              people, apples, share, ( share < 1 ) ? "one" : "them", left );
-    
+    %\S
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_remove_ex">
@@ -5188,8 +5136,7 @@ int main()
                                                                    errno );
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_remquo_ex">
@@ -5215,7 +5162,7 @@ int main()
     scanf( "%%lf", &apples );
 
     share = nearbyint( apples / people );
-    left = remquo( apples, people, &quotient );    
+    left = remquo( apples, people, &quotient );    %\S
 
     printf( "If there are %%.2lf of us and %%.2lf apples, "
             "each of us gets %%.2lf apple%%s, with %%.2lf left over.\n",
@@ -5228,15 +5175,14 @@ int main()
             (int) share %% 8 - quotient );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_rewind_ex">
 			<text>
 				<![CDATA[// rewind_ex.c : rewind() example
-// This example prints the contents of a file twice, converting 
-// each character to lowercase the first time through, and to 
+// This example prints the contents of a file twice, converting %\S
+// each character to lowercase the first time through, and to %\S
 // uppercase the second time:
 // -------------------------------------------------------------
 
@@ -5268,8 +5214,7 @@ int main( int argc, char *argv[])
        fclose( fp );
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_rint_ex">
@@ -5318,8 +5263,7 @@ int main()
                 rint(-1.4), rint(-1.5) );
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_cacukate">
@@ -5349,8 +5293,7 @@ double calculate2( double x)
         longjmp( jmp_dest, ERANGE);  // Range error
     else
         return y;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="sc_set_constraint_handler_s_ex">
@@ -5391,8 +5334,7 @@ int main()
 {
     func("Hi");
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_set_constraint_handler_s_ex">
@@ -5433,8 +5375,7 @@ int main()
 {
     func("Hi");
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_setjmp_ex">
@@ -5445,7 +5386,7 @@ int main()
 #include <setjmp.h>       // int setjmp( jmp_buf env );
                           // void longjmp( jmp_buf environment,
                           //               int returnval );
-#include <stdlib.h> 
+#include <stdlib.h> %\S
 #include <stdio.h>
 #include <errno.h>
 
@@ -5496,8 +5437,7 @@ int main()
     printf(  "Result of Calculation 2: %%G\n", y2);
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_setlocale_ex">
@@ -5505,7 +5445,7 @@ int main()
 				<![CDATA[// setlocale_ex.c : setlocale() example
 // -------------------------------------------------------------
 
-#include <locale.h>    // char *setlocale( int category, 
+#include <locale.h>    // char *setlocale( int category, %\S
                        //                  const char *locale_name );
 #include <stdio.h>
 #include <string.h>
@@ -5551,8 +5491,7 @@ int main()
     printf( "Hello there, %%s!\n", name );
 
    return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_signal_ex">
@@ -5614,8 +5553,7 @@ void sigint_handler( int sig )
     signal( SIGINT, sigint_handler );  // Reinstall this handler.
 
     /* No return value; just fall off the end of the function. */
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_signb_ex">
@@ -5632,10 +5570,9 @@ int main()
 
     for ( int i = 0 ; i < ( sizeof(x) / sizeof(double)) ; i++ )
         printf( "x[%%d] equals %%lF, and is%%s negative.\n",
-                 i, x[i], signbit( x[i] ) ? "" : " not" );    
+                 i, x[i], signbit( x[i] ) ? "" : " not" );    %\S
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_sin_ex">
@@ -5671,8 +5608,7 @@ int main()
                     a[i], sin( a[i] / DEG_PER_RAD ) );
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_sinh_ex">
@@ -5712,8 +5648,7 @@ int main()
     }
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_snprintf_ex">
@@ -5738,8 +5673,7 @@ int main()
        fprintf( stderr, "Output string truncated! Lost %%d characters.\n",
                 output_len - 79 );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_sprintf_ex">
@@ -5747,7 +5681,7 @@ int main()
 				<![CDATA[// sprintf_ex.c : sprintf() example
 // -------------------------------------------------------------
 
-#include <stdio.h>   // int sprintf( char * restrict dest, 
+#include <stdio.h>   // int sprintf( char * restrict dest, %\S
                      //              const char * restrict format, ... );
 
 int main()
@@ -5766,8 +5700,7 @@ int main()
                 "x now contains %%lf, y %%lf, z %%lf, and a %%lf.\n",
                  output_len - 79, x, y, z, a );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_sqrt_ex">
@@ -5792,8 +5725,7 @@ int main()
           perror( __FILE__ );
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strcat_ex">
@@ -5803,7 +5735,7 @@ int main()
 
 #define __STDC_WANT_LIB_EXT1__ 1   // for strcat_s()
 
-#include <string.h>  // char *strcat( char * restrict s1, 
+#include <string.h>  // char *strcat( char * restrict s1, %\S
                      //               const char * restrict s2 );
                      // errno_t strcat_s( char * restrict s1, rsize_t s1max,
                      //                   const char * restrict s2 );
@@ -5841,8 +5773,7 @@ int main()
     puts( displayname );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strchr_ex">
@@ -5876,8 +5807,7 @@ int main()
         puts(newAddr->street);
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strcmp_ex">
@@ -5911,8 +5841,7 @@ int main()
             word1, greaterlessequal, word2 );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strcoll_ex">
@@ -5944,8 +5873,7 @@ int main()
                samples[0], samples[1] );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strcpy_ex">
@@ -5957,7 +5885,7 @@ int main()
 
 #include <string.h>  // char *strcpy( char * restrict dest,
                      //               const char * restrict src );
-                     // errno_t strcpy_s( char * restrict dest, 
+                     // errno_t strcpy_s( char * restrict dest, %\S
                      //                   rsize_t destmax,
                      //                   const char * restrict src );
 #include <stdio.h>
@@ -5978,8 +5906,7 @@ int main()
     printf( "Name: %%s\n", this.name );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strcspn_ex">
@@ -6008,8 +5935,7 @@ int main()
     puts( fullname );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strerror_ex">
@@ -6038,8 +5964,7 @@ int main( int argc, char *argv[])
        return retval;
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strerror_s_ex">
@@ -6068,8 +5993,7 @@ int main()
     }
   // ...
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strftime_ex">
@@ -6097,8 +6021,7 @@ int main()
         return -1;
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strlen_ex">
@@ -6121,13 +6044,12 @@ int main()
     {   // print a row with a backslash at the end:
         printf( "%%.*s\\", columns-1, readptr);
         readptr += columns -1;
-    }   
+    }   %\S
     // Then print the rest with a newline at the end:
     printf( "%%s\n", readptr );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strncat_ex">
@@ -6169,8 +6091,7 @@ int main()
     printf( "ret3: %%d    str3: %%s\n", ret3, str3 );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strneln_s_ex">
@@ -6189,13 +6110,12 @@ int main()
     size_t len = strnlen_s( str, 1000);  // len = 5
 
     if( strnlen_s( str, 4) == 4)
-    { 
-        puts("str is more than 4 characters long."); 
+    { %\S
+        puts("str is more than 4 characters long."); %\S
     }
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strpbrk_ex">
@@ -6203,7 +6123,7 @@ int main()
 				<![CDATA[// strpbrk_ex.c : strpbrk() example
 // -------------------------------------------------------------
 
-#include <string.h>    // char *strpbrk( const char *s1, 
+#include <string.h>    // char *strpbrk( const char *s1, %\S
                        //                const char *s2 );
 #include <stdio.h>
 
@@ -6232,8 +6152,7 @@ int main()
        puts( words[j] );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strrchr_ex">
@@ -6254,8 +6173,7 @@ int main( int argc, char *argv[])
 
     printf( "This program was invoked as %%s.\n", mybasename );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strspn_ex">
@@ -6284,8 +6202,7 @@ int main()
         printf( "You entered the value %%g\n", val );
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strtod_ex">
@@ -6317,8 +6234,7 @@ int main()
     puts( "Done." );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strtok_ex">
@@ -6326,7 +6242,7 @@ int main()
 				<![CDATA[// strtok_ex.c : strtok() example
 // -------------------------------------------------------------
 
-#include <string.h>  // char *strtok( char * restrict s1, 
+#include <string.h>  // char *strtok( char * restrict s1, %\S
                      //               const char * restrict s2 );
 #include <stdio.h>
 
@@ -6348,8 +6264,7 @@ int main()
             command, arg1, arg2, comment );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strtok_s_ex">
@@ -6358,9 +6273,9 @@ int main()
 // -------------------------------------------------------------
 
 #define __STDC_WANT_LIB_EXT1__ 1
-#include <string.h>  // char *strtok_s( char * restrict s1, 
+#include <string.h>  // char *strtok_s( char * restrict s1, %\S
                      //                 rsize_t * restrict s1max,
-                     //                 const char * restrict s2, 
+                     //                 const char * restrict s2, %\S
                      //                 char ** restrict ptr);
 #include <stdio.h>
 
@@ -6381,8 +6296,7 @@ int main()
               firstname, lastname, birthday);
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strtoul_ex">
@@ -6400,7 +6314,7 @@ int main()
     char dotted[ ] = "172.16.2.10", *ptr = dotted, *nextdot = NULL;
     unsigned long dest = 0;
 
-    // This for loop uses stroul() to convert an IPv4 address from a 
+    // This for loop uses stroul() to convert an IPv4 address from a %\S
     // dotted-decimal string to a 32-bit integer value:
     for ( int i = 0; i < 4; i++)
     {
@@ -6413,8 +6327,7 @@ int main()
              dotted, dest );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_strxfrm_ex">
@@ -6469,8 +6382,7 @@ int stringpaircmp( const void * sp1, const void *sp2 )
     const char * s1 = ((Stringpair_t *)sp1)->xformed;
     const char * s2 = ((Stringpair_t *)sp2)->xformed;
     return strcmp( s1, s2 );
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_swprintf_ex">
@@ -6506,8 +6418,7 @@ int main()
 {
     fputws( dollar_as_wstr( -123456), stdout );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_system_ex">
@@ -6526,8 +6437,7 @@ int main()
        printf( "No command processor available.\n" );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_tan_ex">
@@ -6551,8 +6461,7 @@ int main()
     printf("The tower is %%.2f meters high.\n", height);
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_tanh_ex">
@@ -6577,8 +6486,7 @@ int main()
     printf("Using the function exp() yields %%.15f.\n", y2 );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_thrd_create_ex">
@@ -6609,8 +6517,7 @@ int main()
     printf("The value of n is %%d\n", n);       // n == 2
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_thrd_detach_ex">
@@ -6646,13 +6553,12 @@ int main()
     puts("Main thread here ...");
 
     // Working ...
-    struct timespec d = { .tv_nsec = 1E6 };  // 1 ms. 
+    struct timespec d = { .tv_nsec = 1E6 };  // 1 ms. %\S
     thrd_sleep( &d, NULL);
 
     puts("Main thread done.");
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_thrd_equal_ex">
@@ -6686,8 +6592,7 @@ int main()
     thrd_join(th, NULL);
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_timespec_get_ex">
@@ -6707,8 +6612,7 @@ int main()
                "%%.24s and %%09lu nanoseconds\n", ctime(&ts.tv_sec), ts.tv_nsec);
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_tmpfile_ex">
@@ -6747,8 +6651,7 @@ int main()
        putchar(c);
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_tmpnam_ex">
@@ -6777,13 +6680,12 @@ int main()
 
     fpOut = fopen( fname, "w+" );
 
-    fputs( "... write and edit something in the file ...\n", fpOut );    
+    fputs( "... write and edit something in the file ...\n", fpOut );    %\S
     fclose( fpOut );
     printf( "The results have been saved in %%s.\n", fname );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_towctrans_ex">
@@ -6808,8 +6710,7 @@ int main()
           break;
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_trunc_ex">
@@ -6831,8 +6732,7 @@ int main()
             round(-1.7), round(1.4), round(1.5) );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="tss_set_ex">
@@ -6910,8 +6810,7 @@ int main(void)
 
     tss_delete(key); // Free all resources of the TSS pointer.
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_ungetc_ex">
@@ -6960,8 +6859,7 @@ int main()
        fprintf( stderr, "Error processing the file %%s\n", file);
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_va_arg_ex">
@@ -7002,7 +6900,7 @@ int main()
     printf("\nUsing the three numbers %%lf, %%lf, and %%lf.\n", d1, d2, d3);
     for ( int i = 0; operation[i] != NULL; i++ )
     {
-        printf( "The %%s of these %%d numbers is %%lf\n", 
+        printf( "The %%s of these %%d numbers is %%lf\n", %\S
                  operation[i], 3, vop( operation[i], 3, d1, d2, d3 ) );
     }
 
@@ -7012,7 +6910,7 @@ int main()
     for ( int i = 0; operation[i] != NULL; i++ )
     {
         printf( "The %%s of these %%d numbers is %%lf\n",
-                operation[i], 6, 
+                operation[i], 6, %\S
                 vop( operation[i], 6, d1, d2, d3, d4, d5, d6 ) );
     }
 }
@@ -7061,8 +6959,7 @@ double vsum( int n, va_list argptr )
         sum += va_arg( argptr, double );
 
     return sum;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_vfprintf_ex">
@@ -7070,7 +6967,7 @@ double vsum( int n, va_list argptr )
 				<![CDATA[// vfprintf_ex.c : vfprintf() example
 // -------------------------------------------------------------
 
-#include <stdio.h>   
+#include <stdio.h>   %\S
 #include <stdarg.h>
 // int vfprintf( FILE * restrict fp, const char * restrict format, va_list argptr );
 // int vprintf( const char * restrict format, va_list argptr );
@@ -7085,7 +6982,7 @@ double vsum( int n, va_list argptr )
 // The format string and optional arguments are the same as for printf().
 
 FILE *fp_log;
- 
+ %\S
 void write_log(const char *function_name, unsigned int line_num,
                const char *format_str, ...)
 {
@@ -7113,10 +7010,9 @@ void myFunc( int param)
 int main()
 {
     fp_log = stderr;
-    myFunc( 777);    
+    myFunc( 777);    %\S
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_vfscanf_ex">
@@ -7124,7 +7020,7 @@ int main()
 				<![CDATA[// vfscanf_ex.c : vscanf() example
 // -------------------------------------------------------------
 
-#include <stdio.h>   
+#include <stdio.h>   %\S
 #include <stdarg.h>
 // int vfscanf( FILE * restrict fp, const char * restrict format,
 //              va_list argptr );
@@ -7189,8 +7085,7 @@ int main()
              pEmployee->dob_day,
              pEmployee->dob_year );
 #endif // def DEBUG
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcrtomb_s_ex">
@@ -7228,8 +7123,7 @@ int main()
     putchar('\n');
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcscat_ex">
@@ -7279,8 +7173,7 @@ int main()
     fputws( displayname, stdout );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcschr_ex">
@@ -7314,8 +7207,7 @@ int main()
         fputws( newAddr->street, stdout );
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcscmp_ex">
@@ -7347,12 +7239,11 @@ int main()
     else
        greaterlessequal = L"the same as";
 
-    wprintf( L"The word \"%%ls\" is %%ls the word \"%%ls\".\n", 
+    wprintf( L"The word \"%%ls\" is %%ls the word \"%%ls\".\n", %\S
              word1, greaterlessequal, word2 );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcscoll_ex">
@@ -7369,7 +7260,7 @@ int main()
     wchar_t *samples[ ] = { L"anejo", L"añeja",};
 
     setlocale( LC_COLLATE, "es_US.UTF-8" );
-    
+    %\S
     int result = wcscoll( samples[0], samples[1] );
 
     wprintf( L"In the locale %%s, ", setlocale( LC_COLLATE, NULL ));
@@ -7384,8 +7275,7 @@ int main()
         wprintf( L"the wide string \"%%ls\" comes after \"%%ls\" "
                  "alphabetically.\n", samples[0], samples[1] );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcscpy_ex">
@@ -7423,8 +7313,7 @@ int main()
     wprintf( L"%%ls\n", this.name );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcscspn_ex">
@@ -7454,8 +7343,7 @@ int main()
     fputws( fullname, stdout );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="ex_wcsftime_ex">
@@ -7485,8 +7373,7 @@ int main()
        return -1;
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcslen_ex">
@@ -7513,8 +7400,7 @@ int main()
     wprintf( L"%%ls\n", readptr);     // Print the rest, ending with a newline.
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcsncmp_ex">
@@ -7537,11 +7423,10 @@ int main()
         mo++;
 
     if( mo < 12)
-       wprintf( L"Month: %%ls\n", months[mo] ); 
+       wprintf( L"Month: %%ls\n", months[mo] ); %\S
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcspbrk_ex">
@@ -7558,7 +7443,7 @@ int main()
     wchar_t *story = L"He shouted: \"What? I can't hear you!\"\n";
     wchar_t separators[ ] = L" \t\n.:?!\"";
     wchar_t *start = story, *end = NULL;
-    wchar_t words[16][16];   // An array of wchar_t arrays to collect words in. 
+    wchar_t words[16][16];   // An array of wchar_t arrays to collect words in. %\S
     int i = 0;
 
     while ( i < 16 && ( end = wcspbrk( start, separators ) ) != NULL )
@@ -7581,8 +7466,7 @@ int main()
     }
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcsrchr_ex">
@@ -7608,8 +7492,7 @@ int main( int argc, char ** argv )
       mybasename = wmyname;
 
     wprintf( L"This program was invoked as %%ls.\n", mybasename );
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcsrtombs_ex">
@@ -7619,7 +7502,7 @@ int main( int argc, char ** argv )
 
 #include <wchar.h>   // size_t wcsrtombs( char * restrict dest,
                      //                   const wchar_t **restrict src,
-                     //                   size_t n, 
+                     //                   size_t n, %\S
                      //                   mbstate_t * restrict state );
 #include <string.h>
 #include <locale.h>
@@ -7647,8 +7530,7 @@ int main()
        printf("The multibyte string: \"%%s\"\n", mbstring);
 
    return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcsrtombs_s_ex">
@@ -7658,7 +7540,7 @@ int main()
 
 #define __STDC_WANT_LIB_EXT1__ 1
 #include <wchar.h>   // errno_t wcsrtombs_s(size_t * restrict retval,
-                     //                     char * restrict dest, 
+                     //                     char * restrict dest, %\S
                      //                     rsize_t destmax,
                      //                     const wchar_t ** restrict src,
                      //                     rsize_t n,
@@ -7689,8 +7571,7 @@ int main()
             printf("Wide characters remaining: \"%%ls\"\n", wcptr);
     }
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcsspn_ex">
@@ -7721,8 +7602,7 @@ int main()
     }
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcsstr_ex">
@@ -7769,8 +7649,7 @@ int main( int argc, char **argv )
        return -4;
     else
        return count;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcstod_ex">
@@ -7781,7 +7660,7 @@ int main( int argc, char **argv )
 #include <wchar.h>     // double wcstod( const wchar_t * restrict wcs,
                        //                wchar_t ** restrict endptr );
                        // float wcstof( const wchar_t * restrict wcs,
-                       //               wchar_t ** restrict endptr ); 
+                       //               wchar_t ** restrict endptr ); %\S
                        // long double wcstold( const wchar_t * restrict wcs,
                        //                      wchar_t ** restrict endptr );
 #include <stdio.h>
@@ -7805,8 +7684,7 @@ int main()
     }
     fputws( L"Done.\n", stdout );
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcstok_ex">
@@ -7814,7 +7692,7 @@ int main()
 				<![CDATA[// wcstok_ex.c : wcstok() example
 // -------------------------------------------------------------
 
-#include <wchar.h>     // wchar_t *wcstok( wchar_t * restrict s1, 
+#include <wchar.h>     // wchar_t *wcstok( wchar_t * restrict s1, %\S
                        //                  const wchar_t * restrict s2,
                        //                  wchar_t ** restrict ptr );
 
@@ -7839,8 +7717,7 @@ int main()
              mnemonic, arg1, arg2, comment );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcstol_ex">
@@ -7851,7 +7728,7 @@ int main()
 #include <wchar.h>     // long int wcstol( const wchar_t * restrict wcs,
                        //                  wchar_t ** restrict endptr, int base );
                        // long long int wcstoll( const wchar_t * restrict wcs,
-                       //                        wchar_t ** restrict endptr, 
+                       //                        wchar_t ** restrict endptr, %\S
                        //                        int base );
 
 int main()
@@ -7871,8 +7748,7 @@ int main()
              hr, min, mo, day, yr %% 100 );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcstombs_ex">
@@ -7880,7 +7756,7 @@ int main()
 				<![CDATA[// wcstombs_ex.c : wcstombs() example
 // -------------------------------------------------------------
 
-#include <stdlib.h>   // size_t wcstombs( char * restrict dest, 
+#include <stdlib.h>   // size_t wcstombs( char * restrict dest, %\S
                       //                  const wchar_t * restrict src,
                       //                  size_t n );
 #include <wchar.h>
@@ -7906,8 +7782,7 @@ int main()
         printf( "Full amount: %%s\n", output_amount );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcstoumax_ex">
@@ -7942,8 +7817,7 @@ int main()
              iface_in.packets, iface_in.bytes );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wcsxfrm_ex">
@@ -7951,7 +7825,7 @@ int main()
 				<![CDATA[// wcsxfrm_ex.c : wcsxfrm() example
 // -------------------------------------------------------------
 
-#include <wchar.h>   // size_t wcsxfrm( wchar_t * restrict dest, 
+#include <wchar.h>   // size_t wcsxfrm( wchar_t * restrict dest, %\S
                      //                 const wchar_t * restrict src,
                      //                 size_t n );
 #include <stdio.h>
@@ -8010,8 +7884,7 @@ int stringpaircmp( const void *p1, const void *p2 )
     const Stringpair_t * sp2 = (Stringpair_t *)p2;
 
     return wcscmp( sp1->xformed, sp2->xformed );
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wctomb_ex">
@@ -8044,8 +7917,7 @@ int main()
             wcs, wcslen( wcs ), n );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wctomb_s_ex">
@@ -8057,7 +7929,7 @@ int main()
 
 #include <stdlib.h>   // errno_t wctomb_s( int * restrict status,
                       //                   char * restrict s,
-                      //                   rsize_t smax, 
+                      //                   rsize_t smax, %\S
                       //                   wchar_t wc);
 #include <wchar.h>
 #include <stdio.h>
@@ -8083,8 +7955,7 @@ int main()
     putchar('\n');
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wctype_ex">
@@ -8106,7 +7977,7 @@ int main()
 
     if (( wct_kata = wctype( "jkata" ) ) == 0 )
     {   wprintf( L"The locale doesn't support the wide-character type "
-                  "string \"jkata\".\n" ); 
+                  "string \"jkata\".\n" ); %\S
         return -1;
     }
     /* ... */
@@ -8117,8 +7988,7 @@ int main()
         wprintf( L"%%lc is a not katakana character.\n", wc );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wmemcpy_ex">
@@ -8126,11 +7996,11 @@ int main()
 				<![CDATA[// wmemcpy_ex.c : wmemcpy(), wmemcpy_s() example
 // -------------------------------------------------------------
 
-#include <wchar.h>     // wchar_t *wmemcpy( wchar_t * restrict dest, 
+#include <wchar.h>     // wchar_t *wmemcpy( wchar_t * restrict dest, %\S
                        //                   const wchar_t * restrict src,
                        //                   size_t n );
                        // errno_t wmemcpy_s( wchar_t * restrict dest, rsize_t destmax,
-                       //                    const wchar_t * restrict src, 
+                       //                    const wchar_t * restrict src, %\S
                        //                    rsize_t n);
 #include <stdio.h>
 #include <stdlib.h>
@@ -8215,8 +8085,7 @@ struct block *newblock( struct block *lastblock )
    }
    else            // Out of memory!
       return NULL;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_wscanf_ex">
@@ -8240,13 +8109,12 @@ int main()
     count = wscanf( L"%%11l[rwxsStTld-+]%%u%%u%%u%%lu%%*10s%%*5s%%256ls",
                     perms, &links, &ownerid, &groupid, &size, name );
 
-wprintf(L"%%ls %%u %%u %%u %%lu %%ls\n", 
+wprintf(L"%%ls %%u %%u %%u %%lu %%ls\n", %\S
          perms, links, ownerid, groupid, size, name );
     wprintf( L"\nThe file %%ls has a length of %%lu bytes.\n", name, size );
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xc_circle">
@@ -8269,7 +8137,7 @@ int main()        // Starts and stops curses display mode
     (void) cbreak();       // Take single input characters
 
 /* Run the circle routine: */
-    circle(); 
+    circle(); %\S
     printw( "Press any key to exit." );
     refresh();             // Put the output on the screen
 
@@ -8289,19 +8157,18 @@ void circle()
   printw("     Radius          Area\n"
           "-------------------------\n" );
   area = circularArea( radius );
-  printw( "%%10.1f     %%10.2f\n", radius, area ); 
+  printw( "%%10.1f     %%10.2f\n", radius, area ); %\S
   radius = 5.0;
   area = circularArea( radius );
-  printw( "%%10.1f     %%10.2f\n", radius, area ); 
+  printw( "%%10.1f     %%10.2f\n", radius, area ); %\S
 }
 
 // Return the area of a circle with radius r
 double circularArea( double r )
 {
-  const double pi = 3.1415926536; // Pi is a constant 
+  const double pi = 3.1415926536; // Pi is a constant %\S
   return  pi * r * r;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_epoll">
@@ -8382,8 +8249,7 @@ int main()
     return 1;
   }
   return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_mmap">
@@ -8416,7 +8282,7 @@ int main()
 
 /**
  * ******************************************************
- * 
+ * %\S
 void * realloc (void *addr, size_t len)
 {
         size_t old_size = look_up_mapping_size (addr);
@@ -8452,24 +8318,24 @@ int msync (void *addr, size_t len, int flags);
 
 /**
  * ******************************************************
- * The only unfamiliar system call in this example should be 
+ * The only unfamiliar system call in this example should be %\S
  * fstat(), which we will cover in Chapter 8. All you need to
- * know at this point is that fstat() returns information 
- * about a given file. 
+ * know at this point is that fstat() returns information %\S
+ * about a given file. %\S
  *
- * The S_ISREG() macro can check some 
+ * The S_ISREG() macro can check some %\S
  * of this information so that we can ensure that the given
- * file is a regular file (as opposed to a device file or a 
- * directory) before we map it. 
+ * file is a regular file (as opposed to a device file or a %\S
+ * directory) before we map it. %\S
  *
  * The behavior of nonregular
  * files when mapped depends on the backing device.
- * Some device files are mmap-able; other nonregular files 
+ * Some device files are mmap-able; other nonregular files %\S
  * are not mmap-able and will set errno to EACCES.
  *
  * The rest of the example should be straightforward. The program is
- * passed a filename as an argument. It opens the file, ensures 
- * it is a regular file, maps it, closes it, prints the file 
+ * passed a filename as an argument. It opens the file, ensures %\S
+ * it is a regular file, maps it, closes it, prints the file %\S
  * byte-by-byte to standard out, and then unmaps the file from memory.
  * ******************************************************
 **/
@@ -8521,8 +8387,7 @@ int main (int argc, char *argv[])
         }
 
         return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_readv">
@@ -8590,8 +8455,7 @@ int main ()
         }
 
         return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_writev">
@@ -8660,8 +8524,7 @@ int main ()
         }
 
         return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_processor_affinity">
@@ -8762,8 +8625,7 @@ void set_hard_affinity() {
 int main(int argc, char ** argv) {
     check_set_processors();
     set_hard_affinity();
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_scheduling">
@@ -8845,8 +8707,7 @@ void wrapper_setpriority(int which, int who, int prio) {
 
 int main(int argc, char ** argv) {
 
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_buffered_io">
@@ -8945,7 +8806,7 @@ void wrapper_fgets() {
 
 /**
  * ******************************************************
- *  Reads a line of data. Also stops reading at delimiter 
+ *  Reads a line of data. Also stops reading at delimiter %\S
  *  'd'
  * ******************************************************
 **/
@@ -9131,8 +8992,7 @@ int main (void)
                 p.name, p.booty, p.beard_len);
 
         return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_file_stat">
@@ -9414,8 +9274,7 @@ int main (int argc, char *argv[])
         process(argv[1]);
 
         exit(0);
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_file_io_main">
@@ -9488,8 +9347,8 @@ int wrapper_open(const char* str, int flags) {
 
 /**
  * ******************************************************
- * The combination of O_WRONLY | O_CREAT | O_TRUNC is so 
- * common that a system call exists to provide just that 
+ * The combination of O_WRONLY | O_CREAT | O_TRUNC is so %\S
+ * common that a system call exists to provide just that %\S
  * behavior:
  * ******************************************************
 **/
@@ -9586,13 +9445,13 @@ ssize_t wrapper_write(int fd, const void *buf, size_t count) {
 ssize_t wrapper_socket_write(int fd, const void *buf, size_t len) {
     ssize_t ret, total_ret;
 
-    /* Trying to write more than SSIZE_MAX results in 
+    /* Trying to write more than SSIZE_MAX results in %\S
      * undefined behaviour */
     if (len > SSIZE_MAX) len = SSIZE_MAX;
 
     while (len != 0 && (ret = write (fd, buf, len)) != 0) {
         if (ret == -1) {
-            if (errno == EINTR) continue; 
+            if (errno == EINTR) continue; %\S
             /*else */
             perror ("write");
             break;
@@ -9666,7 +9525,7 @@ int wrapper_truncate(const char* path, off_t len) {
     if (ret == -1) {
         perror ("truncate");
         return -1;
-    } 
+    } %\S
     return 0;
 }
 
@@ -9708,7 +9567,7 @@ int main(int argc, char ** argv) {
     wrapper_sscanf();
 
     fd = wrapper_open("/home/teach/pearl", O_WRONLY | O_TRUNC);
-    
+    %\S
     strcat(abs_path, cwd);
     strcat(abs_path, "/perl");
 
@@ -9719,8 +9578,7 @@ int main(int argc, char ** argv) {
     wrapper_poll();
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_file_io_multiplexed">
@@ -9757,7 +9615,7 @@ int main(int argc, char ** argv) {
 
 /**
  * ******************************************************
- * @brief 
+ * @brief %\S
  * 1. Tell me when any of these fds become ready for i/o
  * 2. Sleep until one or more fds are ready
  * 3. Woken up! What is ready?
@@ -9775,9 +9633,9 @@ int wrapper_select() {
     FD_SET(STDIN_FILENO, &readfds);
 
     /* Wait up to five seconds */
-    /* !!!! 
+    /* !!!! %\S
      * This needs to be reinitialized on subsequent calls.
-     * pselect() leaves the structure alone. 
+     * pselect() leaves the structure alone. %\S
      * !!!! */
     tv.tv_sec = TIMEOUT;
     tv.tv_usec = 0;
@@ -9800,7 +9658,7 @@ int wrapper_select() {
         return 0;
     }
 
-    /* 
+    /* %\S
      * Is our fd ready to read?
      * Only one provided, so yes.
      * */
@@ -9832,9 +9690,9 @@ int wrapper_select() {
 
 /*
  * There are three differences between pselect() and select():
- *  - pselect() uses the timespec structure, not the timeval structure, for its 
+ *  - pselect() uses the timespec structure, not the timeval structure, for its %\S
  *    timeout parameter. The timespec structure uses seconds and nanoseconds,
- *    not seconds and microseconds, providing theoretically superior timeout 
+ *    not seconds and microseconds, providing theoretically superior timeout %\S
  *    resolution. In practice, however, neither call reliably provides even
  *    microsecond resolution.
  *  - A call to pselect() does not modify the timeout parameter.
@@ -9894,8 +9752,7 @@ int wrapper_poll() {
     if (fds[1].revents & POLLOUT)
         printf ("stdout is writable\n");
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_mmap2">
@@ -9923,23 +9780,23 @@ int wrapper_poll() {
  * ******************************************************
  * As an alternative to standard file I/O, the kernel
  * provides an interface that allows an application to
- * map a file into memory, meaning that there is a 
- * one-to-one correspondence between a memory address 
+ * map a file into memory, meaning that there is a %\S
+ * one-to-one correspondence between a memory address %\S
  * and a word in the file. The programmer can then access
  * the file directly through memory, identically to any
- * other chunk of memory-resident data—it is even possible 
- * to allow writes to the memory region to transparently 
+ * other chunk of memory-resident data—it is even possible %\S
+ * to allow writes to the memory region to transparently %\S
  * map back to the file on disk.
  *
  *  - or -
  *
- *  Perhaps because you want to force the use of a memory 
- *  mapping over the heap for a specific allocation, or 
- *  perhaps because you are writing your own memory allocation 
- *  system, you may want to manually create your own 
- *  anonymous memory mapping—either way, Linux makes it easy. 
+ *  Perhaps because you want to force the use of a memory %\S
+ *  mapping over the heap for a specific allocation, or %\S
+ *  perhaps because you are writing your own memory allocation %\S
+ *  system, you may want to manually create your own %\S
+ *  anonymous memory mapping—either way, Linux makes it easy. %\S
  *  Recall from Chapter 4 that the system call mmap()
- *  creates a memory mapping and the system call munmap() 
+ *  creates a memory mapping and the system call munmap() %\S
  *  destroys a mapping:
  * ******************************************************
 **/
@@ -9973,9 +9830,8 @@ int main(int argc, char ** argv) {
     if (close (fd))
             perror ("close");
 
-    /* 'p' points at one page of memory, use it... */  
-}
-]]>
+    /* 'p' points at one page of memory, use it... */  %\S
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_daemon">
@@ -10053,8 +9909,7 @@ int main (void)
 
         return 0;
 }
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_exec_prog">
@@ -10092,8 +9947,7 @@ int main(int argc, char ** argv) {
     if (ret == -1) perror ("execvp");
 
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_fork_call">
@@ -10141,7 +9995,7 @@ int main(int argc, char ** argv) {
         printf("I am the parent of pid=%%d.\n", pid);
         printf("My pid is =%%d.\n", getpid());
 
-        /* Will call the parent_out function when falling of the 
+        /* Will call the parent_out function when falling of the %\S
          * edge. */
         if (atexit(parent_out)) {
             fprintf(stderr, "atexit() failed!\n");
@@ -10161,7 +10015,7 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "atexit() failed!\n");
         }
         /* If I uncomment the line below then , the program ends with
-         * "atexit() succeeded." Otherwise the execv() flushes all 
+         * "atexit() succeeded." Otherwise the execv() flushes all %\S
          * registered functions with atexit(). */
         //exit(0);
 
@@ -10175,32 +10029,31 @@ int main(int argc, char ** argv) {
          *  - Any pending signals are lost.
          *  - Any signals that the process is catching (see Chapter 10)
          *    are returned to their default behavior, as the signal handlers
-         *    no longer exist in the process’s address space. 
-         *  - Any memory locks (see Chapter 9) are dropped. 
-         *  - Most thread attributes are returned to the default values. 
-         *  - Most process statistics are reset.  
-         *  - Anything related to the process’s memory address space, including any mapped files, 
-         *    is cleared. 
+         *    no longer exist in the process’s address space. %\S
+         *  - Any memory locks (see Chapter 9) are dropped. %\S
+         *  - Most thread attributes are returned to the default values. %\S
+         *  - Most process statistics are reset.  %\S
+         *  - Anything related to the process’s memory address space, including any mapped files, %\S
+         *    is cleared. %\S
          *  - Anything that exists solely in user space, including features of the C library,
-         *    such as atexit() behavior, is cleared.  
+         *    such as atexit() behavior, is cleared.  %\S
          *
-         * Some properties of the process, 
-         * however, do not change. For example, the pid, parent pid, priority, and owning 
+         * Some properties of the process, %\S
+         * however, do not change. For example, the pid, parent pid, priority, and owning %\S
          * user and group all remain the same.  Normally, open files are inherited across an exec.
-         * This means the newly executed program has full access to all of the files open in the 
+         * This means the newly executed program has full access to all of the files open in the %\S
          * original process, assuming it knows the file descriptor values. However, this is
-         * often not the desired behavior. 
+         * often not the desired behavior. %\S
          *
-         * The usual practice is to close files before the exec, 
-         * although it is also possible to instruct the kernel to 
-         * do so automatically via fcntl().  
+         * The usual practice is to close files before the exec, %\S
+         * although it is also possible to instruct the kernel to %\S
+         * do so automatically via fcntl().  %\S
          */
 
         return 0;
     }
 
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_wait_call">
@@ -10240,11 +10093,11 @@ int main(int argc, char ** argv) {
 **/
 void wrapper_system() {
     /*
-     * During execution of the command, SIGCHLD is blocked, 
-     * and SIGINT and SIGQUIT are ignored. Ignoring SIGINT 
+     * During execution of the command, SIGCHLD is blocked, %\S
+     * and SIGINT and SIGQUIT are ignored. Ignoring SIGINT %\S
      * and SIGQUIT has several implications,
-     * particularly if system() is invoked inside a loop. 
-     * If calling system() from within a loop, you should 
+     * particularly if system() is invoked inside a loop. %\S
+     * If calling system() from within a loop, you should %\S
      * ensure that the program properly checks the exit status of the child.
      * For example:
      */
@@ -10282,15 +10135,15 @@ int main(int argc, char ** argv) {
     pid = waitpid(-1, &status, 0); // Better
     /*
      * < −1
-     * Wait for any child process whose process group ID 
-     * is equal to the absolute value of this value. 
+     * Wait for any child process whose process group ID %\S
+     * is equal to the absolute value of this value. %\S
      * For example, passing −500 waits for any process in process group 500.
      *
      * −1
      * Wait for any child process. This is the same behavior as wait().
      *
      * 0
-     * Wait for any child process that belongs to the same process 
+     * Wait for any child process that belongs to the same process %\S
      * group as the calling process.
      *
      * > 0
@@ -10299,16 +10152,16 @@ int main(int argc, char ** argv) {
      */
 
     /*
-     * The options parameter is a binary OR of zero or more of the following 
+     * The options parameter is a binary OR of zero or more of the following %\S
      * options:
-     * 
+     * %\S
      *  - WNOHANG
-     * Do not block, but return immediately if no matching child process has 
+     * Do not block, but return immediately if no matching child process has %\S
      * already terminated (or stopped or continued).
-     *  
+     *  %\S
      *  - WUNTRACED
      * If set, the WIFSTOPPED bit in the returned status parameter is set,
-     * even if the calling process is not tracing the child process. 
+     * even if the calling process is not tracing the child process. %\S
      * This flag allows for the implementation of more general job control,
      * as in a shell.
      *
@@ -10339,8 +10192,7 @@ int main(int argc, char ** argv) {
             printf ("Continued\n");
 
    return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_signal_handling">
@@ -10424,8 +10276,7 @@ int main (void)
         }
 
         return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_threading">
@@ -10478,8 +10329,7 @@ int main (void)
         pthread_join (thing2, NULL);
 
         return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_thread_safety_H">
@@ -10494,7 +10344,7 @@ int main (void)
 
 * Created By : Mihai Constantin constant.mihai@googlemail.com
 
-* License : 
+* License : %\S
 
 ******************************************/
 
@@ -10533,7 +10383,7 @@ int ftrylockfile (FILE *stream);
 
 /**
  * ******************************************************
- * 
+ * %\S
 flockfile (stream);
 
 fputs ("List of treasure:\n", stream);
@@ -10547,7 +10397,7 @@ funlockfile (stream);
 
 /**
  * ******************************************************
- * 
+ * %\S
  * #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -10569,8 +10419,7 @@ void clearerr_unlocked (FILE *stream);
 **/
 
 
-#endif
-]]>
+#endif]]>
 			</text>
 		</p>
 		<p n="xlnx_multiplexed_H">
@@ -10585,7 +10434,7 @@ void clearerr_unlocked (FILE *stream);
 
 * Created By : Mihai Constantin constant.mihai@googlemail.com
 
-* License : 
+* License : %\S
 
 ******************************************/
 
@@ -10601,7 +10450,7 @@ void clearerr_unlocked (FILE *stream);
 
 /**
  * ******************************************************
- * @brief 
+ * @brief %\S
  * 1. Tell me when any of these fds become ready for i/o
  * 2. Sleep until one or more fds are ready
  * 3. Woken up! What is ready?
@@ -10613,8 +10462,7 @@ int wrapper_select();
 
 int wrapper_poll();
 
-#endif
-]]>
+#endif]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_lddbus">
@@ -10795,8 +10643,7 @@ static void ldd_bus_exit(void)
 }
 
 module_init(ldd_bus_init);
-module_exit(ldd_bus_exit);
-]]>
+module_exit(ldd_bus_exit);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_faulty">
@@ -10881,8 +10728,7 @@ void complete_cleanup(void)
 
 module_init(complete_init);
 module_exit(complete_cleanup);
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_complete">
@@ -10967,15 +10813,14 @@ void complete_cleanup(void)
 
 module_init(complete_init);
 module_exit(complete_cleanup);
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_hello">
 			<text>
 				<![CDATA[/*                                                     
- * $Id: hello.c,v 1.5 2004/10/26 03:32:21 corbet Exp $ 
- */                                                    
+ * $Id: hello.c,v 1.5 2004/10/26 03:32:21 corbet Exp $ %\S
+ */                                                    %\S
 #include <linux/init.h>
 #include <linux/module.h>
 MODULE_LICENSE("Dual BSD/GPL");
@@ -10992,27 +10837,26 @@ static void hello_exit(void)
 }
 
 module_init(hello_init);
-module_exit(hello_exit);
-]]>
+module_exit(hello_exit);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_hellop">
 			<text>
 				<![CDATA[/*                                                     
- * $Id: hellop.c,v 1.4 2004/09/26 07:02:43 gregkh Exp $ 
- */                                                    
+ * $Id: hellop.c,v 1.4 2004/09/26 07:02:43 gregkh Exp $ %\S
+ */                                                    %\S
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 
 MODULE_LICENSE("Dual BSD/GPL");
 
-/*                                                        
- * These lines, although not shown in the book,           
- * are needed to make hello.c run properly even when      
- * your kernel has version support enabled                
- */                                                       
-                                                          
+/*                                                        %\S
+ * These lines, although not shown in the book,           %\S
+ * are needed to make hello.c run properly even when      %\S
+ * your kernel has version support enabled                %\S
+ */                                                       %\S
+                                                          %\S
 
 /*
  * A couple of parameters that can be passed in: how many times we say
@@ -11037,8 +10881,7 @@ static void hello_exit(void)
 }
 
 module_init(hello_init);
-module_exit(hello_exit);
-]]>
+module_exit(hello_exit);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_jiq">
@@ -11059,7 +10902,7 @@ module_exit(hello_exit);
  *
  * $Id: jiq.c,v 1.7 2004/09/26 07:02:43 gregkh Exp $
  */
- 
+ %\S
 #include <linux/config.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -11130,7 +10973,7 @@ static int jiq_print(void *ptr)
 	char *buf = data->buf;
 	unsigned long j = jiffies;
 
-	if (len > LIMIT) { 
+	if (len > LIMIT) { %\S
 		wake_up_interruptible(&jiq_wait);
 		return 0;
 	}
@@ -11159,10 +11002,10 @@ static int jiq_print(void *ptr)
 static void jiq_print_wq(void *ptr)
 {
 	struct clientdata *data = (struct clientdata *) ptr;
-    
+    %\S
 	if (! jiq_print (ptr))
 		return;
-    
+    %\S
 	if (data->delay)
 		schedule_delayed_work(&jiq_work, data->delay);
 	else
@@ -11180,7 +11023,7 @@ static int jiq_read_wq(char *buf, char **start, off_t offset,
 	jiq_data.buf = buf;              /* print in this place */
 	jiq_data.jiffies = jiffies;      /* initial time */
 	jiq_data.delay = 0;
-    
+    %\S
 	prepare_to_wait(&jiq_wait, &wait, TASK_INTERRUPTIBLE);
 	schedule_work(&jiq_work);
 	schedule();
@@ -11200,7 +11043,7 @@ static int jiq_read_wq_delayed(char *buf, char **start, off_t offset,
 	jiq_data.buf = buf;              /* print in this place */
 	jiq_data.jiffies = jiffies;      /* initial time */
 	jiq_data.delay = delay;
-    
+    %\S
 	prepare_to_wait(&jiq_wait, &wait, TASK_INTERRUPTIBLE);
 	schedule_delayed_work(&jiq_work, delay);
 	schedule();
@@ -11271,7 +11114,7 @@ static int jiq_read_run_timer(char *buf, char **start, off_t offset,
 	add_timer(&jiq_timer);
 	interruptible_sleep_on(&jiq_wait);  /* RACE */
 	del_timer_sync(&jiq_timer);  /* in case a signal woke us up */
-    
+    %\S
 	*eof = 1;
 	return jiq_data.len;
 }
@@ -11306,8 +11149,7 @@ static void jiq_cleanup(void)
 
 
 module_init(jiq_init);
-module_exit(jiq_cleanup);
-]]>
+module_exit(jiq_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_jit">
@@ -11603,8 +11445,7 @@ void __exit jit_cleanup(void)
 }
 
 module_init(jit_init);
-module_exit(jit_cleanup);
-]]>
+module_exit(jit_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_kdataalign">
@@ -11677,8 +11518,7 @@ static int data_init(void)
 module_init(data_init);
 module_exit(data_cleanup);
 
-MODULE_LICENSE("Dual BSD/GPL");
-]]>
+MODULE_LICENSE("Dual BSD/GPL");]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_kdatasize">
@@ -11730,8 +11570,7 @@ int data_init(void)
 module_init(data_init);
 module_exit(data_cleanup);
 
-MODULE_LICENSE("Dual BSD/GPL");
-]]>
+MODULE_LICENSE("Dual BSD/GPL");]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_seq">
@@ -11844,8 +11683,7 @@ static void ct_exit(void)
 }
 
 module_init(ct_init);
-module_exit(ct_exit);
-]]>
+module_exit(ct_exit);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_silly">
@@ -11965,7 +11803,7 @@ ssize_t silly_read(struct file *filp, char __user *buf, size_t count, loff_t *f_
 		mode = M_8;
 
 	switch(mode) {
-	  case M_32: 
+	  case M_32: %\S
 		while (count >= 4) {
 			*(u32 *)ptr = ioread32(add);
 			add += 4;
@@ -11973,8 +11811,8 @@ ssize_t silly_read(struct file *filp, char __user *buf, size_t count, loff_t *f_
 			ptr += 4;
 		}
 		break;
-	    
-	  case M_16: 
+	    %\S
+	  case M_16: %\S
 		while (count >= 2) {
 			*(u16 *)ptr = ioread16(add);
 			add+=2;
@@ -11982,8 +11820,8 @@ ssize_t silly_read(struct file *filp, char __user *buf, size_t count, loff_t *f_
 			ptr+=2;
 		}
 		break;
-	    
-	  case M_8: 
+	    %\S
+	  case M_8: %\S
 		while (count) {
 			*ptr = ioread8(add);
 			add++;
@@ -12062,7 +11900,7 @@ ssize_t silly_write(struct file *filp, const char __user *buf, size_t count,
 	add = (void __iomem *)(io_base + (isa_addr - ISA_BASE));
 
 	switch(mode) {
-	  case M_32: 
+	  case M_32: %\S
 		while (count >= 4) {
 			iowrite8(*(u32 *)ptr, add);
 			add += 4;
@@ -12070,8 +11908,8 @@ ssize_t silly_write(struct file *filp, const char __user *buf, size_t count,
 			ptr += 4;
 		}
 		break;
-	    
-	  case M_16: 
+	    %\S
+	  case M_16: %\S
 		while (count >= 2) {
 			iowrite8(*(u16 *)ptr, add);
 			add += 2;
@@ -12079,8 +11917,8 @@ ssize_t silly_write(struct file *filp, const char __user *buf, size_t count,
 			ptr += 2;
 		}
 		break;
-	    
-	  case M_8: 
+	    %\S
+	  case M_8: %\S
 		while (count) {
 			iowrite8(*ptr, add);
 			add++;
@@ -12143,8 +11981,7 @@ void silly_cleanup(void)
 
 
 module_init(silly_init);
-module_exit(silly_cleanup);
-]]>
+module_exit(silly_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_sleepy">
@@ -12232,8 +12069,7 @@ void sleepy_cleanup(void)
 
 module_init(sleepy_init);
 module_exit(sleepy_cleanup);
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_asynctest">
@@ -12294,8 +12130,7 @@ int main(int argc, char **argv)
         write(1,buffer,count);
         gotdata=0;
     }
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_dataalign">
@@ -12357,8 +12192,7 @@ int main(int argc, char **argv)
 	   (int)((void *)(&u4b.t) - (void *)&u4b),
 	   (int)((void *)(&u8b.t) - (void *)&u8b));
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_datasize">
@@ -12397,8 +12231,7 @@ int main(int argc, char **argv)
 	   (int)sizeof(void *), (int)sizeof(long long), (int)sizeof(__u8),
 	   (int)sizeof(__u16), (int)sizeof(__u32), (int)sizeof(__u64));
     return 0;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_inp">
@@ -12410,7 +12243,7 @@ int main(int argc, char **argv)
  *     to its own name
  *
  * Copyright (C) 1998,2000,2001 Alessandro Rubini
- * 
+ * %\S
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -12484,7 +12317,7 @@ static int read_and_print_one(unsigned int port,int size)
 	return 1;
     }
     lseek(fd, port, SEEK_SET);
-    
+    %\S
     if (size == 4) {
 	read(fd, &l, 4);
 	printf("%%04x: 0x%%08x\n", port, l);
@@ -12504,7 +12337,7 @@ static int read_and_print_one(unsigned int port,int size)
 int main(int argc, char **argv)
 {
     unsigned int i, n, port, size, error = 0;
-    
+    %\S
     prgname = argv[0];
     /* find the data size */
     switch (prgname[strlen(prgname)-1]) {
@@ -12531,14 +12364,13 @@ int main(int argc, char **argv)
     }
     exit (error ? 1 : 0);
 }
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_load50">
 			<text>
 				<![CDATA[/*
- * load50.c -- a simple busy-looping tool. 
+ * load50.c -- a simple busy-looping tool. %\S
  * Obviously, this runs with any kernel and any Unix
  *
  * Copyright (C) 2001 Alessandro Rubini and Jonathan Corbet
@@ -12551,7 +12383,7 @@ int main(int argc, char **argv)
  * Drivers" by Alessandro Rubini and Jonathan Corbet, published
  * by O'Reilly & Associates.   No warranty is attached;
  * we cannot take responsibility for errors or fitness for use.
- */ 
+ */ %\S
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12565,7 +12397,7 @@ int main(int argc, char **argv)
 		load=atoi(argv[1]);
 	}
 	printf("Bringing load to %%i\n",load);
-  
+  %\S
 	for (i=0; i<load; i++)
 		if (fork()==0)
 			break;
@@ -12574,8 +12406,7 @@ int main(int argc, char **argv)
 		;
 	return 0;
 }
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_mapcmp">
@@ -12666,8 +12497,7 @@ static char *mapdev (const char *dev, unsigned long offset,
 	}
 	printf ("Mapped %%s (%%lu @ %%lx) at %%p\n", dev, size, offset, addr);
 	return (addr);
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_mapper">
@@ -12676,7 +12506,7 @@ static char *mapdev (const char *dev, unsigned long offset,
  * mapper.c -- simple file that mmap()s a file region and prints it
  *
  * Copyright (C) 1998,2000,2001 Alessandro Rubini
- * 
+ * %\S
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -12742,8 +12572,7 @@ int main(int argc, char **argv)
     fwrite(address, 1, len, stdout);
     return 0;
 }
-        
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_nbtest">
@@ -12791,8 +12620,7 @@ int main(int argc, char **argv)
 	}
 	perror(n < 0 ? "stdin" : "stdout");
 	exit(1);
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_netifdebug">
@@ -12880,8 +12708,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     exit(0);
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_outp">
@@ -12893,7 +12720,7 @@ int main(int argc, char **argv)
  *     to its own name
  *
  * Copyright (C) 1998,2000,2001 Alessandro Rubini
- * 
+ * %\S
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -12967,7 +12794,7 @@ static int write_one(unsigned int port, unsigned int val, int size)
 	return 1;
     }
     lseek(fd, port, SEEK_SET);
-    
+    %\S
     if (size == 4) {
 	write(fd, &val, 4);
     } else if (size == 2) {
@@ -12985,7 +12812,7 @@ static int write_one(unsigned int port, unsigned int val, int size)
 int main(int argc, char **argv)
 {
     unsigned int i, n, port, val, size, error = 0;
-    
+    %\S
     prgname = argv[0];
     /* find the data size */
     switch (prgname[strlen(prgname)-1]) {
@@ -13021,8 +12848,7 @@ int main(int argc, char **argv)
 	error += write_one(port, val, size);
     }
     exit (error ? 1 : 0);
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_polltest">
@@ -13073,8 +12899,7 @@ int main(int argc, char **argv)
     }
     perror( n<0 ? "stdin" : "stdout");
     exit(1);
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_setconsole">
@@ -13083,7 +12908,7 @@ int main(int argc, char **argv)
  * setconsole.c -- choose a console to receive kernel messages
  *
  * Copyright (C) 1998,2000,2001 Alessandro Rubini
- * 
+ * %\S
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -13120,8 +12945,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     exit(0);
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_setlevel">
@@ -13130,7 +12954,7 @@ int main(int argc, char **argv)
  * setlevel.c -- choose a console_loglevel for the kernel
  *
  * Copyright (C) 1998,2000,2001 Alessandro Rubini
- * 
+ * %\S
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -13166,14 +12990,13 @@ int main(int argc, char **argv)
     } else {
         fprintf(stderr, "%%s: need a single arg\n",argv[0]); exit(1);
     }
-    if (syslog(8,NULL,level) < 0) {  
+    if (syslog(8,NULL,level) < 0) {  %\S
         fprintf(stderr,"%%s: syslog(setlevel): %%s\n",
                 argv[0],strerror(errno));
         exit(1);
     }
     exit(0);
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_pci_skel">
@@ -13201,7 +13024,7 @@ static unsigned char skel_get_revision(struct pci_dev *dev)
 
 static int probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
-	/* Do probing type stuff here.  
+	/* Do probing type stuff here.  %\S
 	 * Like calling request_region();
 	 */
 	pci_enable_device(dev);
@@ -13240,8 +13063,7 @@ static void __exit pci_skel_exit(void)
 MODULE_LICENSE("GPL");
 
 module_init(pci_skel_init);
-module_exit(pci_skel_exit);
-]]>
+module_exit(pci_skel_exit);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_sbull">
@@ -13398,7 +13220,7 @@ static int sbull_xfer_request(struct sbull_dev *dev, struct request *req)
 {
 	struct bio *bio;
 	int nsect = 0;
-    
+    %\S
 	rq_for_each_bio(bio, req) {
 		sbull_xfer_bio(dev, bio);
 		nsect += bio->bi_size/KERNEL_SECTOR_SIZE;
@@ -13458,7 +13280,7 @@ static int sbull_open(struct inode *inode, struct file *filp)
 	del_timer_sync(&dev->timer);
 	filp->private_data = dev;
 	spin_lock(&dev->lock);
-	if (! dev->users) 
+	if (! dev->users) %\S
 		check_disk_change(inode->i_bdev);
 	dev->users++;
 	spin_unlock(&dev->lock);
@@ -13515,7 +13337,7 @@ void sbull_invalidate(unsigned long ldev)
 	struct sbull_dev *dev = (struct sbull_dev *) ldev;
 
 	spin_lock(&dev->lock);
-	if (dev->users || !dev->data) 
+	if (dev->users || !dev->data) %\S
 		printk (KERN_WARNING "sbull: timer sanity check failed\n");
 	else
 		dev->media_change = 1;
@@ -13665,9 +13487,9 @@ static int __init sbull_init(void)
 	Devices = kmalloc(ndevices*sizeof (struct sbull_dev), GFP_KERNEL);
 	if (Devices == NULL)
 		goto out_unregister;
-	for (i = 0; i < ndevices; i++) 
+	for (i = 0; i < ndevices; i++) %\S
 		setup_device(Devices + i, i);
-    
+    %\S
 	return 0;
 
   out_unregister:
@@ -13701,8 +13523,7 @@ static void sbull_exit(void)
 }
 	
 module_init(sbull_init);
-module_exit(sbull_exit);
-]]>
+module_exit(sbull_exit);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_access">
@@ -13725,7 +13546,7 @@ module_exit(sbull_exit);
  */
 
 /* FIXME: cloned devices as a use for kobjects? */
- 
+ %\S
 #include <linux/kernel.h> /* printk() */
 #include <linux/module.h>
 #include <linux/slab.h>   /* kmalloc() */
@@ -13811,7 +13632,7 @@ static int scull_u_open(struct inode *inode, struct file *filp)
 	struct scull_dev *dev = &scull_u_device; /* device information */
 
 	spin_lock(&scull_u_lock);
-	if (scull_u_count && 
+	if (scull_u_count && %\S
 			(scull_u_owner != current->uid) &&  /* allow user */
 			(scull_u_owner != current->euid) && /* allow whoever did su */
 			!capable(CAP_DAC_OVERRIDE)) { /* still allow root */
@@ -13941,7 +13762,7 @@ struct scull_listitem {
 	struct scull_dev device;
 	dev_t key;
 	struct list_head list;
-    
+    %\S
 };
 
 /* The list of devices, and a lock to protect it */
@@ -13949,7 +13770,7 @@ static LIST_HEAD(scull_c_list);
 static spinlock_t scull_c_lock = SPIN_LOCK_UNLOCKED;
 
 /* A placeholder scull_dev which really just holds the cdev stuff. */
-static struct scull_dev scull_c_device;   
+static struct scull_dev scull_c_device;   %\S
 
 /* Look for a device or create one if missing */
 static struct scull_dev *scull_c_lookfor_device(dev_t key)
@@ -13982,8 +13803,8 @@ static int scull_c_open(struct inode *inode, struct file *filp)
 {
 	struct scull_dev *dev;
 	dev_t key;
- 
-	if (!current->signal->tty) { 
+ %\S
+	if (!current->signal->tty) { %\S
 		PDEBUG("Process \"%%s\" has no ctl tty\n", current->comm);
 		return -EINVAL;
 	}
@@ -14116,8 +13937,7 @@ void scull_access_cleanup(void)
 	/* Free up our number space */
 	unregister_chrdev_region(scull_a_firstdev, SCULL_N_ADEVS);
 	return;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scull_main">
@@ -14416,7 +14236,7 @@ struct scull_qset *scull_follow(struct scull_dev *dev, int n)
 ssize_t scull_read(struct file *filp, char __user *buf, size_t count,
                 loff_t *f_pos)
 {
-	struct scull_dev *dev = filp->private_data; 
+	struct scull_dev *dev = filp->private_data; %\S
 	struct scull_qset *dptr;	/* the first listitem */
 	int quantum = dev->quantum, qset = dev->qset;
 	int itemsize = quantum * qset; /* how many bytes in the listitem */
@@ -14520,7 +14340,7 @@ int scull_ioctl(struct inode *inode, struct file *filp,
 
 	int err = 0, tmp;
 	int retval = 0;
-    
+    %\S
 	/*
 	 * extract the type and number bitfields, and don't decode
 	 * wrong cmds: return ENOTTY (inappropriate ioctl) before access_ok()
@@ -14546,7 +14366,7 @@ int scull_ioctl(struct inode *inode, struct file *filp,
 		scull_quantum = SCULL_QUANTUM;
 		scull_qset = SCULL_QSET;
 		break;
-        
+        %\S
 	  case SCULL_IOCSQUANTUM: /* Set: arg points to the value */
 		if (! capable (CAP_SYS_ADMIN))
 			return -EPERM;
@@ -14581,7 +14401,7 @@ int scull_ioctl(struct inode *inode, struct file *filp,
 		tmp = scull_quantum;
 		scull_quantum = arg;
 		return tmp;
-        
+        %\S
 	  case SCULL_IOCSQSET:
 		if (! capable (CAP_SYS_ADMIN))
 			return -EPERM;
@@ -14725,7 +14545,7 @@ void scull_cleanup_module(void)
 static void scull_setup_cdev(struct scull_dev *dev, int index)
 {
 	int err, devno = MKDEV(scull_major, scull_minor + index);
-    
+    %\S
 	cdev_init(&dev->cdev, &scull_fops);
 	dev->cdev.owner = THIS_MODULE;
 	dev->cdev.ops = &scull_fops;
@@ -14758,7 +14578,7 @@ int scull_init_module(void)
 		return result;
 	}
 
-        /* 
+        /* %\S
 	 * allocate the devices -- we can't have them static, as the number
 	 * can be specified at load time
 	 */
@@ -14794,8 +14614,7 @@ int scull_init_module(void)
 }
 
 module_init(scull_init_module);
-module_exit(scull_cleanup_module);
-]]>
+module_exit(scull_cleanup_module);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scull_access">
@@ -14818,7 +14637,7 @@ module_exit(scull_cleanup_module);
  */
 
 /* FIXME: cloned devices as a use for kobjects? */
- 
+ %\S
 #include <linux/kernel.h> /* printk() */
 #include <linux/module.h>
 #include <linux/slab.h>   /* kmalloc() */
@@ -14904,7 +14723,7 @@ static int scull_u_open(struct inode *inode, struct file *filp)
 	struct scull_dev *dev = &scull_u_device; /* device information */
 
 	spin_lock(&scull_u_lock);
-	if (scull_u_count && 
+	if (scull_u_count && %\S
 			(scull_u_owner != current->uid) &&  /* allow user */
 			(scull_u_owner != current->euid) && /* allow whoever did su */
 			!capable(CAP_DAC_OVERRIDE)) { /* still allow root */
@@ -15034,7 +14853,7 @@ struct scull_listitem {
 	struct scull_dev device;
 	dev_t key;
 	struct list_head list;
-    
+    %\S
 };
 
 /* The list of devices, and a lock to protect it */
@@ -15042,7 +14861,7 @@ static LIST_HEAD(scull_c_list);
 static spinlock_t scull_c_lock = SPIN_LOCK_UNLOCKED;
 
 /* A placeholder scull_dev which really just holds the cdev stuff. */
-static struct scull_dev scull_c_device;   
+static struct scull_dev scull_c_device;   %\S
 
 /* Look for a device or create one if missing */
 static struct scull_dev *scull_c_lookfor_device(dev_t key)
@@ -15075,8 +14894,8 @@ static int scull_c_open(struct inode *inode, struct file *filp)
 {
 	struct scull_dev *dev;
 	dev_t key;
- 
-	if (!current->signal->tty) { 
+ %\S
+	if (!current->signal->tty) { %\S
 		PDEBUG("Process \"%%s\" has no ctl tty\n", current->comm);
 		return -EINVAL;
 	}
@@ -15209,8 +15028,7 @@ void scull_access_cleanup(void)
 	/* Free up our number space */
 	unregister_chrdev_region(scull_a_firstdev, SCULL_N_ADEVS);
 	return;
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scull_pipe">
@@ -15230,7 +15048,7 @@ void scull_access_cleanup(void)
  * we cannot take responsibility for errors or fitness for use.
  *
  */
- 
+ %\S
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 
@@ -15546,7 +15364,7 @@ struct file_operations scull_pipe_fops = {
 static void scull_p_setup_cdev(struct scull_pipe *dev, int index)
 {
 	int err, devno = scull_p_devno + index;
-    
+    %\S
 	cdev_init(&dev->cdev, &scull_pipe_fops);
 	dev->cdev.owner = THIS_MODULE;
 	err = cdev_add (&dev->cdev, devno, 1);
@@ -15555,7 +15373,7 @@ static void scull_p_setup_cdev(struct scull_pipe *dev, int index)
 		printk(KERN_NOTICE "Error %%d adding scullpipe%%d", err, index);
 }
 
- 
+ %\S
 
 /*
  * Initialize the pipe devs; return how many we did.
@@ -15610,8 +15428,7 @@ void scull_p_cleanup(void)
 	kfree(scull_p_devices);
 	unregister_chrdev_region(scull_p_devno, scull_p_nr_devs);
 	scull_p_devices = NULL; /* pedantic */
-}
-]]>
+}]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scullc_main">
@@ -15766,7 +15583,7 @@ int scullc_release (struct inode *inode, struct file *filp)
 }
 
 /*
- * Follow the list 
+ * Follow the list %\S
  */
 struct scullc_dev *scullc_follow(struct scullc_dev *dev, int n)
 {
@@ -15798,7 +15615,7 @@ ssize_t scullc_read (struct file *filp, char __user *buf, size_t count,
 
 	if (down_interruptible (&dev->sem))
 		return -ERESTARTSYS;
-	if (*f_pos > dev->size) 
+	if (*f_pos > dev->size) %\S
 		goto nothing;
 	if (*f_pos + count > dev->size)
 		count = dev->size - *f_pos;
@@ -15874,7 +15691,7 @@ ssize_t scullc_write (struct file *filp, const char __user *buf, size_t count,
 		goto nomem;
 	}
 	*f_pos += count;
- 
+ %\S
     	/* update the size */
 	if (dev->size < *f_pos)
 		dev->size = *f_pos;
@@ -16074,7 +15891,7 @@ static ssize_t scullc_aio_write(struct kiocb *iocb, const char __user *buf,
 }
 
 
- 
+ %\S
 
 /*
  * The fops
@@ -16124,7 +15941,7 @@ int scullc_trim(struct scullc_dev *dev)
 static void scullc_setup_cdev(struct scullc_dev *dev, int index)
 {
 	int err, devno = MKDEV(scullc_major, index);
-    
+    %\S
 	cdev_init(&dev->cdev, &scullc_fops);
 	dev->cdev.owner = THIS_MODULE;
 	dev->cdev.ops = &scullc_fops;
@@ -16158,7 +15975,7 @@ int scullc_init(void)
 		return result;
 
 	
-	/* 
+	/* %\S
 	 * allocate the devices -- we can't have them static, as the number
 	 * can be specified at load time
 	 */
@@ -16215,8 +16032,7 @@ void scullc_cleanup(void)
 
 
 module_init(scullc_init);
-module_exit(scullc_cleanup);
-]]>
+module_exit(scullc_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scullc_mmap">
@@ -16338,8 +16154,7 @@ int scullc_mmap(struct file *filp, struct vm_area_struct *vma)
 	scullc_vma_open(vma);
 	return 0;
 }
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_sculld_main">
@@ -16501,7 +16316,7 @@ int sculld_release (struct inode *inode, struct file *filp)
 }
 
 /*
- * Follow the list 
+ * Follow the list %\S
  */
 struct sculld_dev *sculld_follow(struct sculld_dev *dev, int n)
 {
@@ -16533,7 +16348,7 @@ ssize_t sculld_read (struct file *filp, char __user *buf, size_t count,
 
 	if (down_interruptible (&dev->sem))
 		return -ERESTARTSYS;
-	if (*f_pos > dev->size) 
+	if (*f_pos > dev->size) %\S
 		goto nothing;
 	if (*f_pos + count > dev->size)
 		count = dev->size - *f_pos;
@@ -16610,7 +16425,7 @@ ssize_t sculld_write (struct file *filp, const char __user *buf, size_t count,
 		goto nomem;
 	}
 	*f_pos += count;
- 
+ %\S
     	/* update the size */
 	if (dev->size < *f_pos)
 		dev->size = *f_pos;
@@ -16810,7 +16625,7 @@ static ssize_t sculld_aio_write(struct kiocb *iocb, const char __user *buf,
 }
 
 
- 
+ %\S
 /*
  * Mmap *is* available, but confined in a different file
  */
@@ -16868,7 +16683,7 @@ int sculld_trim(struct sculld_dev *dev)
 static void sculld_setup_cdev(struct sculld_dev *dev, int index)
 {
 	int err, devno = MKDEV(sculld_major, index);
-    
+    %\S
 	cdev_init(&dev->cdev, &sculld_fops);
 	dev->cdev.owner = THIS_MODULE;
 	dev->cdev.ops = &sculld_fops;
@@ -16924,7 +16739,7 @@ int sculld_init(void)
 	 */
 	register_ldd_driver(&sculld_driver);
 	
-	/* 
+	/* %\S
 	 * allocate the devices -- we can't have them static, as the number
 	 * can be specified at load time
 	 */
@@ -16975,8 +16790,7 @@ void sculld_cleanup(void)
 
 
 module_init(sculld_init);
-module_exit(sculld_cleanup);
-]]>
+module_exit(sculld_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_sculld_mmap">
@@ -17098,8 +16912,7 @@ int sculld_mmap(struct file *filp, struct vm_area_struct *vma)
 	sculld_vma_open(vma);
 	return 0;
 }
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scullp_main">
@@ -17252,7 +17065,7 @@ int scullp_release (struct inode *inode, struct file *filp)
 }
 
 /*
- * Follow the list 
+ * Follow the list %\S
  */
 struct scullp_dev *scullp_follow(struct scullp_dev *dev, int n)
 {
@@ -17284,7 +17097,7 @@ ssize_t scullp_read (struct file *filp, char __user *buf, size_t count,
 
 	if (down_interruptible (&dev->sem))
 		return -ERESTARTSYS;
-	if (*f_pos > dev->size) 
+	if (*f_pos > dev->size) %\S
 		goto nothing;
 	if (*f_pos + count > dev->size)
 		count = dev->size - *f_pos;
@@ -17361,7 +17174,7 @@ ssize_t scullp_write (struct file *filp, const char __user *buf, size_t count,
 		goto nomem;
 	}
 	*f_pos += count;
- 
+ %\S
     	/* update the size */
 	if (dev->size < *f_pos)
 		dev->size = *f_pos;
@@ -17561,7 +17374,7 @@ static ssize_t scullp_aio_write(struct kiocb *iocb, const char __user *buf,
 }
 
 
- 
+ %\S
 /*
  * Mmap *is* available, but confined in a different file
  */
@@ -17619,7 +17432,7 @@ int scullp_trim(struct scullp_dev *dev)
 static void scullp_setup_cdev(struct scullp_dev *dev, int index)
 {
 	int err, devno = MKDEV(scullp_major, index);
-    
+    %\S
 	cdev_init(&dev->cdev, &scullp_fops);
 	dev->cdev.owner = THIS_MODULE;
 	dev->cdev.ops = &scullp_fops;
@@ -17653,7 +17466,7 @@ int scullp_init(void)
 		return result;
 
 	
-	/* 
+	/* %\S
 	 * allocate the devices -- we can't have them static, as the number
 	 * can be specified at load time
 	 */
@@ -17701,8 +17514,7 @@ void scullp_cleanup(void)
 
 
 module_init(scullp_init);
-module_exit(scullp_cleanup);
-]]>
+module_exit(scullp_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scullp_mmap">
@@ -17825,8 +17637,7 @@ int scullp_mmap(struct file *filp, struct vm_area_struct *vma)
 	scullp_vma_open(vma);
 	return 0;
 }
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scullv_main">
@@ -17980,7 +17791,7 @@ int scullv_release (struct inode *inode, struct file *filp)
 }
 
 /*
- * Follow the list 
+ * Follow the list %\S
  */
 struct scullv_dev *scullv_follow(struct scullv_dev *dev, int n)
 {
@@ -18012,7 +17823,7 @@ ssize_t scullv_read (struct file *filp, char __user *buf, size_t count,
 
 	if (down_interruptible (&dev->sem))
 		return -ERESTARTSYS;
-	if (*f_pos > dev->size) 
+	if (*f_pos > dev->size) %\S
 		goto nothing;
 	if (*f_pos + count > dev->size)
 		count = dev->size - *f_pos;
@@ -18088,7 +17899,7 @@ ssize_t scullv_write (struct file *filp, const char __user *buf, size_t count,
 		goto nomem;
 	}
 	*f_pos += count;
- 
+ %\S
     	/* update the size */
 	if (dev->size < *f_pos)
 		dev->size = *f_pos;
@@ -18288,7 +18099,7 @@ static ssize_t scullv_aio_write(struct kiocb *iocb, const char __user *buf,
 }
 
 
- 
+ %\S
 /*
  * Mmap *is* available, but confined in a different file
  */
@@ -18345,7 +18156,7 @@ int scullv_trim(struct scullv_dev *dev)
 static void scullv_setup_cdev(struct scullv_dev *dev, int index)
 {
 	int err, devno = MKDEV(scullv_major, index);
-    
+    %\S
 	cdev_init(&dev->cdev, &scullv_fops);
 	dev->cdev.owner = THIS_MODULE;
 	dev->cdev.ops = &scullv_fops;
@@ -18379,7 +18190,7 @@ int scullv_init(void)
 		return result;
 
 	
-	/* 
+	/* %\S
 	 * allocate the devices -- we can't have them static, as the number
 	 * can be specified at load time
 	 */
@@ -18427,8 +18238,7 @@ void scullv_cleanup(void)
 
 
 module_init(scullv_init);
-module_exit(scullv_cleanup);
-]]>
+module_exit(scullv_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scullv_mmap">
@@ -18552,8 +18362,7 @@ int scullv_mmap(struct file *filp, struct vm_area_struct *vma)
 	scullv_vma_open(vma);
 	return 0;
 }
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_short">
@@ -18664,11 +18473,11 @@ static inline void short_incr_bp(volatile unsigned long *index, int delta)
 /*
  * The devices with low minor numbers write/read burst of data to/from
  * specific I/O ports (by default the parallel ones).
- * 
+ * %\S
  * The device with 128 as minor number returns ascii strings telling
  * when interrupts have been received. Writing to the device toggles
  * 00/FF on the parallel data lines. If there is a loopback wire, this
- * generates interrupts.  
+ * generates interrupts.  %\S
  */
 
 int short_open (struct inode *inode, struct file *filp)
@@ -18699,7 +18508,7 @@ ssize_t do_short_read (struct inode *inode, struct file *filp, char __user *buf,
 	void *address = (void *) short_base + (minor&0x0f);
 	int mode = (minor&0x70) >> 4;
 	unsigned char *kbuf = kmalloc(count, GFP_KERNEL), *ptr;
-    
+    %\S
 	if (!kbuf)
 		return -ENOMEM;
 	ptr = kbuf;
@@ -18850,7 +18659,7 @@ ssize_t short_i_read (struct file *filp, char __user *buf, size_t count, loff_t 
 		finish_wait(&short_queue, &wait);
 		if (signal_pending (current))  /* a signal arrived */
 			return -ERESTARTSYS; /* tell the fs layer to handle it */
-	} 
+	} %\S
 	/* count0 is the number of readable data bytes */
 	count0 = short_head - short_tail;
 	if (count0 < 0) /* wrapped */
@@ -19249,8 +19058,7 @@ void short_cleanup(void)
 }
 
 module_init(short_init);
-module_exit(short_cleanup);
-]]>
+module_exit(short_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_shortprint">
@@ -19475,7 +19283,7 @@ static void shortp_wait(void)
 		printk(KERN_INFO "Status is 0x%%x\n", inb(shortp_base + SP_STATUS));
 		while ((inb(shortp_base + SP_STATUS) & SP_SR_BUSY) == 0) {
 			set_current_state(TASK_INTERRUPTIBLE);
-			schedule_timeout(10*HZ); 
+			schedule_timeout(10*HZ); %\S
 		}
 	}
 }
@@ -19593,7 +19401,7 @@ static void shortp_do_work(void *unused)
 	if (shortp_out_head == shortp_out_tail) { /* empty */
 		shortp_output_active = 0;
 		wake_up_interruptible(&shortp_empty_queue);
-		del_timer(&shortp_timer);  
+		del_timer(&shortp_timer);  %\S
 	}
 	/* Nope, write another byte */
 	else
@@ -19619,10 +19427,10 @@ static void shortp_do_work(void *unused)
  */
 static irqreturn_t shortp_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	if (! shortp_output_active) 
+	if (! shortp_output_active) %\S
 		return IRQ_NONE;
 
-	/* Remember the time, and farm off the rest to the workqueue function */ 
+	/* Remember the time, and farm off the rest to the workqueue function */ %\S
 	do_gettimeofday(&shortp_tv);
 	queue_work(shortp_workqueue, &shortp_work);
 	return IRQ_HANDLED;
@@ -19637,7 +19445,7 @@ static void shortp_timeout(unsigned long unused)
 {
 	unsigned long flags;
 	unsigned char status;
-   
+   %\S
 	if (! shortp_output_active)
 		return;
 	spin_lock_irqsave(&shortp_out_lock, flags);
@@ -19655,7 +19463,7 @@ static void shortp_timeout(unsigned long unused)
 	spin_unlock_irqrestore(&shortp_out_lock, flags);
 	shortp_interrupt(shortp_irq, NULL, NULL);
 }
-    
+    %\S
 
 
 
@@ -19714,14 +19522,14 @@ static int shortp_init(void)
 	shortp_out_buffer = (unsigned char *) __get_free_pages(GFP_KERNEL, 0);
 	shortp_out_head = shortp_out_tail = shortp_out_buffer;
 	sema_init(&shortp_out_sem, 1);
-    
+    %\S
 	/* And the output info */
 	shortp_output_active = 0;
 	spin_lock_init(&shortp_out_lock);
 	init_timer(&shortp_timer);
 	shortp_timer.function = shortp_timeout;
 	shortp_timer.data = 0;
-    
+    %\S
 	/* Set up our workqueue. */
 	shortp_workqueue = create_singlethread_workqueue("shortprint");
 
@@ -19775,8 +19583,7 @@ static void shortp_cleanup(void)
 }
 
 module_init(shortp_init);
-module_exit(shortp_cleanup);
-]]>
+module_exit(shortp_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_simple">
@@ -19932,7 +19739,7 @@ static void simple_setup_cdev(struct cdev *dev, int minor,
 		struct file_operations *fops)
 {
 	int err, devno = MKDEV(simple_major, minor);
-    
+    %\S
 	cdev_init(dev, fops);
 	dev->owner = THIS_MODULE;
 	dev->ops = fops;
@@ -20015,8 +19822,7 @@ static void simple_cleanup(void)
 
 
 module_init(simple_init);
-module_exit(simple_cleanup);
-]]>
+module_exit(simple_cleanup);]]>
 			</text>
 		</p>
 		<p n="xln_drv_skull_clean">
@@ -20042,8 +19848,7 @@ module_exit(skull_cleanup);
 
 
 
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_skull_init">
@@ -20141,8 +19946,8 @@ module_param(skull_port_base, int, 0);
 static int skull_find_hw(void) /* returns the # of devices */
 {
     /* base is either the load-time value or the first trial */
-    int base = skull_port_base ? skull_port_base 
-                             : SKULL_PORT_FLOOR; 
+    int base = skull_port_base ? skull_port_base %\S
+                             : SKULL_PORT_FLOOR; %\S
     int result = 0;
 
     /* loop one time if value assigned, try them all if autodetecting */
@@ -20171,11 +19976,11 @@ int skull_init(void)
     unsigned long flags;          /* used to hold system flags */
     unsigned long add, i;
     void *base;
-    
+    %\S
     /* Use ioremap to get a handle on our region */
     base = ioremap(ISA_REGION_BEGIN, ISA_REGION_END - ISA_REGION_BEGIN);
     base -= ISA_REGION_BEGIN;  /* Do the offset once */
-    
+    %\S
     /* probe all the memory hole in 2KB steps */
     for (add = ISA_REGION_BEGIN; add < ISA_REGION_END; add += STEP) {
 	/*
@@ -20188,7 +19993,7 @@ int skull_init(void)
 	/*
 	 * Read and write the beginning of the region and see what happens.
 	 */
-	save_flags(flags); 
+	save_flags(flags); %\S
 	cli();
 	oldval = readb (base + add);  /* Read a byte */
 	writeb (oldval^0xff, base + add);
@@ -20232,12 +20037,12 @@ int skull_init(void)
 	    unsigned char val = readb (base + radd);
 	    if (val && val != 0xFF && val != ((unsigned long) radd&0xFF))
 		break;
-	}    
+	}    %\S
 	printk("%%s\n", i==5 ? "empty" : "ROM");
     }
 
     /*
-     * Find you hardware 
+     * Find you hardware %\S
      */
     skull_find_hw();
 
@@ -20247,8 +20052,7 @@ int skull_init(void)
     return 0;
 }
 
-module_init(skull_init);
-]]>
+module_init(skull_init);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_snull">
@@ -20373,13 +20177,13 @@ void snull_teardown_pool(struct net_device *dev)
 {
 	struct snull_priv *priv = netdev_priv(dev);
 	struct snull_packet *pkt;
-    
+    %\S
 	while ((pkt = priv->ppool)) {
 		priv->ppool = pkt->next;
 		kfree (pkt);
 		/* FIXME - in-flight packets ? */
 	}
-}    
+}    %\S
 
 /*
  * Buffer/pool management.
@@ -20389,7 +20193,7 @@ struct snull_packet *snull_get_tx_buffer(struct net_device *dev)
 	struct snull_priv *priv = netdev_priv(dev);
 	unsigned long flags;
 	struct snull_packet *pkt;
-    
+    %\S
 	spin_lock_irqsave(&priv->lock, flags);
 	pkt = priv->ppool;
 	priv->ppool = pkt->next;
@@ -20449,7 +20253,7 @@ static void snull_rx_ints(struct net_device *dev, int enable)
 	priv->rx_int_enabled = enable;
 }
 
-    
+    %\S
 /*
  * Open and close
  */
@@ -20458,7 +20262,7 @@ int snull_open(struct net_device *dev)
 {
 	/* request_region(), request_irq(), ....  (like fops->open) */
 
-	/* 
+	/* %\S
 	 * Assign the hardware address of the board: use "\0SNULx", where
 	 * x is 0 or 1. The first byte is '\0' to avoid being a multicast
 	 * address (the first byte of multicast addrs is odd).
@@ -20521,7 +20325,7 @@ void snull_rx(struct net_device *dev, struct snull_packet *pkt)
 		priv->stats.rx_dropped++;
 		goto out;
 	}
-	skb_reserve(skb, 2); /* align IP on 16B boundary */  
+	skb_reserve(skb, 2); /* align IP on 16B boundary */  %\S
 	memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
 
 	/* Write metadata, and then pass to the receive level */
@@ -20534,7 +20338,7 @@ void snull_rx(struct net_device *dev, struct snull_packet *pkt)
   out:
 	return;
 }
-    
+    %\S
 
 /*
  * The poll implementation.
@@ -20545,7 +20349,7 @@ static int snull_poll(struct net_device *dev, int *budget)
 	struct sk_buff *skb;
 	struct snull_priv *priv = netdev_priv(dev);
 	struct snull_packet *pkt;
-    
+    %\S
 	while (npackets < quota && priv->rx_queue) {
 		pkt = snull_dequeue_buf(dev);
 		skb = dev_alloc_skb(pkt->datalen + 2);
@@ -20556,7 +20360,7 @@ static int snull_poll(struct net_device *dev, int *budget)
 			snull_release_buffer(pkt);
 			continue;
 		}
-		skb_reserve(skb, 2); /* align IP on 16B boundary */  
+		skb_reserve(skb, 2); /* align IP on 16B boundary */  %\S
 		memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
 		skb->dev = dev;
 		skb->protocol = eth_type_trans(skb, dev);
@@ -20580,8 +20384,8 @@ static int snull_poll(struct net_device *dev, int *budget)
 	/* We couldn't process everything. */
 	return 1;
 }
-	    
-        
+	    %\S
+        %\S
 /*
  * The typical interrupt entry point
  */
@@ -20690,7 +20494,7 @@ static void snull_hw_tx(char *buf, int len, struct net_device *dev)
 	struct snull_priv *priv;
 	u32 *saddr, *daddr;
 	struct snull_packet *tx_buffer;
-    
+    %\S
 	/* I am paranoid. Ain't I? */
 	if (len < sizeof(struct ethhdr) + sizeof(struct iphdr)) {
 		printk("snull: Hmm... packet too short (%%i octets)\n",
@@ -20806,7 +20610,7 @@ void snull_tx_timeout (struct net_device *dev)
 
 
 /*
- * Ioctl commands 
+ * Ioctl commands %\S
  */
 int snull_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 {
@@ -20831,7 +20635,7 @@ int snull_rebuild_header(struct sk_buff *skb)
 {
 	struct ethhdr *eth = (struct ethhdr *) skb->data;
 	struct net_device *dev = skb->dev;
-    
+    %\S
 	memcpy(eth->h_source, dev->dev_addr, dev->addr_len);
 	memcpy(eth->h_dest, dev->dev_addr, dev->addr_len);
 	eth->h_dest[ETH_ALEN-1]   ^= 0x01;   /* dest is us xor 1 */
@@ -20865,7 +20669,7 @@ int snull_change_mtu(struct net_device *dev, int new_mtu)
 	unsigned long flags;
 	struct snull_priv *priv = netdev_priv(dev);
 	spinlock_t *lock = &priv->lock;
-    
+    %\S
 	/* check ranges */
 	if ((new_mtu < 68) || (new_mtu > 1500))
 		return -EINVAL;
@@ -20889,11 +20693,11 @@ void snull_init(struct net_device *dev)
     	/*
 	 * Make the usual checks: check_region(), probe irq, ...  -ENODEV
 	 * should be returned if no device found.  No resource should be
-	 * grabbed: this is done on open(). 
+	 * grabbed: this is done on open(). %\S
 	 */
 #endif
 
-    	/* 
+    	/* %\S
 	 * Then, assign other fields in dev, using ether_setup() and some
 	 * hand assignments
 	 */
@@ -20905,7 +20709,7 @@ void snull_init(struct net_device *dev)
 	dev->hard_start_xmit = snull_tx;
 	dev->do_ioctl        = snull_ioctl;
 	dev->get_stats       = snull_stats;
-	dev->change_mtu      = snull_change_mtu;  
+	dev->change_mtu      = snull_change_mtu;  %\S
 	dev->rebuild_header  = snull_rebuild_header;
 	dev->hard_header     = snull_header;
 	dev->tx_timeout      = snull_tx_timeout;
@@ -20945,7 +20749,7 @@ struct net_device *snull_devs[2];
 void snull_cleanup(void)
 {
 	int i;
-    
+    %\S
 	for (i = 0; i < 2;  i++) {
 		if (snull_devs[i]) {
 			unregister_netdev(snull_devs[i]);
@@ -20981,15 +20785,14 @@ int snull_init_module(void)
 		else
 			ret = 0;
    out:
-	if (ret) 
+	if (ret) %\S
 		snull_cleanup();
 	return ret;
 }
 
 
 module_init(snull_init_module);
-module_exit(snull_cleanup);
-]]>
+module_exit(snull_cleanup);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_tiny_serial">
@@ -21284,8 +21087,7 @@ static int __init tiny_init(void)
 	return result;
 }
 
-module_init(tiny_init);
-]]>
+module_init(tiny_init);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_tiny_tty">
@@ -21463,7 +21265,7 @@ static void tiny_close(struct tty_struct *tty, struct file *file)
 		do_close(tiny);
 }	
 
-static int tiny_write(struct tty_struct *tty, 
+static int tiny_write(struct tty_struct *tty, %\S
 		      const unsigned char *buffer, int count)
 {
 	struct tiny_serial *tiny = tty->driver_data;
@@ -21492,7 +21294,7 @@ exit:
 	return retval;
 }
 
-static int tiny_write_room(struct tty_struct *tty) 
+static int tiny_write_room(struct tty_struct *tty) %\S
 {
 	struct tiny_serial *tiny = tty->driver_data;
 	int room = -EINVAL;
@@ -21526,7 +21328,7 @@ static void tiny_set_termios(struct tty_struct *tty, struct termios *old_termios
 	/* check that they really want us to change something */
 	if (old_termios) {
 		if ((cflag == old_termios->c_cflag) &&
-		    (RELEVANT_IFLAG(tty->termios->c_iflag) == 
+		    (RELEVANT_IFLAG(tty->termios->c_iflag) == %\S
 		     RELEVANT_IFLAG(old_termios->c_iflag))) {
 			printk(KERN_DEBUG " - nothing to change...\n");
 			return;
@@ -21572,7 +21374,7 @@ static void tiny_set_termios(struct tty_struct *tty, struct termios *old_termios
 		printk(KERN_DEBUG " - RTS/CTS is disabled\n");
 	
 	/* determine software flow control */
-	/* if we are implementing XON/XOFF, set the start and 
+	/* if we are implementing XON/XOFF, set the start and %\S
 	 * stop character in the device */
 	if (I_IXOFF(tty) || I_IXON(tty)) {
 		unsigned char stop_char  = STOP_CHAR(tty);
@@ -21880,8 +21682,7 @@ static void __exit tiny_exit(void)
 }
 
 module_init(tiny_init);
-module_exit(tiny_exit);
-]]>
+module_exit(tiny_exit);]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_usb_skeleton">
@@ -21895,7 +21696,7 @@ module_exit(tiny_exit);
  *	modify it under the terms of the GNU General Public License as
  *	published by the Free Software Foundation, version 2.
  *
- * This driver is based on the 2.6.3 version of drivers/usb/usb-skeleton.c 
+ * This driver is based on the 2.6.3 version of drivers/usb/usb-skeleton.c %\S
  * but has been rewritten to be easy to read and use, as no locks are now
  * needed anymore.
  *
@@ -22025,8 +21826,8 @@ static ssize_t skel_read(struct file *file, char __user *buffer, size_t count, l
 static void skel_write_bulk_callback(struct urb *urb, struct pt_regs *regs)
 {
 	/* sync/async unlink faults aren't errors */
-	if (urb->status && 
-	    !(urb->status == -ENOENT || 
+	if (urb->status && %\S
+	    !(urb->status == -ENOENT || %\S
 	      urb->status == -ECONNRESET ||
 	      urb->status == -ESHUTDOWN)) {
 		dbg("%%s - nonzero write bulk status received: %%d",
@@ -22034,7 +21835,7 @@ static void skel_write_bulk_callback(struct urb *urb, struct pt_regs *regs)
 	}
 
 	/* free up our allocated buffer */
-	usb_buffer_free(urb->dev, urb->transfer_buffer_length, 
+	usb_buffer_free(urb->dev, urb->transfer_buffer_length, %\S
 			urb->transfer_buffer, urb->transfer_dma);
 }
 
@@ -22102,7 +21903,7 @@ static struct file_operations skel_fops = {
 	.release =	skel_release,
 };
 
-/* 
+/* %\S
  * usb class driver info in order to get a minor number from the usb core,
  * and to have the device registered with devfs and the driver core
  */
@@ -22241,8 +22042,7 @@ static void __exit usb_skel_exit(void)
 module_init (usb_skel_init);
 module_exit (usb_skel_exit);
 
-MODULE_LICENSE("GPL");
-]]>
+MODULE_LICENSE("GPL");]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_ldbus_H">
@@ -22284,12 +22084,11 @@ struct ldd_device {
 extern int register_ldd_device(struct ldd_device *);
 extern void unregister_ldd_device(struct ldd_device *);
 extern int register_ldd_driver(struct ldd_driver *);
-extern void unregister_ldd_driver(struct ldd_driver *);
-			</text>
+extern void unregister_ldd_driver(struct ldd_driver *);</text>
 		</p>
 		<p n="xlnx_drv_sbull_H">
 			<text>
-				<![CDATA[
+				<![CDATA[%\l
 /*
  * sbull.h -- definitions for the char module
  *
@@ -22359,8 +22158,7 @@ typedef struct Sbull_Dev {
    request_queue_t *queue;
    int busy;
 #endif
-}              Sbull_Dev;
-]]>
+}              Sbull_Dev;]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scull_H">
@@ -22541,8 +22339,7 @@ int     scull_ioctl(struct inode *inode, struct file *filp,
 
 #define SCULL_IOC_MAXNR 14
 
-#endif /* _SCULL_H_ */
-]]>
+#endif /* _SCULL_H_ */]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scullc_H">
@@ -22668,8 +22465,7 @@ struct scullc_dev *scullc_follow(struct scullc_dev *dev, int n);
 #define SCULLC_IOC_MAXNR 12
 
 
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_sculld_H">
@@ -22799,8 +22595,7 @@ struct sculld_dev *sculld_follow(struct sculld_dev *dev, int n);
 #define SCULLD_IOC_MAXNR 12
 
 
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scullp_H">
@@ -22926,8 +22721,7 @@ struct scullp_dev *scullp_follow(struct scullp_dev *dev, int n);
 #define SCULLP_IOC_MAXNR 12
 
 
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_scullv_H">
@@ -23053,8 +22847,7 @@ struct scullv_dev *scullv_follow(struct scullv_dev *dev, int n);
 #define SCULLV_IOC_MAXNR 12
 
 
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_shortprint_H">
@@ -23104,13 +22897,12 @@ struct scullv_dev *scullv_follow(struct scullv_dev *dev, int n);
 /*
  * Minimum space before waking up a writer.
  */
-#define SP_MIN_SPACE	PAGE_SIZE/2
-]]>
+#define SP_MIN_SPACE	PAGE_SIZE/2]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_snull_H">
 			<text>
-				<![CDATA[
+				<![CDATA[%\l
 /*
  * snull.h -- definitions for the network module
  *
@@ -23158,8 +22950,7 @@ extern struct net_device *snull_devs[];
 
 
 
-
-]]>
+%\l]]>
 			</text>
 		</p>
 		<p n="xlnx_drv_attribute_H">
@@ -23174,7 +22965,7 @@ extern struct net_device *snull_devs[];
 
 * Created By : Mihai Constantin constant.mihai@googlemail.com
 
-* License : 
+* License : %\S
 
 ******************************************/
 
@@ -23187,7 +22978,7 @@ extern struct net_device *snull_devs[];
 
 /**
  * ******************************************************
- * @brief 
+ * @brief %\S
  * ******************************************************
 **/
 #if __GNUC_  _ >= 3
@@ -23224,9 +23015,756 @@ extern struct net_device *snull_devs[];
 # define unlikely(x)    (x)
 #endif
 
-#endif
-]]>
+#endif]]>
 			</text>
+		</p>
+		<p n="xc_alg_insertion_sort_nonincreasing">
+			<text>
+				<![CDATA[//Rewrite the \text{INSERTION-SORT}INSERTION-SORT procedure to sort into nonincreasing instead of nondecreasing order
+INSERTION-SORT(A)
+    for j = 2 to A.length
+        key = A[j]
+        i = j - 1
+        while i > 0 and A[i] < key
+            A[i + 1] = A[i]
+            i = i - 1
+        A[i + 1] = key]]>
+			</text>
+		</p>
+		<p n="xc_alg_add_binary">
+			<text>ADD-BINARY(A, B)
+    C = new integer[A.length + 1]
+    carry = 0
+    for i = 1 to A.length
+        C[i] = (A[i] + B[i] + carry) % 2  // remainder
+        carry = (A[i] + B[i] + carry) / 2 // quotient
+    C[i + 1] = carry
+    return C</text>
+		</p>
+		<p n="xc_alg_sorting_finding_smallest">
+			<text>
+				<![CDATA[n = A.length
+for i = 1 to n - 1
+    minIndex = i
+    for j = i + 1 to n
+        if A[j] < A[minIndex]
+            minIndex = j
+    swap(A[i], A[minIndex])]]>
+			</text>
+		</p>
+		<p n="xc_alg_merge">
+			<text>
+				<![CDATA[MERGE(A, p, q, r)
+    n1 = q - p + 1
+    n2 = r - q
+    let L[1..n1] and R[1..n2] be new arrays
+    for i = 1 to n1
+        L[i] = A[p + i - 1]
+    for j = 1 to n2
+        R[j] = A[q + j]
+    i = 1
+    j = 1
+    for k = p to r
+        if i > n1
+            A[k] = R[j]
+            j = j + 1
+        else if j > n2
+            A[k] = L[i]
+            i = i + 1
+        else if L[i] ≤ R[j]
+            A[k] = L[i]
+            i = i + 1
+        else
+            A[k] = R[j]
+            j = j + 1]]>
+			</text>
+		</p>
+		<p n="xc_alg_iterative_binary_search">
+			<text>
+				<![CDATA[ITERATIVE-BINARY-SEARCH(A, v, low, high)
+    while low ≤ high
+        mid = floor((low + high) / 2)
+        if v == A[mid]
+            return mid
+        else if v > A[mid]
+            low = mid + 1
+        else high = mid - 1
+    return NIL]]>
+			</text>
+		</p>
+		<p n="xc_alg_recursive_binary_search">
+			<text>
+				<![CDATA[RECURSIVE-BINARY-SEARCH(A, v, low, high)
+    if low > high
+        return NIL
+    mid = floor((low + high) / 2)
+    if v == A[mid]
+        return mid
+    else if v > A[mid]
+        return RECURSIVE-BINARY-SEARCH(A, v, mid + 1, high)
+    else return RECURSIVE-BINARY-SEARCH(A, v, low, mid - 1)]]>
+			</text>
+		</p>
+		<p n="xc_alg_bubble_sort">
+			<text>
+				<![CDATA[BUBBLESORT(A)
+    for i = 1 to A.length - 1
+        for j = A.length downto i + 1
+            if A[j] < A[j - 1]
+                exchange A[j] with A[j - 1]]]>
+			</text>
+		</p>
+		<p n="xc_alg_native_horner">
+			<text>NAIVE-HORNER()
+    y = 0
+    for k = 0 to n
+        temp = 1
+        for i = 1 to k
+            temp = temp * x
+        y = y + a[k] * temp</text>
+		</p>
+		<p n="xc_alg_horner_polynomial_coefficient">
+			<text>%\l</text>
+		</p>
+		<p n="xc_alg_count_inversions">
+			<text>
+				<![CDATA[COUNT-INVERSIONS(A, p, r)
+    if p < r
+        q = floor((p + r) / 2)
+        left = COUNT-INVERSIONS(A, p, q)
+        right = COUNT-INVERSIONS(A, q + 1, r)
+        inversions = MERGE-INVERSIONS(A, p, q, r) + left + right
+        return inversions]]>
+			</text>
+		</p>
+		<p n="xc_alg_merge_inversions">
+			<text>%\l</text>
+		</p>
+		<p n="xc_alg_brute_force_find_max_subarray">
+			<text>
+				<![CDATA[BRUTE-FORCE-FIND-MAXIMUM-SUBARRAY(A)
+    n = A.length
+    max-sum = -∞
+    for l = 1 to n
+        sum = 0
+        for h = l to n
+            sum = sum + A[h]
+            if sum > max-sum
+                max-sum = sum
+                low = l
+                high = h
+    return (low, high, max-sum)]]>
+			</text>
+		</p>
+		<p n="xc_alg_iterative_find_max_subarray">
+			<text>
+				<![CDATA[ITERATIVE-FIND-MAXIMUM-SUBARRAY(A)
+    n = A.length
+    max-sum = -∞
+    sum = -∞
+    for j = 1 to n
+        currentHigh = j
+        if sum > 0
+            sum = sum + A[j]
+        else
+            currentLow = j
+            sum = A[j]
+        if sum > max-sum
+            max-sum = sum
+            low = currentLow
+            high = currentHigh
+    return (low, high, max-sum)]]>
+			</text>
+		</p>
+		<p n="xc_alg_strassen">
+			<text>STRASSEN(A, B)
+    n = A.rows
+    if n == 1
+        return a[1, 1] * b[1, 1]
+    let C be a new n × n matrix
+    A[1, 1] = A[1..n / 2][1..n / 2]
+    A[1, 2] = A[1..n / 2][n / 2 + 1..n]
+    A[2, 1] = A[n / 2 + 1..n][1..n / 2]
+    A[2, 2] = A[n / 2 + 1..n][n / 2 + 1..n]
+    B[1, 1] = B[1..n / 2][1..n / 2]
+    B[1, 2] = B[1..n / 2][n / 2 + 1..n]
+    B[2, 1] = B[n / 2 + 1..n][1..n / 2]
+    B[2, 2] = B[n / 2 + 1..n][n / 2 + 1..n]
+    S[1] = B[1, 2] - B[2, 2]
+    S[2] = A[1, 1] + A[1, 2]
+    S[3] = A[2, 1] + A[2, 2]
+    S[4] = B[2, 1] - B[1, 1]
+    S[5] = A[1, 1] + A[2, 2]
+    S[6] = B[1, 1] + B[2, 2]
+    S[7] = A[1, 2] - A[2, 2]
+    S[8] = B[2, 1] + B[2, 2]
+    S[9] = A[1, 1] - A[2, 1]
+    S[10] = B[1, 1] + B[1, 2]
+    P[1] = STRASSEN(A[1, 1], S[1])
+    P[2] = STRASSEN(S[2], B[2, 2])
+    P[3] = STRASSEN(S[3], B[1, 1])
+    P[4] = STRASSEN(A[2, 2], S[4])
+    P[5] = STRASSEN(S[5], S[6])
+    P[6] = STRASSEN(S[7], S[8])
+    P[7] = STRASSEN(S[9], S[10])
+    C[1..n / 2][1..n / 2] = P[5] + P[4] - P[2] + P[6]
+    C[1..n / 2][n / 2 + 1..n] = P[1] + P[2]
+    C[n / 2 + 1..n][1..n / 2] = P[3] + P[4]
+    C[n / 2 + 1..n][n / 2 + 1..n] = P[5] + P[1] - P[3] - P[7]
+    return C</text>
+		</p>
+		<p n="xc_alg_random">
+			<text>
+				<![CDATA[RANDOM(a, b)
+    range = b - a
+    bits = ceil(log(2, range))
+    result = 0
+    for i = 1 to bits
+        r = RANDOM(0, 1)
+        result = result + r >> i
+    if result > range
+        return RANDOM(a, b)
+    else return a + result]]>
+			</text>
+		</p>
+		<p n="xc_alg_randomize_in_place">
+			<text>swap(A[1], A[RANDOM(1, n)])
+for i = 2 to n
+    swap(A[i], A[RANDOM(i, n)])</text>
+		</p>
+		<p n="xc_alg_unbiased_random">
+			<text>%\l</text>
+		</p>
+		<p n="xc_alg_permute_without_identity">
+			<text>PERMUTE-WITHOUT-IDENTITY(A)
+    n = A.length
+    for i = 1 to n - 1
+        swap A[i] with A[RANDOM(i + 1, n)]</text>
+		</p>
+		<p n="xc_alg_swap_random_element">
+			<text>PERMUTE-WITHOUT-IDENTITY(A)
+    n = A.length
+    for i = 1 to n - 1
+        swap A[i] with A[RANDOM(i + 1, n)]</text>
+		</p>
+		<p n="xc_alg_uniform_random_permutation">
+			<text>
+				<![CDATA[PERMUTE-BY-CYCLIC(A)
+    n = A.length
+    let B[1..n] be a new array
+    offset = RANDOM(1, n)
+    for i = 1 to n
+        dest = i + offset
+        if dest > n
+            dest = dest - n
+        B[dest] = A[i]
+    return B]]>
+			</text>
+		</p>
+		<p n="xc_alg_permute_by_sorting">
+			<text>PERMUTE-BY-SORTING(A)
+    let P[1..n] be a new array
+    for i = 1 to n
+        P[i] = i
+    for i = 1 to n
+        swap P[i] with P[RANDOM(i, n)]</text>
+		</p>
+		<p n="xc_alg_random_search">
+			<text>RANDOM-SEARCH(x, A, n)
+    v = Ø
+    while |Ø| != n
+        i = RANDOM(1, n)
+        if A[i] = x
+            return i
+        else
+            v = v ∩ i
+    return NIL</text>
+		</p>
+		<p n="xc_alg_random_sample">
+			<text>RANDOM-SAMPLE(m, n)
+    if m == 0
+        return Ø
+    else S = RANDOM-SAMPLE(m - 1, n - 1)
+        i = RANDOM(1, n)
+        if i ∈ S
+            S = S ∪ {n}
+        else S = S ∪ {i}
+        return S</text>
+		</p>
+		<p n="xc_alg_min_heapify">
+			<text>
+				<![CDATA[MIN-HEAPIFY(A, i)
+    l = LEFT(i)
+    r = RIGHT(i)
+    if l ≤ A.heap-size and A[l] < A[i]
+        smallest = l
+    else smallest = i
+    if r ≤ A.heap-size and A[r] < A[smallest]
+        smallest = r
+    if smallest != i
+        exchange A[i] with A[smallest]
+        MIN-HEAPIFY(A, smallest)]]>
+			</text>
+		</p>
+		<p n="xc_alg_max_heapify">
+			<text>
+				<![CDATA[MAX-HEAPIFY(A, i)
+    while true
+        l = LEFT(i)
+        r = RIGHT(i)
+        if l ≤ A.heap-size and A[l] > A[i]
+            largest = l
+        else largest = i
+        if r ≤ A.heap-size and A[r] > A[largest]
+            largest = r
+        if largest == i
+            return
+        exchange A[i] with A[largest]
+        i = largest]]>
+			</text>
+		</p>
+		<p n="xc_alg_heap_min">
+			<text>HEAP-MINIMUM(A)
+    return A[1]</text>
+		</p>
+		<p n="xc_alg_heap_extract_min">
+			<text>
+				<![CDATA[HEAP-EXTRACT-MIN(A)
+    if A.heap-size < 1
+        error "heap underflow"
+    min = A[1]
+    A[1] = A[A.heap-size]
+    A.heap-size = A.heap-size - 1
+    MIN-HEAPIFY(A, 1)
+    return min]]>
+			</text>
+		</p>
+		<p n="xc_alg_heap_decrease_key">
+			<text>
+				<![CDATA[HEAP-DECREASE-KEY(A, i, key)
+    if key > A[i]
+        error "new key is larger than current key"
+    A[i] = key
+    while i > 1 and A[PAREANT(i)] > A[i]
+        exchange A[i] with A[PARENT(i)]
+        i = PARENT(i)]]>
+			</text>
+		</p>
+		<p n="xc_alg_min_heap_insert">
+			<text>MIN-HEAP-INSERT(A, key)
+    A.heap-size = A.heap-size + 1
+    A[A.heap-size] = ∞
+    HEAP-DECREASE-KEY(A, A.heap-size, key)</text>
+		</p>
+		<p n="xc_alg_heap_increase_key">
+			<text>
+				<![CDATA[HEAP-INCREASE-KEY(A, i, key)
+    if key < A[i]
+        error "new key is smaller than current key"
+    while i > 1 and A[PARENT(i)] < key
+        A[i] = A[PARENT(i)]
+        i = PARENT(i)
+    A[i] = key]]>
+			</text>
+		</p>
+		<p n="xc_alg_heap_delete">
+			<text>
+				<![CDATA[HEAP-DELETE(A, i)
+    if A[i] > A[A.heap-size]
+        A[i] = A[A.heap-size]
+        MAX-HEAPIFY(A, i)
+    else
+        HEAP-INCREASE-KEY(A, i, A[A.heap-size])
+    A.heap-size = A.heap-size - 1]]>
+			</text>
+		</p>
+		<p n="xc_alg_build_max_heap_with_insertion">
+			<text>BUILD-MAX-HEAP'(A)
+    A.heap-size = 1
+    for i = 2 to A.length
+        MAX-HEAP-INSERT(A, A[i])</text>
+		</p>
+		<p n="xc_alg_d_ary_heap_extract_max">
+			<text>
+				<![CDATA[d-ARY-HEAP-EXTRACT-MAX(A)
+    if A.heap-size < 1
+        error "heap under flow"
+    max = A[1]
+    A[1] = A[A.heap-size]
+    A.heap-size = A.heap-size - 1
+    d-ARY-MAX-HEAPIFY(A, 1)
+    return max]]>
+			</text>
+		</p>
+		<p n="xc_alg_d_ary_max_heapify">
+			<text>
+				<![CDATA[d-ARY-MAX-HEAPIFY(A, i)
+    largest = i
+    for k = 1 to d
+        if d-ARY-CHILD(k, i) ≤ A.heap-size and A[d-ARY-CHILD(k, i)] > A[i]
+            if A[d-ARY-CHILD(k, i)] > largest
+                largest = A[d-ARY-CHILD(k, i)]
+    if largest != i
+        exchange A[i] with A[largest]
+        d-ARY-MAX-HEAPIFY(A, largest)]]>
+			</text>
+		</p>
+		<p n="xc_alg_d_ary_max_heap_insert">
+			<text>
+				<![CDATA[d-ARY-MAX-HEAP-INSERT(A, key)
+    A.heap-size = A.heap-size + 1
+    A[A.heap-size] = key
+    i = A.heap-size
+    while i > 1 and A[d-ARY-PARENT(i) < A[i]]
+        exchange A[i] with A[d-ARY-PARENT(i)]
+        i = d-ARY-PARENT(i)]]>
+			</text>
+		</p>
+		<p n="xc_alg_d_ary_increase_key">
+			<text>
+				<![CDATA[d-ARY-INCREASE-KEY(A, i, key)
+    if key < A[i]
+        error "new key is smaller than current key"
+    A[i] = key
+    while i > 1 and A[d-ARY-PARENT(i) < A[i]]
+        exchange A[i] with A[d-ARY-PARENT(i)]
+        i = d-ARY-PARENT(i)]]>
+			</text>
+		</p>
+		<p n="xc_alg_hoare_partition">
+			<text>
+				<![CDATA[HOARE-PARTITION(A, p, r)
+    x = A[p]
+    i = p - 1
+    j = r + 1
+    while true
+        repeat
+            j = j - 1
+        until A[j] ≤ x
+        repeat
+            i = i + 1
+        until A[i] ≥ x
+        if i < j
+            exchange A[i] with A[j]
+        else return j]]>
+			</text>
+		</p>
+		<p n="xc_alg_hoare_quicksort">
+			<text>
+				<![CDATA[HOARE-QUICKSORT(A, p, r)
+    if p < r
+        q = HOARE-PARTITION(A, p, r)
+        HOARE-QUICKSORT(A, p, q)
+        HOARE-QUICKSORT(A, q + 1, r)]]>
+			</text>
+		</p>
+		<p n="xc_alg_partition_plun">
+			<text>
+				<![CDATA[PARTITION'(A, p, r)
+    x = A[p]
+    low = p
+    high = p
+    for j = p + 1 to r
+        if A[j] < x
+            y = A[j]
+            A[j] = A[high + 1]
+            A[high + 1] = A[low]
+            A[low] = y
+            low = low + 1
+            high = high + 1
+        else if A[j] == x
+            exchange A[high + 1] with A[j]
+            high = high + 1
+    return (low, high)]]>
+			</text>
+		</p>
+		<p n="xc_alg_quicksort_plun">
+			<text>
+				<![CDATA[QUICKSORT'(A, p, r)
+    if p < r
+        (low, high) = RANDOMIZED-PARTITION'(A, p, r)
+        QUICKSORT'(A, p, low - 1)
+        QUICKSORT'(A, high + 1, r)]]>
+			</text>
+		</p>
+		<p n="xc_alg_tail_recursive_quicksort">
+			<text>
+				<![CDATA[TAIL-RECURSIVE-QUICKSORT(A, p, r)
+    while p < r
+        // Partition and sort left subarray.
+        q = PARTITION(A, p, r)
+        TAIL-RECURSIVE-QUICKSORT(A, p, q - 1)
+        p = q + 1]]>
+			</text>
+		</p>
+		<p n="xc_alg_modified_tail_recursive_quicksort">
+			<text>
+				<![CDATA[MODIFIED-TAIL-RECURSIVE-QUICKSORT(A, p, r)
+    while p < r
+        q = PARTITION(A, p, r)
+        if q < floor((p + r) / 2)
+            MODIFIED-TAIL-RECURSIVE-QUICKSORT(A, p, q - 1)
+            p = q + 1
+        else
+            MODIFIED-TAIL-RECURSIVE-QUICKSORT(A, q + 1, r)
+            r = q - 1]]>
+			</text>
+		</p>
+		<p n="xc_alg_find_intersection">
+			<text>
+				<![CDATA[FIND-INTERSECTION(A, p, r)
+    rand = RANDOM(p, r)
+    exchange A[rand] with A[r]
+    a = A[r].a
+    b = A[r].b
+    for i = p to r - 1
+        if A[i].a ≤ b and A[i].b ≥ a
+            if A[i].a > a
+                a = A[i].a
+            if A[i].b < b
+                b = A[i].b
+    return (a, b)]]>
+			</text>
+		</p>
+		<p n="xc_alg_fuzzy_sort">
+			<text>
+				<![CDATA[FUZZY-SORT(A, p, r)
+    if p < r
+        (a, b) = FIND-INTERSECTION(A, p, r)
+        t = PARTITION-RIGHT(A, a, p, r)
+        q = PARTITION-LEFT(A, b, p, t)
+        FUZZY-SORT(A, p, q - 1)
+        FUZZY-SORT(A, t + 1, r)]]>
+			</text>
+		</p>
+		<p n="xc_alg_partition_right">
+			<text>PARTITION-RIGHT(A, a, p, r)
+    i = p - 1
+    for j = p to r - 1
+        if A[j].a ≤ a
+            i = i + 1
+            exchange A[i] with A[j]
+    exchange A[i + 1] with A[r]
+    return i + 1</text>
+		</p>
+		<p n="xc_alg_partition_left">
+			<text>
+				<![CDATA[PARTITION-LEFT(A, b, p, t)
+    i = p - 1
+    for j = p to t - 1
+        if A[j].b < b
+            i = i + 1
+            exchange A[i] with A[j]
+    exchange A[i + 1] with A[t]
+    return i + 1]]>
+			</text>
+		</p>
+		<p n="xc_alg_modified_couting_sort">
+			<text>MODIFIED-COUNTING-SORT(A, k)
+    let C[0..k] be a new array
+    for i = 1 to k
+        C[i] = 0
+    for j = 1 to A.length
+        C[A[j]] = C[A[j]] + 1
+    for i = 2 to k
+        C[i] = C[i] + C[i - 1]
+    insert sentinel element NIL at the start of A
+    B = C[0..k - 1]
+    insert number 1 at the start of B
+    // B now contains the "endpoints" for C
+    for i = 2 to A.length
+        while C[A[i]] != B[A[i]]
+            key = A[i]
+            exchange A[C[A[i]]] with A[i]
+            while A[C[key]] == key // make sure that elements with the same keys will not be swapped
+                C[key] = C[key] - 1
+    remove the sentinel element
+    return A</text>
+		</p>
+		<p n="xc_alg_compare_exchange">
+			<text>
+				<![CDATA[COMPARE-EXCHANGE(A, i, j)
+    if A[i] > A[j]
+        exchange A[i] with A[j]]]>
+			</text>
+		</p>
+		<p n="xc_alg_insertion_sort">
+			<text>INSERTION-SORT(A)
+    for j = 2 to A.length
+        for i = j - 1 downto 1
+            COMPARE-EXCHANGE(A, i, i + 1)</text>
+		</p>
+		<p n="xc_alg_randomized_select_partition">
+			<text>
+				<![CDATA[PARTITION(A, p, r)
+    x = A[r]
+    i = p
+    for k = p - 1 to r
+       if A[k] < x
+           i = i + 1
+           swap A[i] with A[k]
+    i = i + 1
+    swap A[i] with A[r]
+    return i]]>
+			</text>
+		</p>
+		<p n="xc_alg_randomized_select_randomised_partition">
+			<text>RANDOMIZED-PARTITION(A, p, r)
+    x = RANDOM(p - 1, r)
+    swap A[x] with A[r]
+    return PARTITION(A, p, r)</text>
+		</p>
+		<p n="xc_alg_randomized_select_randomized_select">
+			<text>
+				<![CDATA[RANDOMIZED-SELECT(A, p, r, i)
+    while true
+        if p == r
+            return A[p]
+        q = RANDOMIZED-PARTITION(A, p, r)
+        k = q - p + 1
+        if i == k
+            return A[q]
+        if i < k
+            r = q
+        else
+            p = q
+            i = i - k]]>
+			</text>
+		</p>
+		<p n="xc_alg_kth_partition">
+			<text>
+				<![CDATA[PARTITION(A, p, r)
+    x = A[r]
+    i = p
+    for k = p to r
+        if A[k] < x
+            i = i + 1
+            swap A[i] with A[k]
+    i = i + 1
+    swap a[i] with a[r]
+    return i]]>
+			</text>
+		</p>
+		<p n="xc_alg_kth_randomized_partition">
+			<text>RANDOMIZED-PARTITION(A, p, r)
+    x = RANDOM(p, r)
+    swap A[x] with A[r]
+    return PARTITION(A, p, r)</text>
+		</p>
+		<p n="xc_alg_randomized_select">
+			<text>
+				<![CDATA[RANDOMIZED-SELECT(A, p, r, i)
+    while true
+        if p == r
+            return p, A[p]
+        q = RANDOMIZED-PARTITION(A, p, r)
+        k = q - p + 1
+        if i == k
+            return q, A[q]
+        if i < k
+            r = q
+        else
+            p = q + 1
+            i = i - k]]>
+			</text>
+		</p>
+		<p n="xc_alg_kth_k_quantitles_sub">
+			<text>
+				<![CDATA[k-QUANTITLES-SUB(A, p, r, pos, f, e, quantiles)
+    if f + 1 > e
+        return
+    mid = (f + e) / 2
+    q, val = RANDOMIZED-SELECT(A, p, r, pos[mid])
+    quantiles[mid] = val
+    k = q - p + 1
+    for i = mid + 1 to e
+        pos[i] = pos[i] - k
+    k-QUANTILES-SUB(A, q + 1, r, pos, mid + 1, e, quantiles)]]>
+			</text>
+		</p>
+		<p n="xc_alg_kth_k_quantitles">
+			<text>k-QUANTITLES(A, k)
+    num = A.size() / k
+    mod = A.size() % k
+    pos = num[1..k]
+    for i = 1 to mod
+        pos[i] = pos[i] + 1
+    for i = 1 to k
+        pos[i] = pos[i] + pos[i - 1]
+    quantiles = [1..k]
+    k-QUANTITLES-SUB(A, 0, A.length, pos, 0, pos.size(), quantiles)
+    return quantiles</text>
+		</p>
+		<p n="xc_alg_median">
+			<text>
+				<![CDATA[MEDIAN(X, Y, n)
+    if n == 1
+        return min(X[1], Y[1])
+    if X[n / 2] < Y[n / 2]
+        return MEDIAN(X[n / 2 + 1..n], Y[1..n / 2], n / 2)
+    return MEDIAN(X[1..n / 2], Y[n / 2 + 1..n], n / 2)]]>
+			</text>
+		</p>
+		<p n="xc_alg_queue_empty">
+			<text>QUEUE-EMPTY(Q)
+    if Q.head == Q.tail
+        return true
+    else return false</text>
+		</p>
+		<p n="xc_alg_queue_full">
+			<text>QUEUE-FULL(Q)
+    if Q.head == Q.tail + 1 or (Q.head == 1 and Q.tail == Q.length)
+        return true
+    else return false</text>
+		</p>
+		<p n="xc_alg_enqueue">
+			<text>ENQUEUE(Q, x)
+    if QUEUE-FULL(Q)
+        error "overflow"
+    else
+        Q[Q.tail] = x
+        if Q.tail == Q.length
+            Q.tail = 1
+        else Q.tail = Q.tail + 1</text>
+		</p>
+		<p n="xc_alg_dequeue">
+			<text>DEQUEUE(Q)
+    if QUEUE-EMPTY(Q)
+        error "underflow"
+    else
+        x = Q[Q.head]
+        if Q.head == Q.length
+            Q.head = 1
+        else Q.head = Q.head + 1
+        return x</text>
+		</p>
+		<p n="xc_alg_head_enqueue">
+			<text>%\l</text>
+		</p>
+		<p n="xc_alg_tail_enqueue">
+			<text>%\l</text>
+		</p>
+		<p n="xc_alg_head_dequeue">
+			<text>HEAD-DEQUEUE(Q)
+    if QUEUE-EMPTY(Q)
+        error "underflow"
+    else
+        x = Q[Q.head]
+        if Q.head == Q.length
+            Q.head = 1
+        else Q.head = Q.head + 1
+        return x</text>
+		</p>
+		<p n="xc_alg_tail_dequeue">
+			<text>TAIL-DEQUEUE(Q)
+    if QUEUE-EMPTY(Q)
+        error "underflow"
+    else
+        if Q.tail == 1
+            Q.tail = Q.length
+        else Q.tail = Q.tail - 1
+        x = Q[Q.tail]
+        return x</text>
 		</p>
 	</language.aliases>
 	<language.aliases n="language.java.aliases" version="1">
