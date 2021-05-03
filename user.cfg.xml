@@ -573,6 +573,13 @@
 					<u/>
 					<projectname v="C:\W\Algorithm\repo\aliasfor.vpj"/>
 				</class.WORKSPACE_LIST>
+				<class.WORKSPACE_LIST>
+					<isFolder v="0"/>
+					<filename v="D:\testCordinateECC\myv2\testECCCordinate-master\test.vpw"/>
+					<caption v=""/>
+					<u/>
+					<projectname v="D:\testCordinateECC\myv2\testECCCordinate-master\test.vpj"/>
+				</class.WORKSPACE_LIST>
 			</array>
 		</p>
 		<p n="def_open_style" v="0"/>
@@ -634,6 +641,7 @@
 		<p n="def_mfsearch_init_flags" v="0xA"/>
 		<p n="def_active_java_config" v="JDK 14.0.1"/>
 		<p n="def_pip_on" v="0"/>
+		<p n="def_updown_col" v="0"/>
 	</misc.def_vars>
 	<misc.tag_file_list_all n="misc.tag_file_list_all" version="1" configs="win">
 		<p n="cs" v="%SLICKEDITCONFIGVERSION%tagfiles\dotnet.vtg;%SLICKEDITCONFIGVERSION%tagfiles\unity.vtg"/>
@@ -38965,4 +38973,7 @@ system("");
 } FILE1 FILE2</text>
 		</p>
 	</language.aliases>
+	<eventtab_profiles n="eventtab_profiles.emulation-Eclipse" version="1">
+		<p n="'C-,'" v="back"/>
+	</eventtab_profiles>
 </options>
