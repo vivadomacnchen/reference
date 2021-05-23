@@ -1,0 +1,11 @@
+===================================
+Configuration Memory information
+===================================
+File Format        BIN
+Interface          SMAPX32
+Size               256K
+Start Address      0x00000000
+End Address        0x0003FFFF
+
+Addr1         Addr2         Date                    File(s)
+0x00000000    0x000319BB    May 16 04:10:40 2021    Bitstreams/Config_add_pblock_rp_instance_partial.bit
