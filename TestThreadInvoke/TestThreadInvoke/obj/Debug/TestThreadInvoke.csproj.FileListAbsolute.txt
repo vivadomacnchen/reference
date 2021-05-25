@@ -1,0 +1,12 @@
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\ResolveAssemblyReference.cache
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\Window1.baml
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\Window1.g.cs
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\App.g.cs
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\TestThreadInvoke_MarkupCompile.cache
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\TestThreadInvoke.g.resources
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\TestThreadInvoke.Properties.Resources.resources
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\TestThreadInvoke.csproj.GenerateResource.Cache
+D:\csharp\TestThreadInvoke\TestThreadInvoke\bin\Debug\TestThreadInvoke.exe
+D:\csharp\TestThreadInvoke\TestThreadInvoke\bin\Debug\TestThreadInvoke.pdb
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\TestThreadInvoke.exe
+D:\csharp\TestThreadInvoke\TestThreadInvoke\obj\Debug\TestThreadInvoke.pdb

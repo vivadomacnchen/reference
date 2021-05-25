@@ -10,6 +10,6 @@
         <TextBox Height="23" Margin="36,8,54,0" Name="textBox1" VerticalAlignment="Top" />
         <Button Height="23" HorizontalAlignment="Right" Margin="0,0,18,6" Name="button3" VerticalAlignment="Bottom" Width="75" Click="button3_Click">close</Button>
         <Button Height="23" HorizontalAlignment="Right" Margin="0,0,14,66" Name="button4" VerticalAlignment="Bottom" Width="75" Click="button4_Click">Send</Button>
-        <TextBox Height="23" Margin="36,0,122,90" Name="tBoxInData" VerticalAlignment="Bottom" />
+        <TextBox Height="23" Margin="36,0,122,90" Name="tBoxInData" VerticalAlignment="Bottom" TextChanged="tBoxInData_TextChanged" PreviewKeyDown="tBoxInData_KeyDown" />
     </Grid>
 </Window>

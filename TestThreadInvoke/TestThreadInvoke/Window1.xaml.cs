@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Windows.Forms;
+//using System.Windows.Forms;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
@@ -152,6 +152,19 @@ namespace TestThreadInvoke
             }
         }
 
+        private void tBoxInData_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
+        }
+        private void tBoxInData_KeyDown(object sender, KeyEventArgs e)
+        {
+            string str1;
+            if ((Key.C == e.Key) && (Keyboard.Modifiers == ModifierKeys.Control))
+            {
+                str1 = "Ctrl+c";
+                richTextBox1.AppendText(str1);
+            }
+        }
 
     }
 }
