@@ -1,0 +1,13 @@
+state  wait_for_icapgo:
+  if ((icap_go == 1'b1)) then
+    goto  wait_for_reconfig_done;
+  else
+    goto  wait_for_icapgo;
+  endif
+  
+  state  wait_for_reconfig_done:
+    if ((reconfig_done == 1'b1)) then
+      trigger;
+    else
+      goto  wait_for_reconfig_done;
+    endif

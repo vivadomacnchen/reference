@@ -1,0 +1,13 @@
+state  wait_for_icapgo:
+  if ((icap_go == 1'b1)) then
+   goto  wait_for_crc;
+  else
+    goto  wait_for_icapgo;
+  endif
+  
+  state  wait_for_crc:
+    if ((ICAP_dataout == 32'hffffff1b)) then
+      trigger;
+    else
+      goto  wait_for_crc;
+    endif

@@ -1,0 +1,11 @@
+===================================
+Configuration Memory information
+===================================
+File Format        BIN
+Interface          SMAPX8
+Size               256K
+Start Address      0x00000000
+End Address        0x0003FFFF
+
+Addr1         Addr2         Date                    File(s)
+0x00000000    0x0002686B    May 27 08:32:57 2021    ./Bitstreams/left.bit

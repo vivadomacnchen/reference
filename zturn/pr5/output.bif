@@ -1,0 +1,7 @@
+//arch = zynq; split = false; format = BIN
+the_ROM_image:
+{
+	[bootloader]/home/user/Downloads/pr5/mytestpr/mytestpr.sdk/zynq_fsbl/Debug/zynq_fsbl.elf
+	/home/user/Downloads/pr5/Bitstreams/top.bit
+	/home/user/Downloads/pr5/mytestpr/mytestpr.sdk/TestApp/Debug/TestApp.elf
+}
