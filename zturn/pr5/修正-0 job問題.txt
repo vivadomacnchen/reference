@@ -1,0 +1,1 @@
+在implement時出現-0 job的錯誤時，將VM的cpu processor設定到4可修正這個問題。
